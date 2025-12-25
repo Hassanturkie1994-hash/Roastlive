@@ -20,48 +20,77 @@ import { supabase } from '../../lib/supabase';
 
 const { width, height } = Dimensions.get('window');
 
-// Gift Tiers
-export type GiftTier = 'basic' | 'mid' | 'high' | 'ultra' | 'nuclear';
+// Gift Tiers (Prices in SEK)
+export type GiftTier = 'low' | 'mid' | 'high' | 'ultra' | 'nuclear';
 
 export interface Gift {
   id: string;
   name: string;
   emoji: string;
   tier: GiftTier;
-  cost: number;
+  cost: number; // SEK
   animation_type: 'simple' | 'burst' | 'shower' | 'takeover';
-  battle_points?: number;
-  description: string;
+  battle_points: number;
 }
 
-// Gift Catalog
+// Gift Catalog - Roast Live Official Gifts
 export const GIFT_CATALOG: Gift[] = [
-  // Basic Tier (1-50 coins)
-  { id: 'clap', name: 'Clap', emoji: '👏', tier: 'basic', cost: 5, animation_type: 'simple', battle_points: 1, description: 'Show appreciation' },
-  { id: 'laugh', name: 'Laugh', emoji: '😂', tier: 'basic', cost: 10, animation_type: 'simple', battle_points: 2, description: 'That was funny!' },
-  { id: 'fire', name: 'Fire', emoji: '🔥', tier: 'basic', cost: 20, animation_type: 'simple', battle_points: 4, description: 'That burn was hot!' },
-  { id: 'heart', name: 'Heart', emoji: '❤️', tier: 'basic', cost: 30, animation_type: 'simple', battle_points: 6, description: 'Spread the love' },
-  { id: 'skull', name: 'Skull', emoji: '💀', tier: 'basic', cost: 50, animation_type: 'simple', battle_points: 10, description: 'I\'m dead!' },
-  
-  // Mid Tier (100-500 coins)
-  { id: 'mic_drop', name: 'Mic Drop', emoji: '🎤', tier: 'mid', cost: 100, animation_type: 'burst', battle_points: 25, description: 'Devastating roast!' },
-  { id: 'crown', name: 'Crown', emoji: '👑', tier: 'mid', cost: 200, animation_type: 'burst', battle_points: 50, description: 'Roast royalty' },
-  { id: 'trophy', name: 'Trophy', emoji: '🏆', tier: 'mid', cost: 300, animation_type: 'burst', battle_points: 75, description: 'Champion move!' },
-  { id: 'rocket', name: 'Rocket', emoji: '🚀', tier: 'mid', cost: 500, animation_type: 'shower', battle_points: 125, description: 'To the moon!' },
-  
-  // High Tier (1000-2000 coins)
-  { id: 'diamond', name: 'Diamond', emoji: '💎', tier: 'high', cost: 1000, animation_type: 'shower', battle_points: 250, description: 'Precious roast' },
-  { id: 'tornado', name: 'Tornado', emoji: '🌪️', tier: 'high', cost: 1500, animation_type: 'shower', battle_points: 400, description: 'Devastating storm!' },
-  { id: 'bomb', name: 'Bomb', emoji: '💣', tier: 'high', cost: 2000, animation_type: 'shower', battle_points: 500, description: 'BOOM! Total destruction' },
-  
-  // Ultra Tier (5000-10000 coins)
-  { id: 'nuke', name: 'Nuke', emoji: '☢️', tier: 'ultra', cost: 5000, animation_type: 'takeover', battle_points: 1250, description: 'Nuclear roast!' },
-  { id: 'galaxy', name: 'Galaxy', emoji: '🌌', tier: 'ultra', cost: 7500, animation_type: 'takeover', battle_points: 2000, description: 'Universal destruction' },
-  { id: 'supernova', name: 'Supernova', emoji: '🌟', tier: 'ultra', cost: 10000, animation_type: 'takeover', battle_points: 2500, description: 'Stellar explosion!' },
-  
-  // Nuclear Tier (25000+ coins) - Screen takeover
-  { id: 'black_hole', name: 'Black Hole', emoji: '🕳️', tier: 'nuclear', cost: 25000, animation_type: 'takeover', battle_points: 7500, description: 'Everything gets sucked in!' },
-  { id: 'big_bang', name: 'Big Bang', emoji: '💥', tier: 'nuclear', cost: 50000, animation_type: 'takeover', battle_points: 15000, description: 'Universe-creating roast!' },
+  // LOW TIER (1–10 SEK)
+  { id: 'boo', name: 'Boo', emoji: '👻', tier: 'low', cost: 1, animation_type: 'simple', battle_points: 1 },
+  { id: 'flying_tomato', name: 'Flying Tomato', emoji: '🍅', tier: 'low', cost: 2, animation_type: 'simple', battle_points: 2 },
+  { id: 'laugh_track', name: 'Laugh Track', emoji: '😆', tier: 'low', cost: 3, animation_type: 'simple', battle_points: 3 },
+  { id: 'facepalm', name: 'Facepalm', emoji: '🤦', tier: 'low', cost: 4, animation_type: 'simple', battle_points: 4 },
+  { id: 'crickets', name: 'Crickets', emoji: '🦗', tier: 'low', cost: 5, animation_type: 'simple', battle_points: 5 },
+  { id: 'yawn', name: 'Yawn', emoji: '🥱', tier: 'low', cost: 6, animation_type: 'simple', battle_points: 6 },
+  { id: 'clown', name: 'Clown', emoji: '🤡', tier: 'low', cost: 7, animation_type: 'simple', battle_points: 7 },
+  { id: 'trash', name: 'Trash', emoji: '🗑️', tier: 'low', cost: 8, animation_type: 'simple', battle_points: 8 },
+  { id: 'skull', name: 'Skull', emoji: '💀', tier: 'low', cost: 9, animation_type: 'simple', battle_points: 9 },
+  { id: 'poop', name: 'Poop', emoji: '💩', tier: 'low', cost: 10, animation_type: 'simple', battle_points: 10 },
+  { id: 'eye_roll', name: 'Eye Roll', emoji: '🙄', tier: 'low', cost: 5, animation_type: 'simple', battle_points: 5 },
+  { id: 'snore', name: 'Snore', emoji: '😴', tier: 'low', cost: 5, animation_type: 'simple', battle_points: 5 },
+
+  // MID TIER (20–100 SEK)
+  { id: 'mic_drop', name: 'Mic Drop', emoji: '🎤', tier: 'mid', cost: 20, animation_type: 'burst', battle_points: 20 },
+  { id: 'airhorn', name: 'Airhorn', emoji: '📢', tier: 'mid', cost: 30, animation_type: 'burst', battle_points: 30 },
+  { id: 'laugh_explosion', name: 'Laugh Explosion', emoji: '🤣', tier: 'mid', cost: 40, animation_type: 'burst', battle_points: 40 },
+  { id: 'roast_bell', name: 'Roast Bell', emoji: '🔔', tier: 'mid', cost: 50, animation_type: 'burst', battle_points: 50 },
+  { id: 'fire', name: 'Fire', emoji: '🔥', tier: 'mid', cost: 60, animation_type: 'burst', battle_points: 60 },
+  { id: 'explosion', name: 'Explosion', emoji: '💥', tier: 'mid', cost: 70, animation_type: 'burst', battle_points: 70 },
+  { id: 'shocked', name: 'Shocked', emoji: '😱', tier: 'mid', cost: 80, animation_type: 'burst', battle_points: 80 },
+  { id: 'savage', name: 'Savage', emoji: '😈', tier: 'mid', cost: 90, animation_type: 'burst', battle_points: 90 },
+  { id: 'salt_shaker', name: 'Salt Shaker', emoji: '🧂', tier: 'mid', cost: 50, animation_type: 'burst', battle_points: 50 },
+  { id: 'tea_spill', name: 'Tea Spill', emoji: '🍵', tier: 'mid', cost: 60, animation_type: 'burst', battle_points: 60 },
+  { id: 'cringe', name: 'Cringe', emoji: '😬', tier: 'mid', cost: 100, animation_type: 'burst', battle_points: 100 },
+
+  // HIGH TIER (150–500 SEK)
+  { id: 'flame_thrower', name: 'Flame Thrower', emoji: '🔥', tier: 'high', cost: 150, animation_type: 'shower', battle_points: 150 },
+  { id: 'diss_stamp', name: 'Diss Stamp', emoji: '📛', tier: 'high', cost: 200, animation_type: 'shower', battle_points: 200 },
+  { id: 'roast_crown', name: 'Roast Crown', emoji: '👑', tier: 'high', cost: 250, animation_type: 'shower', battle_points: 250 },
+  { id: 'knockout_punch', name: 'Knockout Punch', emoji: '🥊', tier: 'high', cost: 300, animation_type: 'shower', battle_points: 300 },
+  { id: 'bomb', name: 'Bomb', emoji: '💣', tier: 'high', cost: 350, animation_type: 'shower', battle_points: 350 },
+  { id: 'lightning_strike', name: 'Lightning Strike', emoji: '⚡', tier: 'high', cost: 400, animation_type: 'shower', battle_points: 400 },
+  { id: 'roast_trophy', name: 'Roast Trophy', emoji: '🏆', tier: 'high', cost: 450, animation_type: 'shower', battle_points: 450 },
+  { id: 'roast_hammer', name: 'Roast Hammer', emoji: '🔨', tier: 'high', cost: 350, animation_type: 'shower', battle_points: 350 },
+  { id: 'roast_sword', name: 'Roast Sword', emoji: '⚔️', tier: 'high', cost: 400, animation_type: 'shower', battle_points: 400 },
+  { id: 'roast_shield', name: 'Roast Shield', emoji: '🛡️', tier: 'high', cost: 500, animation_type: 'shower', battle_points: 500 },
+
+  // ULTRA TIER (700–1500 SEK) — MP4 + TIMELINE
+  { id: 'screen_shake', name: 'Screen Shake', emoji: '📳', tier: 'ultra', cost: 700, animation_type: 'takeover', battle_points: 700 },
+  { id: 'slow_motion_roast', name: 'Slow Motion Roast', emoji: '🐌', tier: 'ultra', cost: 800, animation_type: 'takeover', battle_points: 800 },
+  { id: 'spotlight_shame', name: 'Spotlight Shame', emoji: '🔦', tier: 'ultra', cost: 900, animation_type: 'takeover', battle_points: 900 },
+  { id: 'silence_button', name: 'Silence Button', emoji: '🔇', tier: 'ultra', cost: 1000, animation_type: 'takeover', battle_points: 1000 },
+  { id: 'time_freeze', name: 'Time Freeze', emoji: '⏸️', tier: 'ultra', cost: 1100, animation_type: 'takeover', battle_points: 1100 },
+  { id: 'roast_nuke', name: 'Roast Nuke', emoji: '☢️', tier: 'ultra', cost: 1200, animation_type: 'takeover', battle_points: 1200 },
+  { id: 'shame_bell', name: 'Shame Bell', emoji: '🔔', tier: 'ultra', cost: 1300, animation_type: 'takeover', battle_points: 1300 },
+  { id: 'roast_meteor', name: 'Roast Meteor', emoji: '☄️', tier: 'ultra', cost: 1500, animation_type: 'takeover', battle_points: 1500 },
+
+  // ULTRA NUCLEAR (2000–4000 SEK) — Full Screen Takeover
+  { id: 'funeral_music', name: 'Funeral Music', emoji: '⚰️', tier: 'nuclear', cost: 2000, animation_type: 'takeover', battle_points: 2000 },
+  { id: 'crowd_riot', name: 'Crowd Riot', emoji: '🎪', tier: 'nuclear', cost: 2500, animation_type: 'takeover', battle_points: 2500 },
+  { id: 'roast_execution', name: 'Roast Execution', emoji: '🪓', tier: 'nuclear', cost: 3000, animation_type: 'takeover', battle_points: 3000 },
+  { id: 'youre_done', name: "You're Done", emoji: '🚪', tier: 'nuclear', cost: 3500, animation_type: 'takeover', battle_points: 3500 },
+  { id: 'roast_apocalypse', name: 'Roast Apocalypse', emoji: '🌋', tier: 'nuclear', cost: 3800, animation_type: 'takeover', battle_points: 3800 },
+  { id: 'roast_dragon', name: 'Roast Dragon', emoji: '🐉', tier: 'nuclear', cost: 4000, animation_type: 'takeover', battle_points: 4000 },
 ];
 
 interface GiftPickerProps {
