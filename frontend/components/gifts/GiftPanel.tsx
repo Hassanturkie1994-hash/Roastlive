@@ -34,11 +34,11 @@ const TIER_COLORS = {
 };
 
 const TIER_NAMES = {
-  LOW: 'low tiers',
-  MID: 'mid tiers',
-  HIGH: 'high tiers',
-  ULTRA: 'ultra tiers',
-  NUCLEAR: 'nuclear tiers',
+  LOW: 'Low tiers',
+  MID: 'Mid tiers',
+  HIGH: 'High tiers',
+  ULTRA: 'Ultra tiers',
+  NUCLEAR: 'Nuclear tiers',
 };
 
 export default function GiftPanel({
