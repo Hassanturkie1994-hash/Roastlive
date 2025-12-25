@@ -14,6 +14,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { theme } from '../../constants/theme';
 import { giftService, Gift } from '../../services/giftService';
 import { useAuth } from '../../contexts/AuthContext';
+import GiftDetailModal from './GiftDetailModal';
 
 const { width, height } = Dimensions.get('window');
 
