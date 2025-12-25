@@ -57,26 +57,51 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const signUp = async (email: string, password: string, username: string) => {
     if (!supabaseClient) return { error: new Error('Supabase not initialized') };
     
-    const { data, error } = await supabaseClient.auth.signUp({
-      email,
-      password,
-      options: {
-        data: {
-          username,
+    try {
+      const { data, error } = await supabaseClient.auth.signUp({
+        email,
+        password,
+        options: {
+          data: {
+            username,
+            full_name: username,
+          },
         },
-      },
-    });
-
-    if (!error && data.user) {
-      // Create profile
-      await supabaseClient.from('profiles').insert({
-        id: data.user.id,
-        username,
-        created_at: new Date().toISOString(),
       });
-    }
 
-    return { error };
+      if (error) {
+        console.error('Signup error:', error);
+        return { error };
+      }
+
+      // Profile will be auto-created by database trigger
+      // Wait a moment for trigger to complete
+      if (data.user) {
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        
+        // Verify profile was created
+        const { data: profile, error: profileError } = await supabaseClient
+          .from('profiles')
+          .select('id')
+          .eq('id', data.user.id)
+          .single();
+
+        if (profileError || !profile) {
+          console.warn('Profile not found after signup, creating manually...');
+          // Fallback: Create profile manually if trigger failed
+          await supabaseClient.from('profiles').insert({
+            id: data.user.id,
+            username,
+            created_at: new Date().toISOString(),
+          });
+        }
+      }
+
+      return { error: null };
+    } catch (err: any) {
+      console.error('Signup exception:', err);
+      return { error: err };
+    }
   };
 
   const signIn = async (email: string, password: string) => {
