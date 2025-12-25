@@ -67,6 +67,17 @@ export default function CreateVIPClubScreen() {
   ];
 
   const handleCreate = async () => {
+    // Check if user has streamed for at least 1 hour
+    if (streamingTime < 3600) {
+      const hoursNeeded = ((3600 - streamingTime) / 3600).toFixed(1);
+      Alert.alert(
+        'Streaming Requirement Not Met',
+        `You need to stream for at least 1 hour total to create a VIP club. You need ${hoursNeeded} more hours of streaming.`,
+        [{ text: 'OK' }]
+      );
+      return;
+    }
+
     if (!clubName.trim()) {
       Alert.alert('Error', 'Please enter a club name');
       return;
