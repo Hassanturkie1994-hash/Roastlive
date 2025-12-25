@@ -96,7 +96,8 @@ export default function GiftDetailModal({
 }: GiftDetailModalProps) {
   const [isPlayingAnimation, setIsPlayingAnimation] = useState(false);
   const scaleAnim = React.useRef(new Animated.Value(1)).current;
-  const lottieRef = useRef<LottieView>(null);
+  // Lottie temporarily disabled
+  // const lottieRef = useRef<LottieView>(null);
   const videoRef = useRef<Video>(null);
 
   useEffect(() => {
