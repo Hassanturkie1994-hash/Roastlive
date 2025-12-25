@@ -23,6 +23,40 @@ export default function CreateVIPClubScreen() {
   const [badgeColor, setBadgeColor] = useState(theme.colors.vip);
   const [monthlyPrice, setMonthlyPrice] = useState('');
   const [creating, setCreating] = useState(false);
+  const [streamingTime, setStreamingTime] = useState(0);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    checkStreamingTime();
+  }, []);
+
+  const checkStreamingTime = async () => {
+    if (!user?.id) return;
+
+    try {
+      // Get all completed streams and calculate total time
+      const { data: streams } = await supabase
+        .from('streams')
+        .select('started_at, ended_at')
+        .eq('host_id', user.id)
+        .not('started_at', 'is', null)
+        .not('ended_at', 'is', null);
+
+      if (streams) {
+        let totalSeconds = 0;
+        streams.forEach(stream => {
+          const start = new Date(stream.started_at).getTime();
+          const end = new Date(stream.ended_at).getTime();
+          totalSeconds += (end - start) / 1000;
+        });
+        setStreamingTime(totalSeconds);
+      }
+    } catch (error) {
+      console.error('Error checking streaming time:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const colors = [
     { name: 'Purple', value: '#9C27B0' },
