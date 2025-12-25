@@ -158,15 +158,21 @@ export default function Profile() {
 
         {/* Menu Items */}
         <View style={styles.menuSection}>
-          <TouchableOpacity style={styles.menuItem}>
-            <Ionicons name="wallet-outline" size={24} color={theme.colors.text} />
+          <TouchableOpacity 
+            style={styles.menuItem}
+            onPress={() => router.push('/(tabs)/profile/wallet')}
+          >
+            <Ionicons name="wallet-outline" size={24} color={theme.colors.gold} />
             <Text style={styles.menuText}>Wallet</Text>
             <Ionicons name="chevron-forward" size={20} color={theme.colors.textSecondary} />
           </TouchableOpacity>
 
           <TouchableOpacity style={styles.menuItem}>
-            <Ionicons name="star-outline" size={24} color={theme.colors.text} />
+            <Ionicons name="star-outline" size={24} color={theme.colors.vip} />
             <Text style={styles.menuText}>VIP Clubs</Text>
+            <View style={styles.comingSoonBadge}>
+              <Text style={styles.comingSoonText}>Soon</Text>
+            </View>
             <Ionicons name="chevron-forward" size={20} color={theme.colors.textSecondary} />
           </TouchableOpacity>
 
