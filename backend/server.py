@@ -266,6 +266,159 @@ async def update_viewer_count(stream_id: str, count: int):
         logging.error(f"Update viewer count error: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
 
+# Gift System Models
+class Gift(BaseModel):
+    id: str
+    name: str
+    icon: str
+    price: int
+
+class SendGiftRequest(BaseModel):
+    streamId: str
+    senderId: str
+    recipientId: str
+    giftId: str
+    giftName: str
+    giftIcon: str
+    giftPrice: int
+
+class WalletTransaction(BaseModel):
+    userId: str
+    amount: int
+    type: str  # 'purchase', 'gift_sent', 'gift_received', 'withdrawal'
+    description: str
+
+# Gift Catalog
+GIFT_CATALOG = [
+    {"id": "1", "name": "Fire", "icon": "🔥", "price": 1},
+    {"id": "2", "name": "Heart", "icon": "❤️", "price": 5},
+    {"id": "3", "name": "Star", "icon": "⭐", "price": 10},
+    {"id": "4", "name": "Crown", "icon": "👑", "price": 50},
+    {"id": "5", "name": "Diamond", "icon": "💎", "price": 100},
+    {"id": "6", "name": "Rocket", "icon": "🚀", "price": 200},
+    {"id": "7", "name": "Lion", "icon": "🦁", "price": 500},
+    {"id": "8", "name": "Roast Trophy", "icon": "🏆", "price": 1000},
+]
+
+@api_router.get("/gifts/catalog")
+async def get_gift_catalog():
+    """Get available gifts"""
+    return {"gifts": GIFT_CATALOG}
+
+@api_router.post("/gifts/send")
+async def send_gift(request: SendGiftRequest):
+    """Send a gift in a live stream"""
+    try:
+        # Record the gift transaction
+        gift_record = {
+            "id": str(uuid.uuid4()),
+            "stream_id": request.streamId,
+            "sender_id": request.senderId,
+            "recipient_id": request.recipientId,
+            "gift_id": request.giftId,
+            "gift_name": request.giftName,
+            "gift_icon": request.giftIcon,
+            "gift_price": request.giftPrice,
+            "created_at": datetime.utcnow().isoformat(),
+        }
+        
+        await db.gifts.insert_one(gift_record)
+        
+        # Update sender wallet (deduct)
+        await db.wallets.update_one(
+            {"user_id": request.senderId},
+            {"$inc": {"balance": -request.giftPrice}},
+            upsert=True
+        )
+        
+        # Update recipient wallet (add - creator gets 70%)
+        creator_amount = int(request.giftPrice * 0.7)
+        await db.wallets.update_one(
+            {"user_id": request.recipientId},
+            {"$inc": {"balance": creator_amount}},
+            upsert=True
+        )
+        
+        # Record transactions
+        await db.transactions.insert_many([
+            {
+                "id": str(uuid.uuid4()),
+                "user_id": request.senderId,
+                "amount": -request.giftPrice,
+                "type": "gift_sent",
+                "description": f"Sent {request.giftName} gift",
+                "created_at": datetime.utcnow().isoformat(),
+            },
+            {
+                "id": str(uuid.uuid4()),
+                "user_id": request.recipientId,
+                "amount": creator_amount,
+                "type": "gift_received",
+                "description": f"Received {request.giftName} gift",
+                "created_at": datetime.utcnow().isoformat(),
+            },
+        ])
+        
+        return {"success": True, "gift": gift_record}
+    except Exception as e:
+        logging.error(f"Send gift error: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@api_router.get("/wallet/{user_id}")
+async def get_wallet(user_id: str):
+    """Get user wallet balance"""
+    try:
+        wallet = await db.wallets.find_one({"user_id": user_id})
+        if not wallet:
+            # Create wallet with default balance for new users
+            wallet = {"user_id": user_id, "balance": 100}  # Free 100 coins
+            await db.wallets.insert_one(wallet)
+        
+        return {"balance": wallet.get("balance", 0)}
+    except Exception as e:
+        logging.error(f"Get wallet error: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@api_router.post("/wallet/{user_id}/add-coins")
+async def add_coins(user_id: str, amount: int):
+    """Add coins to wallet (for IAP)"""
+    try:
+        result = await db.wallets.update_one(
+            {"user_id": user_id},
+            {"$inc": {"balance": amount}},
+            upsert=True
+        )
+        
+        # Record transaction
+        await db.transactions.insert_one({
+            "id": str(uuid.uuid4()),
+            "user_id": user_id,
+            "amount": amount,
+            "type": "purchase",
+            "description": f"Purchased {amount} coins",
+            "created_at": datetime.utcnow().isoformat(),
+        })
+        
+        wallet = await db.wallets.find_one({"user_id": user_id})
+        return {"success": True, "balance": wallet.get("balance", 0)}
+    except Exception as e:
+        logging.error(f"Add coins error: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@api_router.get("/wallet/{user_id}/transactions")
+async def get_transactions(user_id: str):
+    """Get wallet transaction history"""
+    try:
+        transactions = await db.transactions.find(
+            {"user_id": user_id},
+            {"_id": 0}
+        ).sort("created_at", -1).limit(50).to_list(50)
+        
+        return {"transactions": transactions}
+    except Exception as e:
+        logging.error(f"Get transactions error: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
 # Include router
 app.include_router(api_router)
 
