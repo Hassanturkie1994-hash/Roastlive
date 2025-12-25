@@ -291,6 +291,24 @@ const styles = StyleSheet.create({
   iconContainer: {
     marginVertical: theme.spacing.lg,
   },
+  animationContainer: {
+    width: 250,
+    height: 250,
+    marginVertical: theme.spacing.lg,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderRadius: theme.borderRadius.xl,
+    overflow: 'hidden',
+  },
+  lottieAnimation: {
+    width: '100%',
+    height: '100%',
+  },
+  videoAnimation: {
+    width: '100%',
+    height: '100%',
+    borderRadius: theme.borderRadius.lg,
+  },
   giftIcon: {
     fontSize: 100,
   },
