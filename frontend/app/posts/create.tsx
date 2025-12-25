@@ -11,8 +11,8 @@ import {
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { theme } from '../../../constants/theme';
-import { useAuth } from '../../../contexts/AuthContext';
+import { theme } from '../../constants/theme';
+import { useAuth } from '../../contexts/AuthContext';
 import * as ImagePicker from 'expo-image-picker';
 
 export default function CreatePostScreen() {

@@ -9,7 +9,7 @@ import {
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { theme } from '../../../constants/theme';
+import { theme } from '../../constants/theme';
 
 interface Post {
   id: string;
