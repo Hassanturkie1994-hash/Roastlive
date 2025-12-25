@@ -12,7 +12,8 @@ import { theme } from '../../constants/theme';
 import { Gift } from '../../services/giftService';
 import { Audio } from 'expo-av';
 import { Video, ResizeMode } from 'expo-av';
-import LottieView from 'lottie-react-native';
+// Temporarily disabled Lottie to fix preview
+// import LottieView from 'lottie-react-native';
 
 interface GiftDetailModalProps {
   visible: boolean;
