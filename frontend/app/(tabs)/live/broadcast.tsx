@@ -16,8 +16,17 @@ import { theme } from '../../../constants/theme';
 import { useAuth } from '../../../contexts/AuthContext';
 import axios from 'axios';
 import { supabase } from '../../../lib/supabase';
+import ViewerListModal from '../../../components/live/ViewerListModal';
+import VideoGrid from '../../../components/live/VideoGrid';
 
 const API_URL = process.env.EXPO_PUBLIC_BACKEND_URL;
+
+interface Guest {
+  user_id: string;
+  username: string;
+  is_muted_audio?: boolean;
+  is_muted_video?: boolean;
+}
 
 export default function Broadcast() {
   const router = useRouter();
@@ -32,6 +41,8 @@ export default function Broadcast() {
   const [streamId, setStreamId] = useState<string | null>(null);
   const [duration, setDuration] = useState(0);
   const [cameraType, setCameraType] = useState(CameraType.front);
+  const [showViewerList, setShowViewerList] = useState(false);
+  const [guests, setGuests] = useState<Guest[]>([]);
 
   useEffect(() => {
     requestPermissions();
@@ -46,6 +57,56 @@ export default function Broadcast() {
     }
     return () => clearInterval(interval);
   }, [isLive]);
+
+  useEffect(() => {
+    if (isLive && streamId) {
+      subscribeToGuests();
+    }
+  }, [isLive, streamId]);
+
+  const subscribeToGuests = () => {
+    const channel = supabase
+      .channel(`stream:${streamId}:guests`)
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'stream_guests',
+          filter: `stream_id=eq.${streamId}`,
+        },
+        () => {
+          loadGuests();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      channel.unsubscribe();
+    };
+  };
+
+  const loadGuests = async () => {
+    try {
+      const { data } = await supabase
+        .from('stream_guests')
+        .select(`
+          user_id,
+          profiles!user_id(username)
+        `)
+        .eq('stream_id', streamId)
+        .eq('is_active', true);
+
+      const guestList: Guest[] = data?.map((g: any) => ({
+        user_id: g.user_id,
+        username: g.profiles?.username || 'Guest',
+      })) || [];
+
+      setGuests(guestList);
+    } catch (error) {
+      console.error('Load guests error:', error);
+    }
+  };
 
   const requestPermissions = async () => {
     const { status: cameraStatus } = await Camera.requestCameraPermissionsAsync();
@@ -70,24 +131,20 @@ export default function Broadcast() {
 
     setLoading(true);
     try {
-      // Generate channel name
       const channelName = `stream_${user?.id}_${Date.now()}`;
 
-      // Get Agora token from backend
       const tokenResponse = await axios.post(`${API_URL}/api/streams/token`, {
         channelName,
         uid: parseInt(user?.id?.slice(-8) || '0', 16),
         role: 'host',
       });
 
-      // Create stream record
       const streamResponse = await axios.post(`${API_URL}/api/streams/create`, {
         hostId: user?.id,
         title: streamTitle,
         channelName,
       });
 
-      // Also create in Supabase for real-time features
       await supabase.from('streams').insert({
         id: streamResponse.data.id,
         host_id: user?.id,
@@ -101,14 +158,7 @@ export default function Broadcast() {
       setStreamId(streamResponse.data.id);
       setIsLive(true);
 
-      // In production, initialize Agora RTC here with token
-      // For now, we're in demo mode
-      console.log('Stream started:', {
-        token: tokenResponse.data.token,
-        channel: channelName,
-      });
-
-      Alert.alert('Live!', 'You are now live! (Demo Mode)');
+      Alert.alert('🔥 You\'re Live!', 'Start your roast battle!');
     } catch (error) {
       console.error('Start stream error:', error);
       Alert.alert('Error', 'Failed to start stream');
@@ -172,99 +222,119 @@ export default function Broadcast() {
 
   return (
     <View style={styles.container}>
-      {/* Camera Preview */}
-      <Camera
-        ref={cameraRef}
-        style={styles.camera}
-        type={cameraType}
-        ratio="16:9"
-      >
-        {/* Overlay Controls */}
-        <View style={styles.overlay}>
-          {/* Top Bar */}
-          <View style={styles.topBar}>
-            <TouchableOpacity onPress={() => router.back()} style={styles.iconButton}>
-              <Ionicons name="close" size={28} color="#fff" />
-            </TouchableOpacity>
+      {/* Camera Preview or Video Grid */}
+      {guests.length > 0 ? (
+        <View style={styles.videoGridContainer}>
+          <VideoGrid guests={[{ user_id: user?.id || '', username: user?.user_metadata?.username || 'Host' }, ...guests]} hostId={user?.id || ''} />
+        </View>
+      ) : (
+        <Camera
+          ref={cameraRef}
+          style={styles.camera}
+          type={cameraType}
+          ratio="16:9"
+        >
+          {/* Overlay Controls */}
+          <View style={styles.overlay}>
+            {/* Top Bar */}
+            <View style={styles.topBar}>
+              <TouchableOpacity onPress={() => router.back()} style={styles.iconButton}>
+                <Ionicons name="close" size={28} color="#fff" />
+              </TouchableOpacity>
 
+              {isLive && (
+                <View style={styles.liveIndicator}>
+                  <View style={styles.liveDot} />
+                  <Text style={styles.liveText}>LIVE</Text>
+                  <Text style={styles.durationText}>{formatDuration(duration)}</Text>
+                </View>
+              )}
+
+              <TouchableOpacity onPress={toggleCamera} style={styles.iconButton}>
+                <Ionicons name="camera-reverse" size={28} color="#fff" />
+              </TouchableOpacity>
+            </View>
+
+            {/* Stats */}
             {isLive && (
-              <View style={styles.liveIndicator}>
-                <View style={styles.liveDot} />
-                <Text style={styles.liveText}>LIVE</Text>
-                <Text style={styles.durationText}>{formatDuration(duration)}</Text>
+              <View style={styles.statsContainer}>
+                <View style={styles.statItem}>
+                  <Ionicons name="eye" size={20} color="#fff" />
+                  <Text style={styles.statText}>{viewerCount}</Text>
+                </View>
               </View>
             )}
 
-            <TouchableOpacity onPress={toggleCamera} style={styles.iconButton}>
-              <Ionicons name="camera-reverse" size={28} color="#fff" />
-            </TouchableOpacity>
-          </View>
-
-          {/* Stats (when live) */}
-          {isLive && (
-            <View style={styles.statsContainer}>
-              <View style={styles.statItem}>
-                <Ionicons name="eye" size={20} color="#fff" />
-                <Text style={styles.statText}>{viewerCount}</Text>
+            {/* Bottom Section */}
+            {!isLive ? (
+              <View style={styles.setupContainer}>
+                <Text style={styles.setupTitle}>Ready to go live?</Text>
+                <TextInput
+                  style={styles.input}
+                  placeholder="Stream title (e.g., Epic Roast Battle!)" 
+                  placeholderTextColor={theme.colors.textDisabled}
+                  value={streamTitle}
+                  onChangeText={setStreamTitle}
+                  maxLength={100}
+                />
+                <TouchableOpacity
+                  style={[styles.goLiveButton, loading && styles.goLiveButtonDisabled]}
+                  onPress={startStream}
+                  disabled={loading}
+                >
+                  {loading ? (
+                    <ActivityIndicator color="#fff" />
+                  ) : (
+                    <>
+                      <Ionicons name="videocam" size={24} color="#fff" />
+                      <Text style={styles.goLiveButtonText}>GO LIVE</Text>
+                    </>
+                  )}
+                </TouchableOpacity>
               </View>
-            </View>
-          )}
+            ) : (
+              <View style={styles.liveControls}>
+                <TouchableOpacity 
+                  style={styles.controlButton}
+                  onPress={() => setShowViewerList(true)}
+                >
+                  <Ionicons name="people" size={24} color="#fff" />
+                  <Text style={styles.controlText}>Viewers</Text>
+                  {guests.length > 0 && (
+                    <View style={styles.guestBadge}>
+                      <Text style={styles.guestBadgeText}>{guests.length}/9</Text>
+                    </View>
+                  )}
+                </TouchableOpacity>
 
-          {/* Bottom Section */}
-          {!isLive ? (
-            <View style={styles.setupContainer}>
-              <Text style={styles.setupTitle}>Ready to go live?</Text>
-              <TextInput
-                style={styles.input}
-                placeholder="Stream title (e.g., Epic Roast Battle!)" 
-                placeholderTextColor={theme.colors.textDisabled}
-                value={streamTitle}
-                onChangeText={setStreamTitle}
-                maxLength={100}
-              />
-              <TouchableOpacity
-                style={[styles.goLiveButton, loading && styles.goLiveButtonDisabled]}
-                onPress={startStream}
-                disabled={loading}
-              >
-                {loading ? (
-                  <ActivityIndicator color="#fff" />
-                ) : (
-                  <>
-                    <Ionicons name="videocam" size={24} color="#fff" />
-                    <Text style={styles.goLiveButtonText}>GO LIVE</Text>
-                  </>
-                )}
-              </TouchableOpacity>
-            </View>
-          ) : (
-            <View style={styles.liveControls}>
-              <TouchableOpacity style={styles.controlButton}>
-                <Ionicons name="people" size={24} color="#fff" />
-                <Text style={styles.controlText}>Viewers</Text>
-              </TouchableOpacity>
+                <TouchableOpacity style={styles.controlButton}>
+                  <Ionicons name="settings" size={24} color="#fff" />
+                  <Text style={styles.controlText}>Settings</Text>
+                </TouchableOpacity>
 
-              <TouchableOpacity style={styles.controlButton}>
-                <Ionicons name="person-add" size={24} color="#fff" />
-                <Text style={styles.controlText}>Invite</Text>
-              </TouchableOpacity>
+                <TouchableOpacity
+                  style={[styles.controlButton, styles.endButton]}
+                  onPress={endStream}
+                >
+                  <Ionicons name="stop-circle" size={24} color="#fff" />
+                  <Text style={styles.controlText}>End</Text>
+                </TouchableOpacity>
+              </View>
+            )}
+          </View>
+        </Camera>
+      )}
 
-              <TouchableOpacity style={styles.controlButton}>
-                <Ionicons name="settings" size={24} color="#fff" />
-                <Text style={styles.controlText}>Settings</Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                style={[styles.controlButton, styles.endButton]}
-                onPress={endStream}
-              >
-                <Ionicons name="stop-circle" size={24} color="#fff" />
-                <Text style={styles.controlText}>End</Text>
-              </TouchableOpacity>
-            </View>
-          )}
-        </View>
-      </Camera>
+      {/* Viewer List Modal */}
+      {isLive && streamId && (
+        <ViewerListModal
+          visible={showViewerList}
+          onClose={() => setShowViewerList(false)}
+          streamId={streamId}
+          hostId={user?.id || ''}
+          currentGuestCount={guests.length}
+        />
+      )}
     </View>
   );
 }
@@ -277,6 +347,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   camera: {
+    flex: 1,
+    width: '100%',
+  },
+  videoGridContainer: {
     flex: 1,
     width: '100%',
   },
@@ -398,6 +472,7 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: 'center',
     paddingVertical: theme.spacing.sm,
+    position: 'relative',
   },
   endButton: {
     backgroundColor: theme.colors.error,
@@ -407,6 +482,21 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: theme.typography.sizes.xs,
     marginTop: theme.spacing.xs,
+  },
+  guestBadge: {
+    position: 'absolute',
+    top: -4,
+    right: 8,
+    backgroundColor: theme.colors.primary,
+    borderRadius: 10,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    minWidth: 20,
+  },
+  guestBadgeText: {
+    color: '#fff',
+    fontSize: 10,
+    fontWeight: theme.typography.weights.bold,
   },
   permissionText: {
     fontSize: theme.typography.sizes.base,
