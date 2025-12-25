@@ -118,20 +118,22 @@ export default function GiftDetailModal({
   const playPreview = async () => {
     setIsPlayingAnimation(true);
     
-    // Play animation based on format
-    if (gift.format === 'lottie') {
-      lottieRef.current?.reset();
-      lottieRef.current?.play();
-      setTimeout(() => setIsPlayingAnimation(false), gift.duration_ms);
-    } else if (gift.format === 'mp4') {
-      videoRef.current?.replayAsync();
-      setTimeout(() => setIsPlayingAnimation(false), gift.duration_ms);
-    }
+    // Lottie temporarily disabled - using placeholder animation
+    Animated.sequence([
+      Animated.spring(scaleAnim, {
+        toValue: 1.2,
+        useNativeDriver: true,
+      }),
+      Animated.spring(scaleAnim, {
+        toValue: 1,
+        useNativeDriver: true,
+      }),
+    ]).start(() => setIsPlayingAnimation(false));
 
     // Play sound effect
     try {
       const { sound } = await Audio.Sound.createAsync(
-        { uri: `https://example.com/sounds/${gift.id}.mp3` }, // Placeholder - you'll need actual sound URLs
+        { uri: `https://example.com/sounds/${gift.id}.mp3` },
         { shouldPlay: true, volume: 0.5 }
       );
       await sound.playAsync();
