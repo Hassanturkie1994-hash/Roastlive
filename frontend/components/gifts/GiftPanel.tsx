@@ -241,6 +241,13 @@ export default function GiftPanel({
           )}
         </View>
       </View>
+
+      {/* Gift Detail Modal */}
+      <GiftDetailModal
+        visible={detailModalVisible}
+        onClose={() => setDetailModalVisible(false)}
+        gift={selectedGift}
+      />
     </Modal>
   );
 }
