@@ -150,6 +150,7 @@ export default function GiftDetailModal({
   const tierColor = TIER_COLORS[gift.tier];
   const isLottie = gift.tier === 'LOW' || gift.tier === 'MID' || gift.tier === 'HIGH';
   const isVideo = gift.tier === 'ULTRA' || gift.tier === 'NUCLEAR';
+  const scaleAnim = React.useRef(new Animated.Value(1)).current;
 
   return (
     <Modal visible={visible} animationType="slide" transparent>
