@@ -623,6 +623,17 @@ CREATE INDEX IF NOT EXISTS idx_notifications_user_id ON notifications(user_id);
 CREATE INDEX IF NOT EXISTS idx_notifications_is_read ON notifications(is_read);
 CREATE INDEX IF NOT EXISTS idx_follows_follower_id ON follows(follower_id);
 CREATE INDEX IF NOT EXISTS idx_follows_following_id ON follows(following_id);
+CREATE INDEX IF NOT EXISTS idx_posts_user_id ON posts(user_id);
+CREATE INDEX IF NOT EXISTS idx_posts_created_at ON posts(created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_post_likes_post_id ON post_likes(post_id);
+CREATE INDEX IF NOT EXISTS idx_post_comments_post_id ON post_comments(post_id);
+CREATE INDEX IF NOT EXISTS idx_stories_user_id ON stories(user_id);
+CREATE INDEX IF NOT EXISTS idx_stories_expires_at ON stories(expires_at);
+CREATE INDEX IF NOT EXISTS idx_user_reports_status ON user_reports(status);
+CREATE INDEX IF NOT EXISTS idx_user_penalties_user_id ON user_penalties(user_id);
+CREATE INDEX IF NOT EXISTS idx_user_penalties_is_active ON user_penalties(is_active);
+CREATE INDEX IF NOT EXISTS idx_ai_violations_user_id ON ai_violations(user_id);
+CREATE INDEX IF NOT EXISTS idx_ai_strikes_user_id ON ai_strikes(user_id);
 
 -- RPC Functions for counter operations
 CREATE OR REPLACE FUNCTION increment_viewer_count(stream_id UUID)
