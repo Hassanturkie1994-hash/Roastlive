@@ -324,8 +324,9 @@ export default function PreLiveSetupScreen() {
           // Solo Stream Configuration
           <>
             <Text style={styles.title}>Configure Your Stream</Text>
-            <Text style={styles.subtitle}>Set a title for your livestream</Text>
+            <Text style={styles.subtitle}>Set up your livestream before going live</Text>
 
+            {/* Stream Title */}
             <View style={styles.inputContainer}>
               <Text style={styles.label}>Stream Title</Text>
               <TextInput
@@ -339,10 +340,109 @@ export default function PreLiveSetupScreen() {
               <Text style={styles.charCount}>{streamTitle.length}/60</Text>
             </View>
 
+            {/* Stream Labels */}
+            <View style={styles.sectionContainer}>
+              <Text style={styles.label}>Stream Labels</Text>
+              <Text style={styles.labelHint}>Select up to 3 labels that describe your stream</Text>
+              <View style={styles.labelsContainer}>
+                {STREAM_LABELS.map((label) => {
+                  const isSelected = selectedLabels.includes(label.id);
+                  return (
+                    <TouchableOpacity
+                      key={label.id}
+                      style={[
+                        styles.labelChip,
+                        isSelected && { backgroundColor: `${label.color}20`, borderColor: label.color },
+                      ]}
+                      onPress={() => {
+                        if (isSelected) {
+                          setSelectedLabels(selectedLabels.filter(l => l !== label.id));
+                        } else if (selectedLabels.length < 3) {
+                          setSelectedLabels([...selectedLabels, label.id]);
+                        }
+                      }}
+                    >
+                      <Text style={[
+                        styles.labelChipText,
+                        isSelected && { color: label.color },
+                      ]}>
+                        {label.label}
+                      </Text>
+                      {isSelected && (
+                        <Ionicons name="checkmark-circle" size={16} color={label.color} />
+                      )}
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
+            </View>
+
+            {/* Interaction Settings */}
+            <View style={styles.sectionContainer}>
+              <Text style={styles.label}>Interaction Settings</Text>
+              
+              <View style={styles.settingRow}>
+                <View style={styles.settingLeft}>
+                  <Ionicons name="gift-outline" size={22} color={theme.colors.gold} />
+                  <View style={styles.settingInfo}>
+                    <Text style={styles.settingTitle}>Allow Gifts</Text>
+                    <Text style={styles.settingDesc}>Viewers can send you gifts</Text>
+                  </View>
+                </View>
+                <TouchableOpacity
+                  style={[styles.toggleButton, allowGifts && styles.toggleButtonActive]}
+                  onPress={() => setAllowGifts(!allowGifts)}
+                >
+                  <View style={[styles.toggleCircle, allowGifts && styles.toggleCircleActive]} />
+                </TouchableOpacity>
+              </View>
+
+              <View style={styles.settingRow}>
+                <View style={styles.settingLeft}>
+                  <Ionicons name="chatbubble-outline" size={22} color={theme.colors.primary} />
+                  <View style={styles.settingInfo}>
+                    <Text style={styles.settingTitle}>Allow Chat</Text>
+                    <Text style={styles.settingDesc}>Viewers can send messages</Text>
+                  </View>
+                </View>
+                <TouchableOpacity
+                  style={[styles.toggleButton, allowChat && styles.toggleButtonActive]}
+                  onPress={() => setAllowChat(!allowChat)}
+                >
+                  <View style={[styles.toggleCircle, allowChat && styles.toggleCircleActive]} />
+                </TouchableOpacity>
+              </View>
+
+              {allowChat && (
+                <View style={styles.slowModeContainer}>
+                  <Text style={styles.slowModeLabel}>Slow Mode</Text>
+                  <View style={styles.slowModeButtons}>
+                    {[0, 5, 10, 30, 60].map((seconds) => (
+                      <TouchableOpacity
+                        key={seconds}
+                        style={[
+                          styles.slowModeButton,
+                          slowModeSeconds === seconds && styles.slowModeButtonActive,
+                        ]}
+                        onPress={() => setSlowModeSeconds(seconds)}
+                      >
+                        <Text style={[
+                          styles.slowModeButtonText,
+                          slowModeSeconds === seconds && styles.slowModeButtonTextActive,
+                        ]}>
+                          {seconds === 0 ? 'Off' : `${seconds}s`}
+                        </Text>
+                      </TouchableOpacity>
+                    ))}
+                  </View>
+                </View>
+              )}
+            </View>
+
             <View style={styles.infoCard}>
               <Ionicons name="information-circle" size={24} color={theme.colors.info} />
               <Text style={styles.infoText}>
-                Choose a catchy title! It helps viewers know what to expect.
+                You can assign moderators during your stream by tapping on viewers and selecting "Make Moderator".
               </Text>
             </View>
           </>
