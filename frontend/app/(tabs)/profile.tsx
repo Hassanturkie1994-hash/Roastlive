@@ -330,6 +330,18 @@ const styles = StyleSheet.create({
     color: theme.colors.text,
     marginLeft: theme.spacing.md,
   },
+  comingSoonBadge: {
+    backgroundColor: theme.colors.vip,
+    paddingHorizontal: theme.spacing.sm,
+    paddingVertical: 2,
+    borderRadius: theme.borderRadius.sm,
+    marginRight: theme.spacing.sm,
+  },
+  comingSoonText: {
+    fontSize: 10,
+    fontWeight: theme.typography.weights.bold,
+    color: '#fff',
+  },
   signOutButton: {
     flexDirection: 'row',
     alignItems: 'center',
