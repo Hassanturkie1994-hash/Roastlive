@@ -393,14 +393,73 @@ CREATE TRIGGER update_wallets_updated_at
   FOR EACH ROW
   EXECUTE FUNCTION update_updated_at_column();
 
--- Insert default gifts
-INSERT INTO gifts (name, price, icon, tier) VALUES
-  ('Rose', 1, '🌹', 'fun'),
-  ('Fire', 5, '🔥', 'fun'),
-  ('Roast', 10, '🍗', 'fun'),
-  ('Crown', 50, '👑', 'mid'),
-  ('Diamond', 100, '💎', 'mid'),
-  ('Rocket', 500, '🚀', 'premium'),
-  ('Trophy', 1000, '🏆', 'premium'),
-  ('God Mode', 3500, '⚡', 'god')
-ON CONFLICT DO NOTHING;
+-- Insert all 45 gifts organized by tier
+-- LOW TIER (1-10 SEK) - All Lottie
+INSERT INTO gifts (id, name, price, icon, tier, format, duration_ms) VALUES
+  ('boo', 'Boo', 1, '👻', 'LOW', 'lottie', 2000),
+  ('flying_tomato', 'Flying Tomato', 2, '🍅', 'LOW', 'lottie', 2500),
+  ('laugh_track', 'Laugh Track', 3, '😂', 'LOW', 'lottie', 3000),
+  ('facepalm', 'Facepalm', 3, '🤦', 'LOW', 'lottie', 2000),
+  ('crickets', 'Crickets', 4, '🦗', 'LOW', 'lottie', 3000),
+  ('yawn', 'Yawn', 5, '🥱', 'LOW', 'lottie', 2500),
+  ('clown', 'Clown', 5, '🤡', 'LOW', 'lottie', 2000),
+  ('trash', 'Trash', 6, '🗑️', 'LOW', 'lottie', 2000),
+  ('skull', 'Skull', 7, '💀', 'LOW', 'lottie', 2500),
+  ('poop', 'Poop', 8, '💩', 'LOW', 'lottie', 2000),
+  ('eye_roll', 'Eye Roll', 9, '🙄', 'LOW', 'lottie', 2500),
+  ('snore', 'Snore', 10, '😴', 'LOW', 'lottie', 3000),
+
+-- MID TIER (20-100 SEK) - All Lottie  
+  ('mic_drop', 'Mic Drop', 20, '🎙️', 'MID', 'lottie', 3000),
+  ('airhorn', 'Airhorn', 25, '📢', 'MID', 'lottie', 2500),
+  ('laugh_explosion', 'Laugh Explosion', 30, '💥', 'MID', 'lottie', 3000),
+  ('roast_bell', 'Roast Bell', 35, '🔔', 'MID', 'lottie', 3000),
+  ('fire', 'Fire', 39, '🔥', 'MID', 'lottie', 4000),
+  ('explosion', 'Explosion', 50, '💣', 'MID', 'lottie', 3000),
+  ('shocked', 'Shocked', 60, '😱', 'MID', 'lottie', 2500),
+  ('savage', 'Savage', 70, '😈', 'MID', 'lottie', 3500),
+  ('salt_shaker', 'Salt Shaker', 80, '🧂', 'MID', 'lottie', 3000),
+  ('tea_spill', 'Tea Spill', 90, '☕', 'MID', 'lottie', 3500),
+  ('cringe', 'Cringe', 100, '😬', 'MID', 'lottie', 3000),
+
+-- HIGH TIER (150-500 SEK) - Mostly Lottie, some MP4
+  ('flame_thrower', 'Flame Thrower', 150, '🔥', 'HIGH', 'lottie', 4000),
+  ('diss_stamp', 'Diss Stamp', 175, '📝', 'HIGH', 'lottie', 3000),
+  ('judge_gavel', 'Judge Gavel', 200, '🧑‍⚖️', 'HIGH', 'lottie', 3500),
+  ('roast_crown', 'Roast Crown', 250, '👑', 'HIGH', 'lottie', 4000),
+  ('knockout_punch', 'Knockout Punch', 300, '🥊', 'HIGH', 'lottie', 3500),
+  ('bomb', 'Bomb', 350, '💣', 'HIGH', 'mp4', 4000),
+  ('lightning_strike', 'Lightning Strike', 400, '⚡', 'HIGH', 'mp4', 3500),
+  ('roast_trophy', 'Roast Trophy', 450, '🏆', 'HIGH', 'lottie', 4000),
+  ('roast_hammer', 'Roast Hammer', 475, '🔨', 'HIGH', 'lottie', 3500),
+  ('roast_sword', 'Roast Sword', 490, '⚔️', 'HIGH', 'lottie', 4000),
+  ('roast_shield', 'Roast Shield', 500, '🛡️', 'HIGH', 'lottie', 4000),
+
+-- ULTRA TIER (700-1500 SEK) - All MP4 with blocking
+  ('screen_shake', 'Screen Shake', 700, '📱', 'ULTRA', 'mp4', 5000),
+  ('slow_motion_roast', 'Slow Motion Roast', 850, '🎬', 'ULTRA', 'mp4', 6000),
+  ('spotlight_shame', 'Spotlight Shame', 1000, '🔦', 'ULTRA', 'mp4', 5500),
+  ('silence_button', 'Silence Button', 1100, '🤐', 'ULTRA', 'mp4', 5000),
+  ('time_freeze', 'Time Freeze', 1200, '⏱️', 'ULTRA', 'mp4', 6000),
+  ('roast_nuke', 'Roast Nuke', 1300, '☢️', 'ULTRA', 'mp4', 7000),
+  ('shame_bell', 'Shame Bell', 1400, '🔔', 'ULTRA', 'mp4', 5500),
+  ('roast_meteor', 'Roast Meteor', 1500, '☄️', 'ULTRA', 'mp4', 6500),
+
+-- NUCLEAR TIER (2000-4500 SEK) - Cinematic MP4
+  ('funeral_music', 'Funeral Music', 2000, '⚰️', 'NUCLEAR', 'mp4', 10000),
+  ('crowd_riot', 'Crowd Riot', 2500, '🚨', 'NUCLEAR', 'mp4', 12000),
+  ('roast_execution', 'Roast Execution', 3000, '👀', 'NUCLEAR', 'mp4', 15000),
+  ('you_are_done', "You're Done", 3500, '👋', 'NUCLEAR', 'mp4', 13000),
+  ('roast_apocalypse', 'Roast Apocalypse', 4000, '🌋', 'NUCLEAR', 'mp4', 18000),
+  ('roast_dragon', 'Roast Dragon', 4500, '🐉', 'NUCLEAR', 'mp4', 20000)
+ON CONFLICT (id) DO UPDATE SET
+  name = EXCLUDED.name,
+  price = EXCLUDED.price,
+  icon = EXCLUDED.icon,
+  tier = EXCLUDED.tier,
+  format = EXCLUDED.format,
+  duration_ms = EXCLUDED.duration_ms;
+
+-- Update blocking flags for ULTRA and NUCLEAR tiers
+UPDATE gifts SET blocks_others = true WHERE tier IN ('ULTRA', 'NUCLEAR');
+UPDATE gifts SET is_cinematic = true WHERE tier = 'NUCLEAR';
