@@ -166,15 +166,7 @@ export default function Profile() {
             <Ionicons name="create-outline" size={20} color={theme.colors.text} />
             <Text style={styles.editButtonText}>Edit Profile</Text>
           </TouchableOpacity>
-
-          {isAdmin() && (
-            <TouchableOpacity
-              style={styles.adminButton}
-              onPress={() => router.push('/(tabs)/profile/admin')}
-            >
-              <Ionicons name="shield-checkmark" size={20} color="#fff" />
-            </TouchableOpacity>
-          )}
+        </View>
         </View>
 
         {/* Tabs */}
