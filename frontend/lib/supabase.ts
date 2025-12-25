@@ -1,14 +1,12 @@
 import 'react-native-url-polyfill/auto';
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import { createBrowserClient } from '@supabase/ssr';
-import { Platform } from 'react-native';
 
 const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL!;
 const supabaseAnonKey = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY!;
 
-// Check if we're in a server/SSR environment
+// Check if we're in a server/SSR environment BEFORE any other imports
 const isServer = typeof window === 'undefined';
-const isWeb = Platform.OS === 'web';
 
 // Create a no-op storage for SSR
 const noopStorage = {
@@ -17,17 +15,24 @@ const noopStorage = {
   removeItem: async () => {},
 };
 
+// Determine platform safely
+const getPlatform = (): 'web' | 'native' => {
+  if (isServer) return 'web'; // During SSR, treat as web
+  try {
+    const { Platform } = require('react-native');
+    return Platform.OS === 'web' ? 'web' : 'native';
+  } catch {
+    return 'web';
+  }
+};
+
 // Lazy initialization pattern
 let _supabaseClient: SupabaseClient | null = null;
 
 const initSupabase = (): SupabaseClient => {
   if (_supabaseClient) return _supabaseClient;
 
-  // For web platform, use the SSR-safe browser client
-  if (isWeb && !isServer) {
-    _supabaseClient = createBrowserClient(supabaseUrl, supabaseAnonKey);
-    return _supabaseClient;
-  }
+  const platform = getPlatform();
 
   // For SSR (server-side rendering), use no-op storage
   if (isServer) {
@@ -39,6 +44,12 @@ const initSupabase = (): SupabaseClient => {
         detectSessionInUrl: false,
       },
     });
+    return _supabaseClient;
+  }
+
+  // For web platform (client-side), use the SSR-safe browser client
+  if (platform === 'web') {
+    _supabaseClient = createBrowserClient(supabaseUrl, supabaseAnonKey);
     return _supabaseClient;
   }
 
