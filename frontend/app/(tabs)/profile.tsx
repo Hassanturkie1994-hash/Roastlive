@@ -7,27 +7,38 @@ import {
   ScrollView,
   Image,
   ActivityIndicator,
+  FlatList,
+  Dimensions,
 } from 'react-native';
 import { theme } from '../../constants/theme';
 import { useAuth } from '../../contexts/AuthContext';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { supabase } from '../../lib/supabase';
+import { useAdminRole } from '../../hooks/useAdminRole';
+import { postsService } from '../../services/postsService';
+
+const { width } = Dimensions.get('window');
 
 export default function Profile() {
   const { user, signOut } = useAuth();
   const router = useRouter();
+  const { isAdmin } = useAdminRole();
   const [profile, setProfile] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState<'posts' | 'stories'>('posts');
+  const [posts, setPosts] = useState<any[]>([]);
   const [stats, setStats] = useState({
     followers: 0,
     following: 0,
     streams: 0,
+    posts: 0,
   });
 
   useEffect(() => {
     loadProfile();
     loadStats();
+    loadPosts();
   }, []);
 
   const loadProfile = async () => {
@@ -49,31 +60,31 @@ export default function Profile() {
 
   const loadStats = async () => {
     try {
-      // Get followers count
-      const { count: followersCount } = await supabase
-        .from('follows')
-        .select('*', { count: 'exact', head: true })
-        .eq('following_id', user?.id);
-
-      // Get following count
-      const { count: followingCount } = await supabase
-        .from('follows')
-        .select('*', { count: 'exact', head: true })
-        .eq('follower_id', user?.id);
-
-      // Get streams count
-      const { count: streamsCount } = await supabase
-        .from('streams')
-        .select('*', { count: 'exact', head: true })
-        .eq('host_id', user?.id);
+      const [followersCount, followingCount, streamsCount, postsCount] = await Promise.all([
+        supabase.from('follows').select('*', { count: 'exact', head: true }).eq('following_id', user?.id),
+        supabase.from('follows').select('*', { count: 'exact', head: true }).eq('follower_id', user?.id),
+        supabase.from('streams').select('*', { count: 'exact', head: true }).eq('host_id', user?.id),
+        supabase.from('posts').select('*', { count: 'exact', head: true }).eq('user_id', user?.id),
+      ]);
 
       setStats({
-        followers: followersCount || 0,
-        following: followingCount || 0,
-        streams: streamsCount || 0,
+        followers: followersCount.count || 0,
+        following: followingCount.count || 0,
+        streams: streamsCount.count || 0,
+        posts: postsCount.count || 0,
       });
     } catch (error) {
       console.error('Error loading stats:', error);
+    }
+  };
+
+  const loadPosts = async () => {
+    if (!user?.id) return;
+    try {
+      const userPosts = await postsService.getUserPosts(user.id);
+      setPosts(userPosts);
+    } catch (error) {
+      console.error('Error loading posts:', error);
     }
   };
 
@@ -109,7 +120,7 @@ export default function Profile() {
           {profile?.avatar_url ? (
             <Image source={{ uri: profile.avatar_url }} style={styles.avatar} />
           ) : (
-            <View style={styles.avatar}>
+            <View style={styles.avatarPlaceholder}>
               <Text style={styles.avatarText}>
                 {profile?.username?.charAt(0).toUpperCase() || 'U'}
               </Text>
@@ -120,7 +131,6 @@ export default function Profile() {
             <Text style={styles.fullName}>{profile.full_name}</Text>
           )}
           {profile?.bio && <Text style={styles.bio}>{profile.bio}</Text>}
-          <Text style={styles.email}>{user?.email}</Text>
         </View>
 
         {/* Stats */}
@@ -142,65 +152,121 @@ export default function Profile() {
           </TouchableOpacity>
           <View style={styles.statDivider} />
           <View style={styles.statItem}>
-            <Text style={styles.statValue}>{stats.streams}</Text>
-            <Text style={styles.statLabel}>Streams</Text>
+            <Text style={styles.statValue}>{stats.posts}</Text>
+            <Text style={styles.statLabel}>Posts</Text>
           </View>
         </View>
 
-        {/* Edit Profile Button */}
-        <TouchableOpacity
-          style={styles.editButton}
-          onPress={() => router.push('/(tabs)/profile/edit')}
-        >
-          <Ionicons name="create-outline" size={20} color={theme.colors.text} />
-          <Text style={styles.editButtonText}>Edit Profile</Text>
-        </TouchableOpacity>
-
-        {/* Menu Items */}
-        <View style={styles.menuSection}>
-          <TouchableOpacity 
-            style={styles.menuItem}
-            onPress={() => router.push('/(tabs)/profile/wallet')}
+        {/* Action Buttons */}
+        <View style={styles.actionButtons}>
+          <TouchableOpacity
+            style={styles.editButton}
+            onPress={() => router.push('/(tabs)/profile/edit')}
           >
-            <Ionicons name="wallet-outline" size={24} color={theme.colors.gold} />
-            <Text style={styles.menuText}>Wallet</Text>
-            <Ionicons name="chevron-forward" size={20} color={theme.colors.textSecondary} />
+            <Ionicons name="create-outline" size={20} color={theme.colors.text} />
+            <Text style={styles.editButtonText}>Edit Profile</Text>
           </TouchableOpacity>
 
-          <TouchableOpacity 
-            style={styles.menuItem}
-            onPress={() => router.push('/(tabs)/profile/vip-clubs')}
-          >
-            <Ionicons name="star-outline" size={24} color={theme.colors.vip} />
-            <Text style={styles.menuText}>VIP Clubs</Text>
-            <Ionicons name="chevron-forward" size={20} color={theme.colors.textSecondary} />
-          </TouchableOpacity>
+          {isAdmin() && (
+            <TouchableOpacity
+              style={styles.adminButton}
+              onPress={() => router.push('/(tabs)/profile/admin')}
+            >
+              <Ionicons name="shield-checkmark" size={20} color="#fff" />
+            </TouchableOpacity>
+          )}
+        </View>
 
-          <TouchableOpacity 
-            style={styles.menuItem}
-            onPress={() => router.push('/(tabs)/profile/report')}
+        {/* Tabs */}
+        <View style={styles.tabBar}>
+          <TouchableOpacity
+            style={[styles.tab, activeTab === 'posts' && styles.activeTab]}
+            onPress={() => setActiveTab('posts')}
           >
-            <Ionicons name="flag-outline" size={24} color={theme.colors.warning} />
-            <Text style={styles.menuText}>Report Content</Text>
-            <Ionicons name="chevron-forward" size={20} color={theme.colors.textSecondary} />
+            <Ionicons
+              name="grid"
+              size={20}
+              color={activeTab === 'posts' ? theme.colors.primary : theme.colors.textSecondary}
+            />
+            <Text style={[styles.tabText, activeTab === 'posts' && styles.activeTabText]}>Posts</Text>
           </TouchableOpacity>
-
-          <TouchableOpacity 
-            style={styles.menuItem}
-            onPress={() => router.push('/(tabs)/profile/admin')}
+          <TouchableOpacity
+            style={[styles.tab, activeTab === 'stories' && styles.activeTab]}
+            onPress={() => setActiveTab('stories')}
           >
-            <Ionicons name="shield-checkmark-outline" size={24} color={theme.colors.text} />
-            <Text style={styles.menuText}>Admin Panel</Text>
-            <Ionicons name="chevron-forward" size={20} color={theme.colors.textSecondary} />
+            <Ionicons
+              name="play-circle"
+              size={20}
+              color={activeTab === 'stories' ? theme.colors.primary : theme.colors.textSecondary}
+            />
+            <Text style={[styles.tabText, activeTab === 'stories' && styles.activeTabText]}>Stories</Text>
           </TouchableOpacity>
         </View>
 
-        {/* Sign Out */}
-        <TouchableOpacity style={styles.signOutButton} onPress={handleSignOut}>
-          <Ionicons name="log-out-outline" size={20} color={theme.colors.text} />
-          <Text style={styles.signOutText}>Sign Out</Text>
-        </TouchableOpacity>
+        {/* Posts Grid */}
+        {activeTab === 'posts' && (
+          <View style={styles.postsGrid}>
+            {posts.length === 0 ? (
+              <View style={styles.emptyState}>
+                <Ionicons name="images-outline" size={64} color={theme.colors.textSecondary} />
+                <Text style={styles.emptyText}>No posts yet</Text>
+                <TouchableOpacity
+                  style={styles.createPostButton}
+                  onPress={() => router.push('/posts/create')}
+                >
+                  <Ionicons name="add-circle" size={20} color="#fff" />
+                  <Text style={styles.createPostButtonText}>Create Post</Text>
+                </TouchableOpacity>
+              </View>
+            ) : (
+              <FlatList
+                data={posts}
+                numColumns={3}
+                keyExtractor={(item) => item.id}
+                renderItem={({ item }) => (
+                  <TouchableOpacity style={styles.postThumbnail}>
+                    {item.image_url ? (
+                      <Image source={{ uri: item.image_url }} style={styles.thumbnailImage} />
+                    ) : (
+                      <View style={styles.thumbnailPlaceholder}>
+                        <Ionicons name="image" size={32} color={theme.colors.textSecondary} />
+                      </View>
+                    )}
+                  </TouchableOpacity>
+                )}
+                scrollEnabled={false}
+              />
+            )}
+          </View>
+        )}
+
+        {/* Stories Grid */}
+        {activeTab === 'stories' && (
+          <View style={styles.storiesGrid}>
+            <View style={styles.emptyState}>
+              <Ionicons name="play-circle-outline" size={64} color={theme.colors.textSecondary} />
+              <Text style={styles.emptyText}>No stories yet</Text>
+              <TouchableOpacity
+                style={styles.createPostButton}
+                onPress={() => router.push('/stories/create')}
+              >
+                <Ionicons name="add-circle" size={20} color="#fff" />
+                <Text style={styles.createPostButtonText}>Create Story</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        )}
+
+        <View style={{ height: 100 }} />
       </ScrollView>
+
+      {/* Floating Action Button */}
+      <TouchableOpacity
+        style={styles.fab}
+        onPress={() => router.push('/posts/create')}
+      >
+        <Ionicons name="add" size={28} color="#fff" />
+      </TouchableOpacity>
     </View>
   );
 }
@@ -212,22 +278,23 @@ const styles = StyleSheet.create({
   },
   loadingContainer: {
     flex: 1,
-    backgroundColor: theme.colors.background,
-    alignItems: 'center',
     justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: theme.colors.background,
   },
   header: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
-    padding: theme.spacing.md,
-    paddingTop: theme.spacing.xxl,
+    justifyContent: 'space-between',
+    paddingHorizontal: theme.spacing.md,
+    paddingTop: theme.spacing.xxl + 10,
+    paddingBottom: theme.spacing.md,
     backgroundColor: theme.colors.surface,
     borderBottomWidth: 1,
     borderBottomColor: theme.colors.border,
   },
   headerTitle: {
-    fontSize: theme.typography.sizes.xl,
+    fontSize: theme.typography.sizes.xxl,
     fontWeight: theme.typography.weights.bold,
     color: theme.colors.text,
   },
@@ -241,62 +308,54 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: theme.spacing.xl,
     backgroundColor: theme.colors.surface,
-    margin: theme.spacing.md,
-    borderRadius: theme.borderRadius.lg,
+    marginBottom: theme.spacing.md,
   },
   avatar: {
     width: 100,
     height: 100,
     borderRadius: 50,
-    backgroundColor: theme.colors.primary,
+    marginBottom: theme.spacing.md,
+  },
+  avatarPlaceholder: {
+    width: 100,
+    height: 100,
+    borderRadius: 50,
+    backgroundColor: theme.colors.surfaceLight,
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: theme.spacing.md,
-    borderWidth: 3,
-    borderColor: theme.colors.primary,
   },
   avatarText: {
-    fontSize: 40,
+    fontSize: theme.typography.sizes.xxxl,
     fontWeight: theme.typography.weights.bold,
     color: theme.colors.text,
   },
   username: {
     fontSize: theme.typography.sizes.xl,
-    fontWeight: theme.typography.weights.semibold,
+    fontWeight: theme.typography.weights.bold,
     color: theme.colors.text,
     marginBottom: theme.spacing.xs,
   },
   fullName: {
     fontSize: theme.typography.sizes.base,
     color: theme.colors.textSecondary,
-    marginBottom: theme.spacing.sm,
+    marginBottom: theme.spacing.xs,
   },
   bio: {
-    fontSize: theme.typography.sizes.base,
-    color: theme.colors.text,
-    textAlign: 'center',
-    marginVertical: theme.spacing.sm,
-    paddingHorizontal: theme.spacing.md,
-  },
-  email: {
     fontSize: theme.typography.sizes.sm,
     color: theme.colors.textSecondary,
+    textAlign: 'center',
+    marginTop: theme.spacing.sm,
   },
   statsContainer: {
     flexDirection: 'row',
     backgroundColor: theme.colors.surface,
-    margin: theme.spacing.md,
-    marginTop: 0,
-    padding: theme.spacing.lg,
-    borderRadius: theme.borderRadius.lg,
+    paddingVertical: theme.spacing.lg,
+    marginBottom: theme.spacing.md,
   },
   statItem: {
     flex: 1,
     alignItems: 'center',
-  },
-  statDivider: {
-    width: 1,
-    backgroundColor: theme.colors.border,
   },
   statValue: {
     fontSize: theme.typography.sizes.xxl,
@@ -308,14 +367,24 @@ const styles = StyleSheet.create({
     fontSize: theme.typography.sizes.sm,
     color: theme.colors.textSecondary,
   },
+  statDivider: {
+    width: 1,
+    backgroundColor: theme.colors.border,
+  },
+  actionButtons: {
+    flexDirection: 'row',
+    paddingHorizontal: theme.spacing.md,
+    marginBottom: theme.spacing.md,
+  },
   editButton: {
+    flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: theme.colors.primary,
-    margin: theme.spacing.md,
-    padding: theme.spacing.md,
-    borderRadius: theme.borderRadius.md,
+    backgroundColor: theme.colors.surface,
+    paddingVertical: theme.spacing.md,
+    borderRadius: theme.borderRadius.lg,
+    marginRight: theme.spacing.sm,
   },
   editButtonText: {
     fontSize: theme.typography.sizes.base,
@@ -323,50 +392,103 @@ const styles = StyleSheet.create({
     color: theme.colors.text,
     marginLeft: theme.spacing.sm,
   },
-  menuSection: {
-    backgroundColor: theme.colors.surface,
-    margin: theme.spacing.md,
+  adminButton: {
+    width: 48,
+    height: 48,
+    backgroundColor: theme.colors.primary,
     borderRadius: theme.borderRadius.lg,
-    overflow: 'hidden',
-  },
-  menuItem: {
-    flexDirection: 'row',
     alignItems: 'center',
-    padding: theme.spacing.md,
-    borderBottomWidth: 1,
-    borderBottomColor: theme.colors.border,
+    justifyContent: 'center',
   },
-  menuText: {
+  tabBar: {
+    flexDirection: 'row',
+    backgroundColor: theme.colors.surface,
+    marginHorizontal: theme.spacing.md,
+    marginBottom: theme.spacing.md,
+    borderRadius: theme.borderRadius.lg,
+    padding: theme.spacing.xs,
+  },
+  tab: {
     flex: 1,
-    fontSize: theme.typography.sizes.base,
-    color: theme.colors.text,
-    marginLeft: theme.spacing.md,
-  },
-  comingSoonBadge: {
-    backgroundColor: theme.colors.vip,
-    paddingHorizontal: theme.spacing.sm,
-    paddingVertical: 2,
-    borderRadius: theme.borderRadius.sm,
-    marginRight: theme.spacing.sm,
-  },
-  comingSoonText: {
-    fontSize: 10,
-    fontWeight: theme.typography.weights.bold,
-    color: '#fff',
-  },
-  signOutButton: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: theme.colors.error,
-    margin: theme.spacing.md,
-    padding: theme.spacing.md,
+    paddingVertical: theme.spacing.sm,
     borderRadius: theme.borderRadius.md,
   },
-  signOutText: {
-    fontSize: theme.typography.sizes.base,
+  activeTab: {
+    backgroundColor: theme.colors.primaryLight,
+  },
+  tabText: {
+    fontSize: theme.typography.sizes.sm,
+    color: theme.colors.textSecondary,
+    marginLeft: theme.spacing.xs,
     fontWeight: theme.typography.weights.semibold,
-    color: theme.colors.text,
+  },
+  activeTabText: {
+    color: theme.colors.primary,
+  },
+  postsGrid: {
+    paddingHorizontal: theme.spacing.md,
+  },
+  postThumbnail: {
+    width: (width - theme.spacing.md * 2 - 4) / 3,
+    height: (width - theme.spacing.md * 2 - 4) / 3,
+    margin: 1,
+  },
+  thumbnailImage: {
+    width: '100%',
+    height: '100%',
+  },
+  thumbnailPlaceholder: {
+    width: '100%',
+    height: '100%',
+    backgroundColor: theme.colors.surface,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  storiesGrid: {
+    paddingHorizontal: theme.spacing.md,
+  },
+  emptyState: {
+    alignItems: 'center',
+    padding: theme.spacing.xxl,
+    marginTop: theme.spacing.xl,
+  },
+  emptyText: {
+    fontSize: theme.typography.sizes.base,
+    color: theme.colors.textSecondary,
+    marginTop: theme.spacing.md,
+    marginBottom: theme.spacing.lg,
+  },
+  createPostButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: theme.colors.primary,
+    paddingHorizontal: theme.spacing.xl,
+    paddingVertical: theme.spacing.md,
+    borderRadius: theme.borderRadius.full,
+  },
+  createPostButtonText: {
+    fontSize: theme.typography.sizes.base,
+    fontWeight: theme.typography.weights.bold,
+    color: '#fff',
     marginLeft: theme.spacing.sm,
+  },
+  fab: {
+    position: 'absolute',
+    bottom: theme.spacing.xl,
+    right: theme.spacing.xl,
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    backgroundColor: theme.colors.primary,
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 8,
   },
 });
