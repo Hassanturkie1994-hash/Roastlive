@@ -215,6 +215,53 @@ CREATE POLICY "Users can unfollow"
   ON follows FOR DELETE
   USING (auth.uid() = follower_id);
 
+-- Messages table (for direct messaging)
+CREATE TABLE IF NOT EXISTS messages (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  sender_id UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
+  receiver_id UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
+  content TEXT NOT NULL,
+  is_read BOOLEAN DEFAULT false,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+ALTER TABLE messages ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Users can view their messages"
+  ON messages FOR SELECT
+  USING (auth.uid() = sender_id OR auth.uid() = receiver_id);
+
+CREATE POLICY "Users can send messages"
+  ON messages FOR INSERT
+  WITH CHECK (auth.uid() = sender_id);
+
+CREATE POLICY "Users can update own received messages"
+  ON messages FOR UPDATE
+  USING (auth.uid() = receiver_id);
+
+-- Blocked users table
+CREATE TABLE IF NOT EXISTS blocked_users (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  blocker_id UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
+  blocked_id UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  UNIQUE(blocker_id, blocked_id)
+);
+
+ALTER TABLE blocked_users ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Users can view their blocks"
+  ON blocked_users FOR SELECT
+  USING (auth.uid() = blocker_id);
+
+CREATE POLICY "Users can block others"
+  ON blocked_users FOR INSERT
+  WITH CHECK (auth.uid() = blocker_id);
+
+CREATE POLICY "Users can unblock"
+  ON blocked_users FOR DELETE
+  USING (auth.uid() = blocker_id);
+
 -- Notifications table
 CREATE TABLE IF NOT EXISTS notifications (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
