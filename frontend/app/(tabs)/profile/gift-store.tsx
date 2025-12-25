@@ -105,9 +105,28 @@ export const GIFT_CATALOG = {
 export default function GiftStoreScreen() {
   const router = useRouter();
   const [selectedTier, setSelectedTier] = useState('LOW');
+  const [selectedGift, setSelectedGift] = useState<Gift | null>(null);
+  const [modalVisible, setModalVisible] = useState(false);
 
   const tiers = Object.keys(GIFT_CATALOG);
   const currentTier = GIFT_CATALOG[selectedTier as keyof typeof GIFT_CATALOG];
+
+  const handleGiftPress = (gift: any) => {
+    // Convert the gift object to match Gift interface
+    const giftData: Gift = {
+      id: gift.id,
+      name: gift.name,
+      icon: gift.icon,
+      price: gift.price,
+      tier: selectedTier as 'LOW' | 'MID' | 'HIGH' | 'ULTRA' | 'NUCLEAR',
+      format: gift.format as 'lottie' | 'mp4',
+      duration_ms: gift.format === 'mp4' ? 5000 : 3000,
+      blocks_others: gift.blocksOthers || false,
+      is_cinematic: gift.cinematic || false,
+    };
+    setSelectedGift(giftData);
+    setModalVisible(true);
+  };
 
   return (
     <View style={styles.container}>
