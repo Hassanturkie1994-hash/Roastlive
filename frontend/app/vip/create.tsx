@@ -195,6 +195,7 @@ export default function CreateVIPClubScreen() {
             </Text>
           </TouchableOpacity>
         </View>
+        )}
       </ScrollView>
     </View>
   );
@@ -213,6 +214,22 @@ const styles = StyleSheet.create({
   },
   headerTitle: { fontSize: theme.typography.sizes.xl, fontWeight: theme.typography.weights.bold, color: theme.colors.text },
   content: { flex: 1, padding: theme.spacing.md },
+  requirementCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: theme.spacing.lg,
+    borderRadius: theme.borderRadius.lg,
+    marginBottom: theme.spacing.lg,
+  },
+  requirementMet: { backgroundColor: `${theme.colors.success}20` },
+  requirementNotMet: { backgroundColor: `${theme.colors.warning}20` },
+  requirementText: { flex: 1, marginLeft: theme.spacing.md },
+  requirementTitle: { fontSize: theme.typography.sizes.base, fontWeight: theme.typography.weights.bold, color: theme.colors.text },
+  requirementSubtitle: { fontSize: theme.typography.sizes.sm, color: theme.colors.textSecondary, marginTop: 4 },
+  blockedState: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: theme.spacing.xxl },
+  blockedText: { fontSize: theme.typography.sizes.base, color: theme.colors.textSecondary, textAlign: 'center', marginTop: theme.spacing.md, marginBottom: theme.spacing.xl },
+  goStreamButton: { backgroundColor: theme.colors.primary, paddingHorizontal: theme.spacing.xl, paddingVertical: theme.spacing.lg, borderRadius: theme.borderRadius.full },
+  goStreamButtonText: { fontSize: theme.typography.sizes.base, fontWeight: theme.typography.weights.bold, color: '#fff' },
   form: { backgroundColor: theme.colors.surface, borderRadius: theme.borderRadius.lg, padding: theme.spacing.lg },
   label: { fontSize: theme.typography.sizes.base, fontWeight: theme.typography.weights.semibold, color: theme.colors.text, marginBottom: theme.spacing.sm, marginTop: theme.spacing.md },
   input: {
