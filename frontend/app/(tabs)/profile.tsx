@@ -22,7 +22,6 @@ const { width } = Dimensions.get('window');
 export default function Profile() {
   const { user, signOut } = useAuth();
   const router = useRouter();
-  const { isAdmin } = useAdminRole();
   const [profile, setProfile] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<'posts' | 'stories'>('posts');
