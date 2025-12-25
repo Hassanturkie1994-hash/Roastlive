@@ -95,38 +95,55 @@ export default function GiftDetailModal({
 }: GiftDetailModalProps) {
   const [isPlayingAnimation, setIsPlayingAnimation] = useState(false);
   const scaleAnim = React.useRef(new Animated.Value(1)).current;
+  const lottieRef = useRef<LottieView>(null);
+  const videoRef = useRef<Video>(null);
+
+  useEffect(() => {
+    // Auto-play animation when modal opens
+    if (visible && gift) {
+      if (gift.format === 'lottie') {
+        lottieRef.current?.play();
+      } else if (gift.format === 'mp4') {
+        videoRef.current?.playAsync();
+      }
+    }
+  }, [visible, gift]);
 
   if (!gift) return null;
 
   const playPreview = async () => {
     setIsPlayingAnimation(true);
     
-    // Play animation
-    Animated.sequence([
-      Animated.spring(scaleAnim, {
-        toValue: 1.2,
-        useNativeDriver: true,
-      }),
-      Animated.spring(scaleAnim, {
-        toValue: 1,
-        useNativeDriver: true,
-      }),
-    ]).start(() => setIsPlayingAnimation(false));
+    // Play animation based on format
+    if (gift.format === 'lottie') {
+      lottieRef.current?.reset();
+      lottieRef.current?.play();
+      setTimeout(() => setIsPlayingAnimation(false), gift.duration_ms);
+    } else if (gift.format === 'mp4') {
+      videoRef.current?.replayAsync();
+      setTimeout(() => setIsPlayingAnimation(false), gift.duration_ms);
+    }
 
-    // Play sound (if available)
+    // Play sound effect
     try {
       const { sound } = await Audio.Sound.createAsync(
-        // TODO: Add actual sound files
-        require('../../assets/sounds/default.mp3'),
-        { shouldPlay: true }
+        { uri: `https://example.com/sounds/${gift.id}.mp3` }, // Placeholder - you'll need actual sound URLs
+        { shouldPlay: true, volume: 0.5 }
       );
       await sound.playAsync();
+      sound.setOnPlaybackStatusUpdate((status) => {
+        if (status.isLoaded && status.didJustFinish) {
+          sound.unloadAsync();
+        }
+      });
     } catch (error) {
-      console.log('Sound not available for this gift');
+      console.log('Sound not available for this gift:', error);
     }
   };
 
   const tierColor = TIER_COLORS[gift.tier];
+  const isLottie = gift.tier === 'LOW' || gift.tier === 'MID' || gift.tier === 'HIGH';
+  const isVideo = gift.tier === 'ULTRA' || gift.tier === 'NUCLEAR';
 
   return (
     <Modal visible={visible} animationType="slide" transparent>
