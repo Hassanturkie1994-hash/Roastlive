@@ -43,14 +43,34 @@ export default function CreatePostScreen() {
       return;
     }
 
+    if (!user?.id) {
+      Alert.alert('Error', 'You must be logged in');
+      return;
+    }
+
     setPosting(true);
-    // TODO: Upload image to S3 and create post
-    setTimeout(() => {
+    try {
+      // For now, we'll store the image as base64 or use a placeholder URL
+      // In production, you would upload to Supabase Storage or S3
+      const result = await postsService.createPost(
+        user.id,
+        caption,
+        selectedImage || undefined,
+        selectedImage ? 'image' : undefined
+      );
+
+      if (result.success) {
+        Alert.alert('Success', 'Post created!', [
+          { text: 'OK', onPress: () => router.back() },
+        ]);
+      } else {
+        Alert.alert('Error', result.error || 'Failed to create post');
+      }
+    } catch (error) {
+      Alert.alert('Error', 'Failed to create post');
+    } finally {
       setPosting(false);
-      Alert.alert('Success', 'Post created!', [
-        { text: 'OK', onPress: () => router.back() },
-      ]);
-    }, 1000);
+    }
   };
 
   return (
