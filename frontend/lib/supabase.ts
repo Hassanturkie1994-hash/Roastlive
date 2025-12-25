@@ -1,39 +1,54 @@
 import 'react-native-url-polyfill/auto';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import { createClient } from '@supabase/supabase-js';
-import { Platform } from 'react-native';
 
 const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL!;
 const supabaseAnonKey = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY!;
 
-// Create a web-safe storage adapter
-const webStorage = {
-  getItem: async (key: string) => {
-    if (typeof window !== 'undefined' && window.localStorage) {
-      return window.localStorage.getItem(key);
-    }
-    return null;
-  },
-  setItem: async (key: string, value: string) => {
-    if (typeof window !== 'undefined' && window.localStorage) {
-      window.localStorage.setItem(key, value);
-    }
-  },
-  removeItem: async (key: string) => {
-    if (typeof window !== 'undefined' && window.localStorage) {
-      window.localStorage.removeItem(key);
-    }
-  },
-};
+// Check if we're in a browser/server environment for SSR
+const isServer = typeof window === 'undefined';
 
-// Use AsyncStorage for native, localStorage for web
-const storage = Platform.OS === 'web' ? webStorage : AsyncStorage;
+// Create a universal storage adapter that works in all environments
+const createStorage = () => {
+  // Server-side: return a no-op storage
+  if (isServer) {
+    return {
+      getItem: async () => null,
+      setItem: async () => {},
+      removeItem: async () => {},
+    };
+  }
+
+  // Client-side web: use localStorage
+  if (typeof localStorage !== 'undefined') {
+    return {
+      getItem: async (key: string) => localStorage.getItem(key),
+      setItem: async (key: string, value: string) => localStorage.setItem(key, value),
+      removeItem: async (key: string) => localStorage.removeItem(key),
+    };
+  }
+
+  // Native: use AsyncStorage (lazy import to avoid SSR issues)
+  return {
+    getItem: async (key: string) => {
+      const AsyncStorage = require('@react-native-async-storage/async-storage').default;
+      return AsyncStorage.getItem(key);
+    },
+    setItem: async (key: string, value: string) => {
+      const AsyncStorage = require('@react-native-async-storage/async-storage').default;
+      return AsyncStorage.setItem(key, value);
+    },
+    removeItem: async (key: string) => {
+      const AsyncStorage = require('@react-native-async-storage/async-storage').default;
+      return AsyncStorage.removeItem(key);
+    },
+  };
+};
 
 export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
   auth: {
-    storage: storage,
+    storage: createStorage(),
     autoRefreshToken: true,
-    persistSession: true,
+    persistSession: !isServer,
     detectSessionInUrl: false,
   },
 });
