@@ -3,127 +3,101 @@ import {
   View,
   Text,
   StyleSheet,
-  FlatList,
   TouchableOpacity,
-  TextInput,
+  Image,
+  Alert,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { theme } from '../../constants/theme';
+import { useAuth } from '../../contexts/AuthContext';
+import { storiesService } from '../../services/storiesService';
+import * as ImagePicker from 'expo-image-picker';
 
-interface Penalty {
-  id: string;
-  user_id: string;
-  username: string;
-  penalty_type: 'warning' | 'timeout' | 'ban' | 'suspend';
-  reason: string;
-  duration_minutes?: number;
-  expires_at?: string;
-  is_active: boolean;
-  issued_by_username: string;
-  created_at: string;
-}
-
-export default function AdminPenaltiesScreen() {
+export default function CreateStoryScreen() {
   const router = useRouter();
-  const [filter, setFilter] = useState<'all' | 'active' | 'expired'>('active');
-  const [searchQuery, setSearchQuery] = useState('');
-  const [penalties] = useState<Penalty[]>([]);
+  const { user } = useAuth();
+  const [selectedMedia, setSelectedMedia] = useState<string | null>(null);
+  const [mediaType, setMediaType] = useState<'image' | 'video'>('image');
+  const [uploading, setUploading] = useState(false);
 
-  const getPenaltyColor = (type: string) => {
-    switch (type) {
-      case 'warning': return theme.colors.warning;
-      case 'timeout': return theme.colors.warning;
-      case 'ban': return theme.colors.error;
-      case 'suspend': return theme.colors.error;
-      default: return theme.colors.text;
+  const pickMedia = async () => {
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ['images', 'videos'],
+      allowsEditing: true,
+      aspect: [9, 16],
+      quality: 0.8,
+    });
+
+    if (!result.canceled) {
+      setSelectedMedia(result.assets[0].uri);
+      setMediaType(result.assets[0].type === 'video' ? 'video' : 'image');
     }
   };
 
-  const getPenaltyIcon = (type: string) => {
-    switch (type) {
-      case 'warning': return 'alert-circle';
-      case 'timeout': return 'time';
-      case 'ban': return 'ban';
-      case 'suspend': return 'pause-circle';
-      default: return 'flag';
+  const handlePost = async () => {
+    if (!selectedMedia || !user?.id) {
+      Alert.alert('Error', 'Please select media');
+      return;
+    }
+
+    setUploading(true);
+    try {
+      const result = await storiesService.createStory(user.id, selectedMedia, mediaType);
+      if (result.success) {
+        Alert.alert('Success', 'Story posted!', [
+          { text: 'OK', onPress: () => router.back() },
+        ]);
+      } else {
+        Alert.alert('Error', result.error || 'Failed to post story');
+      }
+    } catch (error) {
+      Alert.alert('Error', 'Failed to post story');
+    } finally {
+      setUploading(false);
     }
   };
-
-  const renderPenalty = ({ item }: { item: Penalty }) => (
-    <TouchableOpacity style={styles.penaltyCard}>
-      <View style={[styles.penaltyIcon, { backgroundColor: `${getPenaltyColor(item.penalty_type)}20` }]}>
-        <Ionicons name={getPenaltyIcon(item.penalty_type) as any} size={24} color={getPenaltyColor(item.penalty_type)} />
-      </View>
-      <View style={styles.penaltyInfo}>
-        <Text style={styles.username}>@{item.username}</Text>
-        <Text style={styles.penaltyType}>{item.penalty_type.toUpperCase()}</Text>
-        <Text style={styles.reason} numberOfLines={2}>{item.reason}</Text>
-        <Text style={styles.issuer}>By: {item.issued_by_username}</Text>
-      </View>
-      <View style={styles.penaltyStatus}>
-        {item.is_active ? (
-          <View style={[styles.statusBadge, { backgroundColor: theme.colors.error }]}>
-            <Text style={styles.statusText}>ACTIVE</Text>
-          </View>
-        ) : (
-          <View style={[styles.statusBadge, { backgroundColor: theme.colors.textSecondary }]}>
-            <Text style={styles.statusText}>EXPIRED</Text>
-          </View>
-        )}
-      </View>
-    </TouchableOpacity>
-  );
 
   return (
     <View style={styles.container}>
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-          <Ionicons name="arrow-back" size={24} color={theme.colors.text} />
+        <TouchableOpacity onPress={() => router.back()}>
+          <Ionicons name="close" size={28} color="#fff" />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>User Penalties</Text>
-        <View style={{ width: 40 }} />
-      </View>
-
-      {/* Search */}
-      <View style={styles.searchContainer}>
-        <Ionicons name="search" size={20} color={theme.colors.textSecondary} />
-        <TextInput
-          style={styles.searchInput}
-          placeholder="Search by username..."
-          placeholderTextColor={theme.colors.textSecondary}
-          value={searchQuery}
-          onChangeText={setSearchQuery}
-        />
-      </View>
-
-      {/* Filters */}
-      <View style={styles.filterContainer}>
-        {(['all', 'active', 'expired'] as const).map((f) => (
-          <TouchableOpacity
-            key={f}
-            style={[styles.filterTab, filter === f && styles.filterTabActive]}
-            onPress={() => setFilter(f)}
+        <Text style={styles.headerTitle}>Create Story</Text>
+        <TouchableOpacity onPress={handlePost} disabled={!selectedMedia || uploading}>
+          <Text
+            style={[
+              styles.postButton,
+              (!selectedMedia || uploading) && styles.postButtonDisabled,
+            ]}
           >
-            <Text style={[styles.filterText, filter === f && styles.filterTextActive]}>
-              {f.toUpperCase()}
-            </Text>
-          </TouchableOpacity>
-        ))}
+            {uploading ? 'Posting...' : 'Share'}
+          </Text>
+        </TouchableOpacity>
       </View>
 
-      <FlatList
-        data={penalties}
-        renderItem={renderPenalty}
-        keyExtractor={item => item.id}
-        contentContainerStyle={styles.list}
-        ListEmptyComponent={
-          <View style={styles.emptyContainer}>
-            <Ionicons name="checkmark-circle-outline" size={64} color={theme.colors.success} />
-            <Text style={styles.emptyText}>No {filter === 'all' ? '' : filter} penalties</Text>
-          </View>
-        }
-      />
+      {selectedMedia ? (
+        <View style={styles.previewContainer}>
+          <Image source={{ uri: selectedMedia }} style={styles.previewImage} />
+          <TouchableOpacity
+            style={styles.changeMediaButton}
+            onPress={pickMedia}
+          >
+            <Ionicons name="images" size={24} color="#fff" />
+            <Text style={styles.changeMediaText}>Change Media</Text>
+          </TouchableOpacity>
+        </View>
+      ) : (
+        <View style={styles.emptyState}>
+          <Ionicons name="image-outline" size={64} color={theme.colors.textSecondary} />
+          <Text style={styles.emptyText}>Tap below to add photo or video</Text>
+          <TouchableOpacity style={styles.pickButton} onPress={pickMedia}>
+            <Ionicons name="add-circle" size={28} color={theme.colors.primary} />
+            <Text style={styles.pickButtonText}>Choose Media</Text>
+          </TouchableOpacity>
+        </View>
+      )}
     </View>
   );
 }
@@ -131,7 +105,7 @@ export default function AdminPenaltiesScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: theme.colors.background,
+    backgroundColor: '#000',
   },
   header: {
     flexDirection: 'row',
@@ -140,123 +114,69 @@ const styles = StyleSheet.create({
     paddingHorizontal: theme.spacing.md,
     paddingTop: theme.spacing.xxl + 10,
     paddingBottom: theme.spacing.md,
-    backgroundColor: theme.colors.surface,
-    borderBottomWidth: 1,
-    borderBottomColor: theme.colors.border,
-  },
-  backButton: {
-    width: 40,
-    height: 40,
-    alignItems: 'center',
-    justifyContent: 'center',
   },
   headerTitle: {
-    fontSize: theme.typography.sizes.xl,
+    fontSize: theme.typography.sizes.lg,
     fontWeight: theme.typography.weights.bold,
-    color: theme.colors.text,
+    color: '#fff',
   },
-  searchContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: theme.spacing.md,
-    backgroundColor: theme.colors.surface,
-    marginHorizontal: theme.spacing.md,
-    marginTop: theme.spacing.md,
-    borderRadius: theme.borderRadius.lg,
-  },
-  searchInput: {
-    flex: 1,
-    marginLeft: theme.spacing.sm,
+  postButton: {
     fontSize: theme.typography.sizes.base,
-    color: theme.colors.text,
+    fontWeight: theme.typography.weights.bold,
+    color: theme.colors.primary,
   },
-  filterContainer: {
-    flexDirection: 'row',
-    padding: theme.spacing.md,
+  postButtonDisabled: {
+    opacity: 0.3,
   },
-  filterTab: {
+  previewContainer: {
     flex: 1,
-    paddingVertical: theme.spacing.sm,
+    justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: theme.colors.surface,
-    borderRadius: theme.borderRadius.lg,
-    marginHorizontal: theme.spacing.xs,
   },
-  filterTabActive: {
-    backgroundColor: theme.colors.primary,
+  previewImage: {
+    width: '100%',
+    height: '100%',
+    resizeMode: 'contain',
   },
-  filterText: {
-    fontSize: theme.typography.sizes.sm,
+  changeMediaButton: {
+    position: 'absolute',
+    bottom: theme.spacing.xxl,
+    backgroundColor: 'rgba(0,0,0,0.7)',
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: theme.spacing.lg,
+    paddingVertical: theme.spacing.md,
+    borderRadius: theme.borderRadius.full,
+  },
+  changeMediaText: {
+    color: '#fff',
+    fontSize: theme.typography.sizes.base,
     fontWeight: theme.typography.weights.semibold,
-    color: theme.colors.textSecondary,
+    marginLeft: theme.spacing.sm,
   },
-  filterTextActive: {
-    color: '#fff',
-  },
-  list: {
-    padding: theme.spacing.md,
-  },
-  penaltyCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: theme.colors.surface,
-    borderRadius: theme.borderRadius.lg,
-    padding: theme.spacing.md,
-    marginBottom: theme.spacing.sm,
-  },
-  penaltyIcon: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: theme.spacing.md,
-  },
-  penaltyInfo: {
+  emptyState: {
     flex: 1,
-  },
-  username: {
-    fontSize: theme.typography.sizes.base,
-    fontWeight: theme.typography.weights.bold,
-    color: theme.colors.text,
-  },
-  penaltyType: {
-    fontSize: theme.typography.sizes.xs,
-    fontWeight: theme.typography.weights.bold,
-    color: theme.colors.error,
-    marginTop: 2,
-  },
-  reason: {
-    fontSize: theme.typography.sizes.sm,
-    color: theme.colors.textSecondary,
-    marginTop: theme.spacing.xs,
-  },
-  issuer: {
-    fontSize: theme.typography.sizes.xs,
-    color: theme.colors.textSecondary,
-    marginTop: theme.spacing.xs,
-  },
-  penaltyStatus: {
-    marginLeft: theme.spacing.md,
-  },
-  statusBadge: {
-    paddingHorizontal: theme.spacing.sm,
-    paddingVertical: theme.spacing.xs,
-    borderRadius: theme.borderRadius.sm,
-  },
-  statusText: {
-    fontSize: 10,
-    fontWeight: theme.typography.weights.bold,
-    color: '#fff',
-  },
-  emptyContainer: {
-    alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: theme.spacing.xxl * 2,
+    alignItems: 'center',
   },
   emptyText: {
-    fontSize: theme.typography.sizes.lg,
+    fontSize: theme.typography.sizes.base,
     color: theme.colors.textSecondary,
-    marginTop: theme.spacing.md,
+    marginTop: theme.spacing.lg,
+    marginBottom: theme.spacing.xxl,
+  },
+  pickButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: theme.colors.surface,
+    paddingHorizontal: theme.spacing.xl,
+    paddingVertical: theme.spacing.lg,
+    borderRadius: theme.borderRadius.full,
+  },
+  pickButtonText: {
+    fontSize: theme.typography.sizes.lg,
+    fontWeight: theme.typography.weights.bold,
+    color: theme.colors.text,
+    marginLeft: theme.spacing.sm,
   },
 });
