@@ -35,7 +35,7 @@ export const GIFT_CATALOG = {
     ],
   },
   MID: {
-    name: 'mid tiers',
+    name: 'Mid tiers',
     priceRange: '20-100 SEK',
     color: '#2196F3',
     gifts: [
