@@ -10,6 +10,8 @@ import {
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { theme } from '../../../constants/theme';
+import GiftDetailModal from '../../../components/gifts/GiftDetailModal';
+import { Gift } from '../../../services/giftService';
 
 const { width } = Dimensions.get('window');
 
