@@ -1,200 +1,225 @@
 <analysis>
-**original_problem_statement**: The user wants to build a comprehensive livestreaming mobile application called Roast Live focused on humorous roast battles.
 
-The user has provided an extremely detailed specification for the entire application, broken down into multiple phases and feature sets, including:
--   **Core Features**: Multi-guest live streaming (up to 10 participants), real-time chat, viewer interaction.
--   **Monetization**: A complex virtual gift system with 45 distinct, tiered gifts (Lottie/MP4 animations) and a VIP club subscription model.
--   **Social Features**: User profiles, DMs, posts, stories, and a follower system.
--   **Moderation**: A robust multi-level moderation system (Head Admin, Admin, Moderator, Support roles) with a dedicated admin panel, user reporting, and AI-powered text/content filtering using a strike system.
--   **Discovery**: A recommendation engine for trending streams and creators.
--   **Tech Stack**: React Native (Expo), Supabase for backend services, Agora for streaming, and OpenAI for AI moderation.
+**original_problem_statement**: The user wants to build a comprehensive livestreaming mobile application called Roast Live focused on roast battles.
 
-The user has also reported several specific bugs that need to be fixed:
-1.  The app crashes when the user tries to open it in Expo Go on their phone (something went wrong).
-2.  The Go live screen was crashing due to a camera API issue.
-3.  The Settings link in the profile has no route.
+Initially, the goal was to fix a critical Expo Go crash and implement several features like a gift details modal, role-based admin dashboards, and social features.
+
+However, the user later provided a much larger, 12-phase, 26-prompt specification (in Chat Message 132) detailing the entire application from the ground up, including pre-live setup, battle matchmaking, advanced multi-guest streaming rules, a complex gift economy, a full social layer, and robust moderation.
+
+The agent's task evolved into implementing this entire 12-phase plan while simultaneously fixing a series of critical, show-stopping bugs related to app preview, user registration, authentication, and database configuration.
 
 **User's preferred language**: English
 
 **what currently exists?**
-The project has progressed significantly. Phases 1-3 (Auth, Profiles, basic Social) are largely complete. The agent has made substantial progress on subsequent phases, including:
--   A new custom floating bottom tab bar has been implemented to fix the user-reported bad UI.
--   Backend endpoints for the gift system (, ) and stream management have been created.
--   Frontend components and screens for the gift system, wallet, VIP clubs, and an admin panel have been created.
--   The AI moderation endpoint on the backend has been set up using the Emergent LLM Key.
--   A comprehensive  file exists, defining the database structure for most of the application's features.
--   The Go live camera crash has been fixed by updating  to use the modern  API ().
+The agent has performed a massive implementation push, creating placeholder or initial versions of nearly all screens, components, and services required by the user's comprehensive 12-phase plan. The application structure is extensive, with UI for battle matchmaking, multi-guest streaming layouts, direct messaging, VIP club management, and more.
+
+Crucially, the agent has also fixed a series of critical bugs:
+- Resolved multiple Expo Go preview crashes and bundling errors.
+- Fixed an ngrok tunnel misconfiguration that prevented the user from accessing the app on their phone.
+- Patched the backend AI moderation endpoint to prevent 500 errors when an API key is missing.
+- Implemented a robust  hook with real-time subscriptions to correctly display role-based UI.
+- Fixed critical Supabase authentication issues, including an Invalid Refresh Token error in  and a Database error saving new user bug during registration by correcting the auth trigger and RLS policies.
+- Implemented a demo mode for live streaming to work around the incompatibility of the Agora SDK with Expo Go, allowing development to continue.
+
+A series of SQL and Markdown files (, , multiple ) have been created, containing all the necessary database schema and fixes.
 
 **Last working item**:
--   Last item agent was working: The agent was in the process of implementing the massive set of new features requested by the user. It had just fixed the Go live camera crash in  and was creating new files for the complete Gift Store and Stream Dashboard.
--   Status: IN PROGRESS
--   Agent Testing Done: N (The latest feature additions and the camera fix have not been tested).
--   Which testing method agent to use? Both. Use the backend testing agent to verify the new gift and wallet endpoints. Use the frontend testing agent to verify the new screens (Gift Store, Admin Dashboards) and the fixed  screen.
+-   Last item agent was working: The agent was fixing a  in . This was caused by an incorrectly formatted object literal within the  function. The agent corrected the syntax to be a valid object.
+-   Status: IN PROGRESS (While the specific syntax fix is complete, it was part of a larger bug-fixing effort, and the overall application stability and feature completeness require user verification).
+-   Agent Testing Done: N (Agent fixed the syntax and restarted the server, but did not perform further testing).
+-   Which testing method agent to use? Manual testing by user. The user has been the primary source of bug reports for these critical issues. After the user tests and provides feedback, the agent can use the  for any new bugs or use the frontend/backend testing agents to validate specific features.
 -   User Testing Done: N
 
 **All Pending/In progress Issue list**:
--   Issue 1: The app crashes on Expo Go for the user. (P0 - BLOCKER)
--   Issue 2: Settings in profile no route bug. (P1)
--   Issue 3: Persistent Supabase SSR  error during web build. (P2)
--   Issue 4: Recurring ngrok tunnel conflicts. (P3)
+-   Issue 1: Full User Acceptance Testing (UAT) Required (P0)
+-   Issue 2: Lottie Animations are Disabled in Gift Modal (P1)
+-   Issue 3:  Screen is Disabled (P1)
+-   Issue 4: Real Streaming with Agora SDK is Not Implemented (P2)
+-   Issue 5: Fragmented Database Schema (P2)
 
 Issues Detail:
--   **Issue 1: App crashes on Expo Go (P0 - BLOCKER)**
-    -   Attempted fixes: The agent has tried multiple solutions in  to make Supabase initialization SSR-safe. While this made the web preview work (by bypassing the SSR error), the issue persists on the user's mobile device. The  passed its tests, which is contradictory to the user's report, suggesting an environmental or native-specific build issue.
-    -   Next debug checklist:
-        1.  Review  again. The current dynamic import approach might not be sufficient for native builds. The issue is that a top-level import of Supabase anywhere in the app can trigger the error on native startup.
-        2.  Systematically check all files that  (, , etc.). Ensure Supabase is only ever accessed inside  or event handlers, never at the top level of a component's render function.
-        3.  Consider creating a separate, simplified Supabase client initialization file just for native, if the SSR-safe web version is too complex.
-        4.  Verify all recently added packages are compatible with Expo Go and don't have native-only or web-only dependencies that could cause a crash.
-    -   Why fix this issue and what will be achieved with the fix?: This is a critical blocker. The user cannot test or use the application on their primary target platform (mobile) until this is resolved.
-    -   Status: IN PROGRESS
-    -   Is recurring issue?: Y
-    -   Should Test frontend/backend/both after fix?: Frontend (specifically on mobile).
-    -   Blocked on other issue: None. This is the main blocker.
+-   **Issue 1: Full User Acceptance Testing (UAT) Required (P0)**
+    -   Attempted fixes: The agent has implemented a vast number of features and bug fixes in a rapid single rush development style.
+    -   Next debug checklist: The user needs to perform thorough testing of the entire application on their device, especially focusing on:
+        1.  User Registration and Login.
+        2.  Admin role assignment and dashboard visibility.
+        3.  The Gift system (opening the detail modal).
+        4.  Navigation to all the newly created screens (matchmaking, profiles, DMs, etc.).
+        5.  Attempting to Go Live to test the new demo streaming mode.
+    -   Why fix this issue and what will be achieved with the fix?: This is critical to validate the massive amount of work done, identify remaining bugs, and determine the true state of the project.
+    -   Status: NOT STARTED
+    -   Is recurring issue?: N/A
+    -   Should Test frontend/backend/both after fix?: Both.
+    -   Blocked on other issue: None. This is the main blocker for further progress.
 
--   **Issue 2: Settings in profile no route bug (P1)**
-    -   Attempted fixes: None. This was recently reported by the user.
+-   **Issue 2: Lottie Animations are Disabled in Gift Modal (P1)**
+    -   Attempted fixes: To fix a web preview build error, the agent commented out the  component and related logic in  (Chat Message 183-194).
     -   Next debug checklist:
-        1.  Examine . Find the Settings  or  component.
-        2.  Check the  property of the . It's likely pointing to a route that doesn't exist.
-        3.  Create the corresponding settings screen file (e.g., ) if it doesn't exist.
-    -   Why fix this issue and what will be achieved with the fix?: Fixes a direct user-reported bug and makes the settings section of the app accessible.
+        1.  Uncomment the  code in .
+        2.  Investigate the original build error (likely related to web compatibility of ).
+        3.  Find a cross-platform solution or conditionally render the Lottie view only on native platforms if a web fix is not feasible.
+    -   Why fix this issue and what will be achieved with the fix?: This will restore a core part of the gift system's user experience as requested by the user.
     -   Status: NOT STARTED
     -   Is recurring issue?: N
     -   Should Test frontend/backend/both after fix?: Frontend.
     -   Blocked on other issue: None.
 
--   **Issue 3: Persistent Supabase SSR  error (P2)**
-    -   Attempted fixes: Numerous attempts were made to fix this, including conditional imports, changing  output, and using . The current state is that the web preview works, but the error is still logged during the build process, indicating an unstable and incorrect setup. This is the likely root cause of the Expo Go crash.
-    -   Next debug checklist: Same as Issue 1. A definitive, clean solution in  that works for both web and native without logging errors is required.
-    -   Why fix this issue and what will be achieved with the fix?: Creates a stable build process for both web and native, eliminates confusing error logs, and will likely fix the user's Expo Go crash.
-    -   Status: IN PROGRESS
-    -   Is recurring issue?: Y
+-   **Issue 3:  Screen is Disabled (P1)**
+    -   Attempted fixes: To fix a preview crash caused by a module resolution error, the agent commented out the entire content of  (Chat Message 167-169).
+    -   Next debug checklist:
+        1.  Restore the content of .
+        2.  Fix the import path for . The path  from  was causing an error. The correct relative path needs to be determined and fixed.
+    -   Why fix this issue and what will be achieved with the fix?: This will re-enable a key social feature that the agent was tasked with building.
+    -   Status: NOT STARTED
+    -   Is recurring issue?: Y (Module resolution and preview crashes have been common).
     -   Should Test frontend/backend/both after fix?: Frontend.
     -   Blocked on other issue: None.
 
--   **Issue 4: Recurring ngrok tunnel conflicts (P3)**
-    -   Attempted fixes: The agent successfully resolved this by killing old ngrok processes and letting Expo generate a random subdomain.
-    -   Next debug checklist: This is an environmental issue. The next agent should be aware that if the preview URL is failing, the first step is to run  and then restart the expo service.
-    -   Why fix this issue and what will be achieved with the fix?: Ensures the web preview is accessible for debugging.
-    -   Status: RESOLVED (but awareness is required)
+-   **Issue 4: Real Streaming with Agora SDK is Not Implemented (P2)**
+    -   Attempted fixes: The Agora SDK was previously removed due to incompatibility with Expo Go. The agent implemented a demo mode for streaming as a workaround.
+    -   Next debug checklist:
+        1.  Discuss the path forward with the user.
+        2.  Option 1: Guide the user on setting up a custom development client for Expo, which is required to use native libraries like Agora.
+        3.  Option 2: Research and propose an alternative streaming solution that is fully compatible with Expo Go.
+    -   Why fix this issue and what will be achieved with the fix?: The core feature of the app is livestreaming; the demo mode is only a temporary placeholder.
+    -   Status: NOT STARTED
     -   Is recurring issue?: Y
-    -   Should Test frontend/backend/both after fix?: NA.
-    -   Blocked on other issue: None.
+    -   Should Test frontend/backend/both after fix?: Both.
+    -   Blocked on other issue: Requires user decision.
+
+-   **Issue 5: Fragmented Database Schema (P2)**
+    -   Attempted fixes: The agent created multiple  and  files for database setup (, , etc.) as requested for incremental changes, but this has led to a fragmented and potentially confusing setup.
+    -   Next debug checklist:
+        1.  Once the current functionality is stable and verified, propose to the user a task to consolidate all SQL scripts into a single, definitive  file.
+        2.  This consolidated file should be idempotent (runnable multiple times without causing errors).
+    -   Why fix this issue and what will be achieved with the fix?: This will improve project maintainability and make it easier for the user (and future agents) to set up the database from scratch.
+    -   Status: NOT STARTED
+    -   Is recurring issue?: N
+    -   Should Test frontend/backend/both after fix?: Backend/DB.
+    -   Blocked on other issue: Issue 1 (UAT).
 
 **In progress Task List**:
--   **Task 1: Implement Full Gift System (P1)**
-    -   Where to resume: The backend has endpoints for gifts. The frontend has a . The next step is to populate the  with all 45 gifts specified by the user, connect it to the user's wallet balance, and implement the real-time gift-sending flow with on-screen animations (Lottie/MP4 based on tier).
-    -   What will be achieved with this?: A core monetization feature of the app.
-    -   Status: IN PROGRESS
-    -   Should Test frontend/backend/both after fix?: Both.
-    -   Blocked on something: Expo Go crash (Issue 1).
-
--   **Task 2: Implement Role-Based Admin Dashboards (P1)**
-    -   Where to resume: Placeholder files like  exist. The agent needs to build out the specific UIs for each admin role (Head Admin, Admin, Moderator, Support) as detailed in the user's specification, with features like report management, live stream monitoring, and user penalty management.
-    -   What will be achieved with this?: The core moderation and administration tools for the platform.
-    -   Status: IN PROGRESS
-    -   Should Test frontend/backend/both after fix?: Frontend.
-    -   Blocked on something: Expo Go crash (Issue 1).
+There are no specific tasks in progress, as the agent has just completed a major implementation and bug-fixing push. The project is awaiting user feedback.
 
 **Upcoming and Future Tasks**
-(Derived from the user's large specification in message 492)
-Upcoming Tasks:
--   **P1: Complete Multi-Guest Streaming**: Wire up the invitation flow (, ) and dynamic video layout.
--   **P1: Complete VIP Club System**: Implement frontend screens for joining/managing VIP clubs and the creator's dashboard. Implement backend logic for subscriptions (using In-App Purchases, not Stripe).
--   **P2: Integrate AI Moderation**: Connect the backend's AI moderation endpoint to the live chat and profile update flows on the frontend.
--   **P2: Build out full Settings section**: Add screens for changing passwords, viewing the stream dashboard, and reading community rules.
--   **P2: Complete Social Features**: Implement the ability to create/view posts and stories, and enhance the DM functionality.
-
-Future Tasks:
--   Implement the stream/creator recommendation engine on the home/discover screen.
--   Implement the full multi-level moderation action log and strike system.
--   Refine gift animations and real-time effects.
--   Conduct final end-to-end testing and performance tuning.
--   Ensure full compliance with App Store policies for submission.
+Based on the user's 12-phase plan, while files have been created, the next steps involve deepening the implementation of these features:
+-   **P1: Phase 3 - Battle Matchmaking**: Implement the server-side queue logic and connect the frontend UI to Supabase Realtime for live updates on queue status and match found events.
+-   **P1: Phase 4 - Live Session Room**: Fully implement the multi-guest layout switching logic, guest invitation flow with expiry, and host/guest controls. This is currently blocked by the Agora SDK issue.
+-   **P1: Phase 5 - Live Chat & Moderation**: Wire up the real-time chat UI to Supabase Realtime, implement message pinning, and connect moderation actions to the backend.
+-   **P2: Phase 6 - Gift Economy**: Ensure the gift transaction flow is atomic and correctly updates wallets. Implement the real-time gift overlay with the specified queuing/blocking rules.
+-   **P2: Phase 7 - Wallet & Payouts**: Build out the payout request workflow and the admin review interface for these requests.
+-   **P2: Phase 8 & 9 - VIP Clubs & Social Layer**: Flesh out the implementation for VIP club management, DMs, and the unified notification center. Ensure deep-linking from notifications works correctly.
 
 **Completed work in this session**
--   **UI**: Replaced the default bottom navigation with a new custom, floating, blurred tab bar in .
--   **Bug Fix**: Fixed a critical crash on the Go Live screen by updating  to use the modern  API ( and ).
--   **Features**: Added backend endpoints for the gift and wallet system in .
--   **Features**: Created placeholder screens and components for Wallet (), VIP Clubs (), Admin Dashboard (), and Gift Store ().
--   **Features**: Added the  package.
--   **Debugging**: Spent significant effort debugging and finding workarounds for persistent Ngrok and Supabase SSR issues, resulting in a (mostly) working web preview.
+-   **CRITICAL BUG FIXES**:
+    -   Fixed multiple Expo Go preview/bundling errors, making the app runnable for the user.
+    -   Fixed Packager is not running error by correcting the ngrok tunnel URL in the  file.
+    -   Fixed Database error saving new user on registration by correcting the Supabase trigger () and RLS policies.
+    -   Fixed Invalid Refresh Token error by improving error handling in .
+    -   Fixed backend 500 error by adding a graceful fallback to the AI moderation endpoint.
+    -   Fixed  error by adding the required Foreign Key relationship for posts.
+    -   Fixed multiple syntax errors in frontend components.
+-   **FEATURE IMPLEMENTATION**:
+    -   Implemented the full scaffolding and initial UI for the user's new 12-phase plan.
+    -   Implemented a robust  hook with real-time updates to correctly show/hide role-based UI.
+    -   Implemented a demo mode for live streaming to allow development in Expo Go.
+    -   Enhanced VIP Club creation with a 1-hour streaming time requirement and added a full-featured VIP dashboard.
+    -   Conditionally rendered the Admin Panel in settings based on user role.
+-   **DOCUMENTATION**:
+    -   Created numerous  and  files containing schema, fixes, and role assignment instructions (, , etc.).
 
 **Earlier issues found/mentioned but not fixed**
--   The Supabase SSR  issue is the primary one. It was bypassed for the web preview but never truly solved, and it is the most likely cause of the user's current Expo Go crash.
+-   **Lottie Animations Disabled**: The agent disabled Lottie animations in  to fix a build error. This needs to be re-enabled and fixed properly.
+-   **Story Creation Screen Disabled**: The agent commented out the content of  to fix a module resolution error. This needs to be restored.
 
 **Known issue recurrence from previous fork**
--   **Issue recurrence in previous fork**: Ngrok tunnel conflicts and Supabase SSR issues.
--   **Recurrence count**: High (occurred multiple times this session).
--   **Status**: IN PROGRESS (The underlying SSR issue is not solved).
+-   **Issue recurrence in previous fork**: The project has a persistent history of Expo Go / Metro bundler instability. While the agent fixed several specific crashes (Failed to download remote update, Lottie errors, import errors), the underlying fragility of the dev environment remains a concern.
+-   **Recurrence count**: High
+-   **Status**: IN PROGRESS (The environment is currently stable, but a new issue could arise with the next feature change).
 
 **Code Architecture**
 
 
 **Key Technical Concepts**
 -   **Frontend**: React Native, Expo, TypeScript, Expo Router
--   **UI/UX**: Custom components,  for effects.
 -   **Backend**: FastAPI, Python
 -   **Database**: PostgreSQL (via Supabase)
--   **Authentication**: Supabase Auth (with a complex, buggy SSR implementation)
--   **Live Streaming**: Agora SDK (planned), 
--   **AI**:  for OpenAI moderation.
+-   **Authentication**: Supabase Auth, with custom role management in a separate table.
+-   **Real-time**: Supabase Realtime is now used in the  hook to listen for database changes.
+-   **State Management**: Zustand, React Context (, ).
+-   **Development Strategy**: A demo mode has been introduced to handle features (like streaming) that are incompatible with the Expo Go environment.
 
 **key DB schema**
-The full schema is defined in . It includes tables for , , , , , , , , , etc. The agent should refer to this file for all DB structure.
+The database schema is now highly fragmented across multiple files. The most important and up-to-date file is , which contains fixes for the  table trigger, RLS policies, and adds a foreign key to the  table. The user must run this file. Other files like  and various  files contain the schema for newer features.
 
 **changes in tech stack**
--   The bottom navigation was refactored to use a custom component () instead of the default  component from .
--   The  screen was updated from the deprecated  component to the new  component from .
+-    is temporarily disabled in .
+-   A demo mode streaming implementation was created to bypass the  dependency in Expo Go.
 
 **All files of reference**
--   : **Most Critical File.** This file contains the Supabase client initialization logic that is causing the build/runtime errors. It needs to be fixed to support both web (SPA) and native (Expo Go) without errors.
--   : Recently modified to fix a camera crash. Needs testing.
--   : The new UI for the tab bar.
--   : Implements the new .
--   : Contains new endpoints for gifts and wallet functionality.
--   : Contains the latest database schema. The agent must remind the user to apply this to their Supabase project.
+-   **/app/RUN_THIS_NOW.sql**: **CRITICAL.** The user must execute this SQL file in their Supabase project to fix registration, auth, and database relation issues.
+-   **/app/frontend/hooks/useAdminRole.ts**: The core of the role-based UI. It now uses real-time subscriptions to reflect DB changes instantly.
+-   **/app/frontend/contexts/AuthContext.tsx**: Contains critical fixes for handling refresh token errors and the user sign-up flow.
+-   **/app/frontend/config/streamingConfig.ts**: Defines the logic for switching between real streaming and demo mode.
+-   **/app/frontend/app/(tabs)/live/broadcast.tsx**: The UI for starting a stream, now patched to use the demo mode.
 
 **Critical Info for New Agent**
--   **TOP PRIORITY:** The user is blocked because the app crashes on Expo Go. You must solve this first. The root cause is almost certainly the faulty Supabase initialization in  which breaks in a native environment. Do not trust the working web preview; the problem is native-specific.
--   The  passed, but the user is still experiencing a crash. This is a contradiction you must investigate. The test environment might differ from the user's Expo Go environment.
--   The user has provided a massive new set of requirements (message #492). You must acknowledge this and create a plan to tackle them systematically *after* fixing the crash.
--   The user believes the agent can automatically make changes to their Supabase instance. This is not true. You must always update the  file and explicitly instruct the user to run the SQL in their Supabase dashboard.
--   Be prepared for ngrok tunnel issues. The standard fix is  and restarting the expo service.
+-   **TOP PRIORITY**: The user **MUST** run the contents of  in their Supabase SQL Editor. The application, especially user registration, will not work without it.
+-   **User Testing is Next**: The agent performed a massive implementation and bug-fixing marathon. The very next step is to wait for the user to test the application thoroughly and report back with a list of working/broken features. Do not start new work until this validation is done.
+-   **Disabled Features**: Be aware that Lottie animations in the gift modal and the entire story creation screen have been disabled to fix build errors. These need to be re-enabled and properly fixed.
+-   **Demo Mode for Streaming**: The app uses a demo mode for streaming in Expo Go. Real streaming functionality using Agora is not implemented and will require guiding the user to set up a custom development client.
+-   **Fragmented Database Schema**: The SQL setup is spread across many files. This is a source of potential confusion. After the app is stabilized, recommend consolidating these into a single, idempotent schema file.
+
+**documents created in this job**
+-   /app/RUN_THIS_NOW.sql
+-   /app/COMPLETE_DATABASE_FIX.md
+-   /app/EMERGENCY_FIX_REGISTRATION.md
+-   /app/ASSIGN_HEAD_ADMIN.md
+-   /app/ADMIN_ROLE_HIERARCHY.md
+-   /app/ARCHITECTURE.md
+-   /app/COMPLETE_DATABASE_SCHEMA.md
+-   /app/SUPABASE_SETUP_BATTLE_MATCHMAKING.md
+-   /app/SUPABASE_SETUP_GIFTS.md
+-   /app/SUPABASE_SETUP_LIVESTREAM.md
+-   /app/SUPABASE_SETUP_MODERATION.md
+-   /app/SUPABASE_SETUP_NOTIFICATIONS.md
+-   /app/SUPABASE_SETUP_PAYOUTS.md
+-   /app/SUPABASE_SETUP_SOCIAL.md
+-   /app/SUPABASE_SETUP_VIP_CLUBS.md
+-   /app/SUPABASE_SETUP_ADMIN_ROLES.md
 
 **Last 10 User Messages and any pending user messages**
-1.  **User (Msg 406):** Reports the app crashes on Expo Go. Asks the agent to check the problem and then continue building all phases (1-11) and integrate with Supabase automatically. (Status: **PENDING - HIGHEST PRIORITY**)
-2.  **Agent (Msg 407):** Acknowledges the Expo Go issue and starts investigating.
-3.  **User (Msg 453):** Re-iterates to first fix the previewing error, and then continue with the phases.
-4.  **Agent (Msg 454):** Acknowledges and calls the troubleshoot agent.
-5.  **Agent (Msg 482):** Reports that the  passed all tests and that the app *should* be working. Proceeds to build more features.
-6.  **Agent (Msg 491):** Summarizes completion of all phases (prematurely) and asks the user for feedback.
-7.  **User (Msg 492):** Provides a massive, detailed specification for the entire application and lists several new bugs to fix (Settings in profile no route, Go live camera fix, etc.). (Status: **PENDING - HUGE SCOPE**)
-8.  **Agent (Msg 493):** Acknowledges the huge request and agrees to start implementing.
-9.  **Agent (Msg 494):** Fixes the  camera issue.
-10. **Agent (Msg 495):** Starts creating files for the Gift Store.
+-   **Msg 381-385**: User provided a series of detailed technical prompts about fixing Supabase errors (, ) and issues with role-based dashboards not updating. Agent responded with detailed fixes. **(Status: IMPLEMENTED)**
+-   **Msg 386**: Agent began implementing the fixes directly in the code. **(Status: IN PROGRESS)**
+-   **Msg 396**: User repeated the prompts for fixing the , , and . **(Status: IMPLEMENTED)**
+-   **Msg 397**: Agent started working on the  error. **(Status: IN PROGRESS)**
+-   **Msg 411**: User provided a prompt to explain and fix a specific Javascript . **(Status: IMPLEMENTED)**
+-   **Msg 412**: Agent began fixing the syntax error in . **(Status: IN PROGRESS)**
 
 **Project Health Check:**
 -   **Broken**:
-    -   **Expo Go Deployment**: The application is confirmed by the user to be crashing on their mobile device via Expo Go. This is the primary blocker.
-    -   **Web SSR Build**: The static site generation for the web preview fails with a  error, although it falls back to a working client-side SPA. This is unstable and the likely root of the native crash.
+    -   **/app/frontend/components/gifts/GiftDetailModal.tsx**: Lottie animations are commented out.
+    -   **/app/frontend/app/stories/create.tsx**: The screen's content is commented out.
 -   **Mocked**:
-    -   All payment systems (In-App Purchases for coins/VIP) are conceptual and not implemented.
+    -   **Live Streaming**: The entire feature is in a demo mode. It does not use a real streaming service.
+    -   **Phases 4-12 Features**: While UI files exist for most features (DMs, matchmaking, multi-guest, etc.), the underlying logic is likely incomplete and not fully integrated with the backend or database.
 
 **3rd Party Integrations**
 -   **Supabase** (Auth, PostgreSQL, Real-time, Storage) — requires User API Key.
--   **Agora** (Live Streaming) — requires User API Key.
--   **OpenAI GPT** (AI Content Moderation) — uses Emergent LLM Key.
+-   **Agora** (Live Streaming) — requires User API Key. **(Currently bypassed by a demo mode)**
+-   **OpenAI GPT** (AI Content Moderation) — uses Emergent LLM Key. The backend endpoint has been patched to handle a missing key gracefully.
 
 **Testing status**
--   Testing agent used after significant changes: YES. The  was run and reported that all tests passed.
--   Troubleshoot agent used after agent stuck in loop: YES, used multiple times for Ngrok/SSR issues.
+-   Testing agent used after significant changes: NO (The agent performed a large number of fixes and implementations without running the testing agent).
+-   Troubleshoot agent used after agent stuck in loop: NO (The agent fixed issues based on direct user prompts or by analyzing logs).
 -   Test files created: []
--   Known regressions: The app is now crashing on Expo Go, which it presumably wasn't before the recent work on the tab bar and the attempted SSR fixes.
+-   Known regressions: Lottie animations and the story creation screen were disabled to fix other issues.
+
+**Credentials to test flow:**
+The user  is intended to be a 'head_admin'. The agent has created SQL scripts (, ) to facilitate this.
 
 **What agent forgot to execute**
--   The agent did not achieve a stable, error-free build for both web and native. It found a workaround for the web preview but failed to address the root cause of the Supabase/SSR initialization issue, which is now manifesting as a critical crash on the user's target mobile platform.
--   The agent has not implemented the majority of the features detailed in the user's large specification from message #492, as it had just begun when the session ended.
+- The agent did not go back to properly fix the root causes of the issues that led to disabling Lottie and the story creation screen. It opted for quick fixes (commenting out code) to solve immediate build problems.
+- The agent did not consolidate the fragmented database schema files, which could lead to confusion later.
 
 </analysis>
