@@ -13,6 +13,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { theme } from '../../../constants/theme';
 import { useAuth } from '../../../contexts/AuthContext';
 import { useTheme } from '../../../contexts/ThemeContext';
+import { useAdminRole } from '../../../hooks/useAdminRole';
 import { supabase } from '../../../lib/supabase';
 
 interface SettingItem {
