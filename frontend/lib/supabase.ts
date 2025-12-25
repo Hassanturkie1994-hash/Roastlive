@@ -1,61 +1,65 @@
 import 'react-native-url-polyfill/auto';
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Platform } from 'react-native';
 
 const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL!;
 const supabaseAnonKey = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY!;
 
-// Web-safe localStorage wrapper
-const webStorage = {
-  getItem: (key: string) => {
-    if (typeof window === 'undefined') return Promise.resolve(null);
-    try {
-      return Promise.resolve(window.localStorage.getItem(key));
-    } catch {
-      return Promise.resolve(null);
-    }
-  },
-  setItem: (key: string, value: string) => {
-    if (typeof window === 'undefined') return Promise.resolve();
-    try {
-      window.localStorage.setItem(key, value);
-    } catch {}
-    return Promise.resolve();
-  },
-  removeItem: (key: string) => {
-    if (typeof window === 'undefined') return Promise.resolve();
-    try {
-      window.localStorage.removeItem(key);
-    } catch {}
-    return Promise.resolve();
-  },
-};
-
-// Lazy-loaded native storage for React Native
-let nativeStorage: any = null;
-const getNativeStorage = () => {
-  if (!nativeStorage) {
-    // Dynamic require to avoid SSR issues
-    nativeStorage = require('@react-native-async-storage/async-storage').default;
+// Safe storage wrapper that works on both web and native
+const createStorage = () => {
+  // For web platform
+  if (Platform.OS === 'web') {
+    return {
+      getItem: async (key: string) => {
+        if (typeof window === 'undefined') return null;
+        try {
+          return window.localStorage.getItem(key);
+        } catch {
+          return null;
+        }
+      },
+      setItem: async (key: string, value: string) => {
+        if (typeof window === 'undefined') return;
+        try {
+          window.localStorage.setItem(key, value);
+        } catch {}
+      },
+      removeItem: async (key: string) => {
+        if (typeof window === 'undefined') return;
+        try {
+          window.localStorage.removeItem(key);
+        } catch {}
+      },
+    };
   }
-  return nativeStorage;
+  
+  // For native platforms (iOS/Android)
+  return AsyncStorage;
 };
 
-// Native AsyncStorage wrapper that lazy-loads
-const nativeStorageWrapper = {
-  getItem: (key: string) => getNativeStorage().getItem(key),
-  setItem: (key: string, value: string) => getNativeStorage().setItem(key, value),
-  removeItem: (key: string) => getNativeStorage().removeItem(key),
+// Lazy initialization - only create client when first accessed
+let supabaseInstance: SupabaseClient | null = null;
+
+const getSupabaseClient = (): SupabaseClient => {
+  if (!supabaseInstance) {
+    supabaseInstance = createClient(supabaseUrl, supabaseAnonKey, {
+      auth: {
+        storage: createStorage(),
+        autoRefreshToken: true,
+        persistSession: true,
+        detectSessionInUrl: false,
+      },
+    });
+  }
+  return supabaseInstance;
 };
 
-// Select storage based on platform
-const storage = Platform.OS === 'web' ? webStorage : nativeStorageWrapper;
-
-export const supabase: SupabaseClient = createClient(supabaseUrl, supabaseAnonKey, {
-  auth: {
-    storage: storage,
-    autoRefreshToken: true,
-    persistSession: true,
-    detectSessionInUrl: false,
+// Export a proxy that lazily initializes the client
+export const supabase = new Proxy({} as SupabaseClient, {
+  get(target, prop) {
+    const client = getSupabaseClient();
+    const value = (client as any)[prop];
+    return typeof value === 'function' ? value.bind(client) : value;
   },
 });
