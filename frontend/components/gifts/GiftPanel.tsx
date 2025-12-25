@@ -1,135 +1,236 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
   StyleSheet,
-  Modal,
   TouchableOpacity,
   ScrollView,
-  Image,
+  Modal,
   Dimensions,
+  Alert,
+  ActivityIndicator,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { theme } from '../../constants/theme';
-import Animated, {
-  useAnimatedStyle,
-  withSpring,
-  withSequence,
-  useSharedValue,
-} from 'react-native-reanimated';
+import { giftService, Gift } from '../../services/giftService';
+import { useAuth } from '../../contexts/AuthContext';
 
-const { width } = Dimensions.get('window');
-
-interface Gift {
-  id: string;
-  name: string;
-  icon: string;
-  price: number;
-  animation?: string;
-}
+const { width, height } = Dimensions.get('window');
 
 interface GiftPanelProps {
   visible: boolean;
   onClose: () => void;
   onSendGift: (gift: Gift) => void;
-  balance: number;
+  streamId: string;
+  receiverId: string;
 }
 
-const GIFTS: Gift[] = [
-  { id: '1', name: 'Fire', icon: '🔥', price: 1 },
-  { id: '2', name: 'Heart', icon: '❤️', price: 5 },
-  { id: '3', name: 'Star', icon: '⭐', price: 10 },
-  { id: '4', name: 'Crown', icon: '👑', price: 50 },
-  { id: '5', name: 'Diamond', icon: '💎', price: 100 },
-  { id: '6', name: 'Rocket', icon: '🚀', price: 200 },
-  { id: '7', name: 'Lion', icon: '🦁', price: 500 },
-  { id: '8', name: 'Roast Trophy', icon: '🏆', price: 1000 },
-];
+const TIER_COLORS = {
+  LOW: '#4CAF50',
+  MID: '#2196F3',
+  HIGH: '#9C27B0',
+  ULTRA: '#FF5722',
+  NUCLEAR: '#F44336',
+};
 
-export default function GiftPanel({ visible, onClose, onSendGift, balance }: GiftPanelProps) {
-  const [selectedGift, setSelectedGift] = useState<Gift | null>(null);
-  const scale = useSharedValue(1);
+const TIER_NAMES = {
+  LOW: 'Fun Tier',
+  MID: 'Mid Tier',
+  HIGH: 'Premium Tier',
+  ULTRA: 'Ultra Tier',
+  NUCLEAR: 'Nuclear Tier',
+};
 
-  const handleSelectGift = (gift: Gift) => {
-    setSelectedGift(gift);
-    scale.value = withSequence(
-      withSpring(1.2, { damping: 10 }),
-      withSpring(1, { damping: 15 })
-    );
+export default function GiftPanel({
+  visible,
+  onClose,
+  onSendGift,
+  streamId,
+  receiverId,
+}: GiftPanelProps) {
+  const { user } = useAuth();
+  const [gifts, setGifts] = useState<Gift[]>([]);
+  const [selectedTier, setSelectedTier] = useState<Gift['tier']>('LOW');
+  const [balance, setBalance] = useState(0);
+  const [loading, setLoading] = useState(false);
+  const [sending, setSending] = useState(false);
+
+  useEffect(() => {
+    if (visible) {
+      loadGifts();
+      loadBalance();
+    }
+  }, [visible]);
+
+  const loadGifts = async () => {
+    setLoading(true);
+    const allGifts = await giftService.getGifts();
+    setGifts(allGifts);
+    setLoading(false);
   };
 
-  const handleSend = () => {
-    if (selectedGift && balance >= selectedGift.price) {
-      onSendGift(selectedGift);
-      setSelectedGift(null);
+  const loadBalance = async () => {
+    if (user?.id) {
+      const bal = await giftService.getWalletBalance(user.id);
+      setBalance(bal);
     }
   };
 
-  const animatedStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: scale.value }],
-  }));
+  const handleSendGift = async (gift: Gift) => {
+    if (balance < gift.price) {
+      Alert.alert(
+        'Insufficient Balance',
+        `You need ${gift.price} SEK but only have ${balance} SEK. Would you like to top up?`,
+        [
+          { text: 'Cancel', style: 'cancel' },
+          { text: 'Top Up', onPress: () => {/* Navigate to wallet */} },
+        ]
+      );
+      return;
+    }
+
+    Alert.alert(
+      'Send Gift',
+      `Send ${gift.name} for ${gift.price} SEK?`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Send',
+          onPress: async () => {
+            setSending(true);
+            const result = await giftService.sendGift(
+              streamId,
+              user!.id,
+              receiverId,
+              gift
+            );
+            setSending(false);
+
+            if (result.success) {
+              setBalance(prev => prev - gift.price);
+              onSendGift(gift);
+              onClose();
+            } else {
+              Alert.alert('Error', result.error || 'Failed to send gift');
+            }
+          },
+        },
+      ]
+    );
+  };
+
+  const filteredGifts = gifts.filter(g => g.tier === selectedTier);
+  const tiers: Gift['tier'][] = ['LOW', 'MID', 'HIGH', 'ULTRA', 'NUCLEAR'];
 
   return (
-    <Modal visible={visible} animationType="slide" transparent>
+    <Modal
+      visible={visible}
+      animationType="slide"
+      transparent
+      onRequestClose={onClose}
+    >
       <View style={styles.overlay}>
         <View style={styles.container}>
           {/* Header */}
           <View style={styles.header}>
-            <Text style={styles.title}>Send a Gift</Text>
-            <View style={styles.balanceContainer}>
-              <Ionicons name="wallet" size={18} color={theme.colors.gold} />
-              <Text style={styles.balanceText}>{balance.toLocaleString()}</Text>
+            <View>
+              <Text style={styles.title}>Send a Gift</Text>
+              <Text style={styles.balanceText}>Balance: {balance} SEK</Text>
             </View>
             <TouchableOpacity onPress={onClose} style={styles.closeButton}>
-              <Ionicons name="close" size={24} color={theme.colors.text} />
+              <Ionicons name="close" size={28} color={theme.colors.text} />
             </TouchableOpacity>
           </View>
 
-          {/* Gift Grid */}
-          <ScrollView style={styles.giftGrid}>
-            <View style={styles.gridContainer}>
-              {GIFTS.map((gift) => (
-                <TouchableOpacity
-                  key={gift.id}
-                  style={[
-                    styles.giftItem,
-                    selectedGift?.id === gift.id && styles.giftItemSelected,
-                  ]}
-                  onPress={() => handleSelectGift(gift)}
-                >
-                  <Text style={styles.giftIcon}>{gift.icon}</Text>
-                  <Text style={styles.giftName}>{gift.name}</Text>
-                  <View style={styles.priceTag}>
-                    <Ionicons name="flash" size={12} color={theme.colors.gold} />
-                    <Text style={styles.priceText}>{gift.price}</Text>
-                  </View>
-                </TouchableOpacity>
-              ))}
-            </View>
-          </ScrollView>
-
-          {/* Send Button */}
-          {selectedGift && (
-            <Animated.View style={[styles.sendContainer, animatedStyle]}>
-              <View style={styles.selectedInfo}>
-                <Text style={styles.selectedIcon}>{selectedGift.icon}</Text>
-                <Text style={styles.selectedName}>{selectedGift.name}</Text>
-              </View>
+          {/* Tier Tabs */}
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            style={styles.tierTabs}
+            contentContainerStyle={styles.tierTabsContent}
+          >
+            {tiers.map((tier) => (
               <TouchableOpacity
+                key={tier}
                 style={[
-                  styles.sendButton,
-                  balance < selectedGift.price && styles.sendButtonDisabled,
+                  styles.tierTab,
+                  selectedTier === tier && {
+                    backgroundColor: TIER_COLORS[tier],
+                  },
                 ]}
-                onPress={handleSend}
-                disabled={balance < selectedGift.price}
+                onPress={() => setSelectedTier(tier)}
               >
-                <Text style={styles.sendButtonText}>
-                  {balance >= selectedGift.price
-                    ? `Send (${selectedGift.price} coins)`
-                    : 'Insufficient coins'}
+                <Text
+                  style={[
+                    styles.tierTabText,
+                    selectedTier === tier && styles.tierTabTextActive,
+                  ]}
+                >
+                  {TIER_NAMES[tier]}
                 </Text>
               </TouchableOpacity>
-            </Animated.View>
+            ))}
+          </ScrollView>
+
+          {/* Gift Grid */}
+          {loading ? (
+            <View style={styles.loadingContainer}>
+              <ActivityIndicator size="large" color={theme.colors.primary} />
+            </View>
+          ) : (
+            <ScrollView style={styles.giftScroll}>
+              <View style={styles.giftGrid}>
+                {filteredGifts.map((gift) => {
+                  const canAfford = balance >= gift.price;
+                  return (
+                    <TouchableOpacity
+                      key={gift.id}
+                      style={[
+                        styles.giftCard,
+                        !canAfford && styles.giftCardDisabled,
+                      ]}
+                      onPress={() => canAfford && handleSendGift(gift)}
+                      disabled={!canAfford || sending}
+                    >
+                      <Text style={styles.giftIcon}>{gift.icon}</Text>
+                      <Text style={styles.giftName} numberOfLines={1}>
+                        {gift.name}
+                      </Text>
+                      <Text
+                        style={[
+                          styles.giftPrice,
+                          { color: TIER_COLORS[gift.tier] },
+                        ]}
+                      >
+                        {gift.price} SEK
+                      </Text>
+                      {gift.format === 'mp4' && (
+                        <View style={styles.formatBadge}>
+                          <Text style={styles.formatBadgeText}>MP4</Text>
+                        </View>
+                      )}
+                      {gift.is_cinematic && (
+                        <View
+                          style={[
+                            styles.formatBadge,
+                            { backgroundColor: theme.colors.gold },
+                          ]}
+                        >
+                          <Text style={styles.formatBadgeText}>EPIC</Text>
+                        </View>
+                      )}
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
+            </ScrollView>
+          )}
+
+          {sending && (
+            <View style={styles.sendingOverlay}>
+              <ActivityIndicator size="large" color="#fff" />
+              <Text style={styles.sendingText}>Sending gift...</Text>
+            </View>
           )}
         </View>
       </View>
@@ -137,69 +238,91 @@ export default function GiftPanel({ visible, onClose, onSendGift, balance }: Gif
   );
 }
 
+const CARD_WIDTH = (width - 80) / 3;
+
 const styles = StyleSheet.create({
   overlay: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.5)',
+    backgroundColor: 'rgba(0,0,0,0.7)',
     justifyContent: 'flex-end',
   },
   container: {
-    backgroundColor: theme.colors.surface,
+    height: height * 0.7,
+    backgroundColor: theme.colors.background,
     borderTopLeftRadius: theme.borderRadius.xl,
     borderTopRightRadius: theme.borderRadius.xl,
-    maxHeight: '70%',
   },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'space-between',
     padding: theme.spacing.lg,
     borderBottomWidth: 1,
     borderBottomColor: theme.colors.border,
   },
   title: {
-    flex: 1,
     fontSize: theme.typography.sizes.xl,
     fontWeight: theme.typography.weights.bold,
     color: theme.colors.text,
   },
-  balanceContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: theme.colors.surfaceLight,
-    paddingHorizontal: theme.spacing.md,
-    paddingVertical: theme.spacing.sm,
-    borderRadius: theme.borderRadius.full,
-    marginRight: theme.spacing.md,
-  },
   balanceText: {
     fontSize: theme.typography.sizes.sm,
-    fontWeight: theme.typography.weights.semibold,
     color: theme.colors.gold,
-    marginLeft: theme.spacing.xs,
+    marginTop: theme.spacing.xs,
   },
   closeButton: {
-    padding: theme.spacing.xs,
+    padding: theme.spacing.sm,
+  },
+  tierTabs: {
+    flexGrow: 0,
+    paddingVertical: theme.spacing.md,
+    borderBottomWidth: 1,
+    borderBottomColor: theme.colors.border,
+  },
+  tierTabsContent: {
+    paddingHorizontal: theme.spacing.md,
+  },
+  tierTab: {
+    paddingHorizontal: theme.spacing.lg,
+    paddingVertical: theme.spacing.sm,
+    borderRadius: theme.borderRadius.full,
+    backgroundColor: theme.colors.surface,
+    marginRight: theme.spacing.sm,
+  },
+  tierTabText: {
+    fontSize: theme.typography.sizes.sm,
+    fontWeight: theme.typography.weights.semibold,
+    color: theme.colors.text,
+  },
+  tierTabTextActive: {
+    color: '#fff',
+  },
+  loadingContainer: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  giftScroll: {
+    flex: 1,
   },
   giftGrid: {
-    padding: theme.spacing.md,
-  },
-  gridContainer: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    justifyContent: 'space-between',
-  },
-  giftItem: {
-    width: (width - theme.spacing.md * 4) / 4,
-    alignItems: 'center',
     padding: theme.spacing.md,
-    borderRadius: theme.borderRadius.lg,
-    backgroundColor: theme.colors.background,
-    marginBottom: theme.spacing.md,
   },
-  giftItemSelected: {
-    backgroundColor: theme.colors.primaryLight,
-    borderWidth: 2,
-    borderColor: theme.colors.primary,
+  giftCard: {
+    width: CARD_WIDTH,
+    aspectRatio: 1,
+    backgroundColor: theme.colors.surface,
+    borderRadius: theme.borderRadius.lg,
+    padding: theme.spacing.sm,
+    margin: theme.spacing.xs,
+    alignItems: 'center',
+    justifyContent: 'center',
+    position: 'relative',
+  },
+  giftCardDisabled: {
+    opacity: 0.4,
   },
   giftIcon: {
     fontSize: 32,
@@ -207,54 +330,39 @@ const styles = StyleSheet.create({
   },
   giftName: {
     fontSize: theme.typography.sizes.xs,
+    fontWeight: theme.typography.weights.medium,
     color: theme.colors.text,
+    textAlign: 'center',
     marginBottom: theme.spacing.xs,
   },
-  priceTag: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  priceText: {
+  giftPrice: {
     fontSize: theme.typography.sizes.xs,
-    color: theme.colors.gold,
-    fontWeight: theme.typography.weights.semibold,
-    marginLeft: 2,
-  },
-  sendContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: theme.spacing.lg,
-    borderTopWidth: 1,
-    borderTopColor: theme.colors.border,
-    backgroundColor: theme.colors.surface,
-  },
-  selectedInfo: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    flex: 1,
-  },
-  selectedIcon: {
-    fontSize: 28,
-    marginRight: theme.spacing.sm,
-  },
-  selectedName: {
-    fontSize: theme.typography.sizes.base,
-    fontWeight: theme.typography.weights.semibold,
-    color: theme.colors.text,
-  },
-  sendButton: {
-    backgroundColor: theme.colors.primary,
-    paddingHorizontal: theme.spacing.xl,
-    paddingVertical: theme.spacing.md,
-    borderRadius: theme.borderRadius.md,
-  },
-  sendButtonDisabled: {
-    backgroundColor: theme.colors.surfaceLight,
-    opacity: 0.5,
-  },
-  sendButtonText: {
-    fontSize: theme.typography.sizes.base,
     fontWeight: theme.typography.weights.bold,
-    color: theme.colors.text,
+  },
+  formatBadge: {
+    position: 'absolute',
+    top: 4,
+    right: 4,
+    backgroundColor: theme.colors.warning,
+    paddingHorizontal: 4,
+    paddingVertical: 2,
+    borderRadius: 4,
+  },
+  formatBadgeText: {
+    fontSize: 8,
+    fontWeight: theme.typography.weights.bold,
+    color: '#fff',
+  },
+  sendingOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(0,0,0,0.8)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  sendingText: {
+    fontSize: theme.typography.sizes.lg,
+    fontWeight: theme.typography.weights.bold,
+    color: '#fff',
+    marginTop: theme.spacing.md,
   },
 });

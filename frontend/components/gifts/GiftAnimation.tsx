@@ -1,69 +1,166 @@
-import React, { useEffect } from 'react';
-import { View, Text, StyleSheet, Dimensions } from 'react-native';
-import Animated, {
-  useAnimatedStyle,
-  useSharedValue,
-  withTiming,
-  withSequence,
-  withSpring,
-  runOnJS,
-} from 'react-native-reanimated';
+import React, { useEffect, useRef } from 'react';
+import {
+  View,
+  Text,
+  StyleSheet,
+  Animated,
+  Dimensions,
+} from 'react-native';
+import { theme } from '../../constants/theme';
+import { Gift } from '../../services/giftService';
 
 const { width, height } = Dimensions.get('window');
 
-interface Gift {
-  id: string;
-  icon: string;
-  name: string;
-  senderName: string;
-}
-
 interface GiftAnimationProps {
   gift: Gift;
-  onComplete: () => void;
+  senderName: string;
+  onComplete?: () => void;
 }
 
-export default function GiftAnimation({ gift, onComplete }: GiftAnimationProps) {
-  const scale = useSharedValue(0);
-  const opacity = useSharedValue(0);
-  const translateY = useSharedValue(50);
+export default function GiftAnimation({
+  gift,
+  senderName,
+  onComplete,
+}: GiftAnimationProps) {
+  const fadeAnim = useRef(new Animated.Value(0)).current;
+  const scaleAnim = useRef(new Animated.Value(0.5)).current;
+  const slideAnim = useRef(new Animated.Value(50)).current;
 
   useEffect(() => {
-    // Entrance animation
-    scale.value = withSequence(
-      withSpring(1.3, { damping: 10 }),
-      withSpring(1, { damping: 15 })
-    );
-    opacity.value = withTiming(1, { duration: 300 });
-    translateY.value = withSpring(0, { damping: 15 });
+    // Entry animation
+    Animated.parallel([
+      Animated.timing(fadeAnim, {
+        toValue: 1,
+        duration: 300,
+        useNativeDriver: true,
+      }),
+      Animated.spring(scaleAnim, {
+        toValue: 1,
+        friction: 5,
+        tension: 100,
+        useNativeDriver: true,
+      }),
+      Animated.timing(slideAnim, {
+        toValue: 0,
+        duration: 300,
+        useNativeDriver: true,
+      }),
+    ]).start();
 
-    // Exit animation after delay
-    const timeout = setTimeout(() => {
-      opacity.value = withTiming(0, { duration: 500 });
-      translateY.value = withTiming(-100, { duration: 500 }, () => {
-        runOnJS(onComplete)();
+    // Hold animation for display duration
+    const holdTimeout = setTimeout(() => {
+      // Exit animation
+      Animated.parallel([
+        Animated.timing(fadeAnim, {
+          toValue: 0,
+          duration: 300,
+          useNativeDriver: true,
+        }),
+        Animated.timing(scaleAnim, {
+          toValue: 0.8,
+          duration: 300,
+          useNativeDriver: true,
+        }),
+        Animated.timing(slideAnim, {
+          toValue: -50,
+          duration: 300,
+          useNativeDriver: true,
+        }),
+      ]).start(() => {
+        onComplete?.();
       });
-    }, 2500);
+    }, gift.duration_ms || 3000);
 
-    return () => clearTimeout(timeout);
-  }, []);
+    return () => clearTimeout(holdTimeout);
+  }, [gift]);
 
-  const animatedStyle = useAnimatedStyle(() => ({
-    opacity: opacity.value,
-    transform: [
-      { scale: scale.value },
-      { translateY: translateY.value },
-    ],
-  }));
+  // Different animation styles based on tier
+  const getTierStyle = () => {
+    switch (gift.tier) {
+      case 'LOW':
+        return styles.lowTier;
+      case 'MID':
+        return styles.midTier;
+      case 'HIGH':
+        return styles.highTier;
+      case 'ULTRA':
+        return styles.ultraTier;
+      case 'NUCLEAR':
+        return styles.nuclearTier;
+      default:
+        return {};
+    }
+  };
 
+  const getTierColor = () => {
+    switch (gift.tier) {
+      case 'LOW':
+        return '#4CAF50';
+      case 'MID':
+        return '#2196F3';
+      case 'HIGH':
+        return '#9C27B0';
+      case 'ULTRA':
+        return '#FF5722';
+      case 'NUCLEAR':
+        return '#F44336';
+      default:
+        return theme.colors.primary;
+    }
+  };
+
+  // Fullscreen animation for ULTRA and NUCLEAR tiers
+  if (gift.tier === 'ULTRA' || gift.tier === 'NUCLEAR') {
+    return (
+      <Animated.View
+        style={[
+          styles.fullscreenContainer,
+          {
+            opacity: fadeAnim,
+          },
+        ]}
+      >
+        <Animated.View
+          style={[
+            styles.fullscreenContent,
+            {
+              transform: [{ scale: scaleAnim }],
+            },
+          ]}
+        >
+          <Text style={styles.fullscreenIcon}>{gift.icon}</Text>
+          <Text style={styles.fullscreenName}>{gift.name}</Text>
+          <Text style={styles.fullscreenSender}>from {senderName}</Text>
+          <Text style={[styles.fullscreenPrice, { color: getTierColor() }]}>
+            {gift.price} SEK
+          </Text>
+        </Animated.View>
+      </Animated.View>
+    );
+  }
+
+  // Standard overlay animation for LOW, MID, HIGH tiers
   return (
-    <Animated.View style={[styles.container, animatedStyle]}>
-      <View style={styles.giftBox}>
-        <Text style={styles.giftIcon}>{gift.icon}</Text>
-        <View style={styles.giftInfo}>
-          <Text style={styles.giftName}>{gift.name}</Text>
-          <Text style={styles.senderName}>from @{gift.senderName}</Text>
-        </View>
+    <Animated.View
+      style={[
+        styles.container,
+        getTierStyle(),
+        {
+          opacity: fadeAnim,
+          transform: [
+            { scale: scaleAnim },
+            { translateY: slideAnim },
+          ],
+        },
+      ]}
+    >
+      <Text style={styles.icon}>{gift.icon}</Text>
+      <View style={styles.textContainer}>
+        <Text style={styles.giftName}>{gift.name}</Text>
+        <Text style={styles.senderName}>{senderName}</Text>
+        <Text style={[styles.price, { color: getTierColor() }]}>
+          {gift.price} SEK
+        </Text>
       </View>
     </Animated.View>
   );
@@ -72,35 +169,94 @@ export default function GiftAnimation({ gift, onComplete }: GiftAnimationProps) 
 const styles = StyleSheet.create({
   container: {
     position: 'absolute',
-    left: 20,
-    bottom: 200,
-    zIndex: 100,
-  },
-  giftBox: {
+    top: 100,
+    alignSelf: 'center',
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(0,0,0,0.8)',
-    borderRadius: 25,
-    paddingVertical: 10,
-    paddingHorizontal: 16,
+    backgroundColor: 'rgba(0, 0, 0, 0.85)',
+    paddingHorizontal: theme.spacing.lg,
+    paddingVertical: theme.spacing.md,
+    borderRadius: theme.borderRadius.xl,
     borderWidth: 2,
-    borderColor: '#FFD700',
+    borderColor: 'rgba(255, 255, 255, 0.3)',
+    zIndex: 1000,
   },
-  giftIcon: {
-    fontSize: 36,
-    marginRight: 12,
+  icon: {
+    fontSize: 40,
+    marginRight: theme.spacing.md,
   },
-  giftInfo: {
-    flex: 1,
+  textContainer: {
+    alignItems: 'flex-start',
   },
   giftName: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: '#FFD700',
+    fontSize: theme.typography.sizes.lg,
+    fontWeight: theme.typography.weights.bold,
+    color: '#fff',
   },
   senderName: {
-    fontSize: 12,
+    fontSize: theme.typography.sizes.sm,
+    color: 'rgba(255, 255, 255, 0.8)',
+    marginTop: 2,
+  },
+  price: {
+    fontSize: theme.typography.sizes.base,
+    fontWeight: theme.typography.weights.bold,
+    marginTop: 4,
+  },
+  lowTier: {
+    borderColor: '#4CAF50',
+  },
+  midTier: {
+    borderColor: '#2196F3',
+    shadowColor: '#2196F3',
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.8,
+    shadowRadius: 10,
+    elevation: 10,
+  },
+  highTier: {
+    borderColor: '#9C27B0',
+    borderWidth: 3,
+    shadowColor: '#9C27B0',
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 1,
+    shadowRadius: 15,
+    elevation: 15,
+  },
+  ultraTier: {},
+  nuclearTier: {},
+  fullscreenContainer: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0, 0, 0, 0.9)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    zIndex: 2000,
+  },
+  fullscreenContent: {
+    alignItems: 'center',
+  },
+  fullscreenIcon: {
+    fontSize: 120,
+    marginBottom: theme.spacing.xl,
+  },
+  fullscreenName: {
+    fontSize: theme.typography.sizes.xxxl,
+    fontWeight: theme.typography.weights.bold,
     color: '#fff',
-    opacity: 0.8,
+    textAlign: 'center',
+    marginBottom: theme.spacing.md,
+  },
+  fullscreenSender: {
+    fontSize: theme.typography.sizes.lg,
+    color: 'rgba(255, 255, 255, 0.8)',
+    marginBottom: theme.spacing.lg,
+  },
+  fullscreenPrice: {
+    fontSize: theme.typography.sizes.xxl,
+    fontWeight: theme.typography.weights.bold,
   },
 });
