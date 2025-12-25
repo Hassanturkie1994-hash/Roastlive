@@ -25,7 +25,7 @@ client = AsyncIOMotorClient(mongo_url)
 db = client[os.environ['DB_NAME']]
 
 # OpenAI client for moderation
-openai.api_key = os.environ['OPENAI_API_KEY']
+openai.api_key = os.getenv('OPENAI_API_KEY')
 
 # Agora credentials
 AGORA_APP_ID = os.environ['AGORA_APP_ID']
