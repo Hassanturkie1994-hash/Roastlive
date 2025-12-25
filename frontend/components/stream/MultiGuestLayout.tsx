@@ -1,5 +1,11 @@
 import React from 'react';
-import { View, Text, StyleSheet, Dimensions } from 'react-native';
+import {
+  View,
+  Text,
+  StyleSheet,
+  Dimensions,
+  Image,
+} from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { theme } from '../../constants/theme';
 
@@ -7,69 +13,92 @@ const { width, height } = Dimensions.get('window');
 
 interface Participant {
   id: string;
-  user_id: string;
-  username?: string;
-  seat_number: number;
-  is_mic_on: boolean;
-  is_camera_on: boolean;
-  is_host: boolean;
+  username: string;
+  avatar_url?: string;
+  team: 'team_a' | 'team_b';
+  is_speaking?: boolean;
+  is_muted?: boolean;
 }
 
 interface MultiGuestLayoutProps {
   participants: Participant[];
-  maxSeats?: number;
+  teamSize: '1v1' | '2v2' | '3v3' | '4v4' | '5v5';
+  currentUserId?: string;
 }
 
-export default function MultiGuestLayout({ participants, maxSeats = 10 }: MultiGuestLayoutProps) {
-  const participantCount = participants.length;
-  
-  const getLayout = () => {
-    if (participantCount === 1) return 'fullscreen';
-    if (participantCount === 2) return 'split';
-    if (participantCount <= 4) return 'grid-2x2';
-    if (participantCount <= 6) return 'grid-2x3';
-    if (participantCount <= 9) return 'grid-3x3';
-    return 'grid-3x3-overflow';
+export default function MultiGuestLayout({
+  participants,
+  teamSize,
+  currentUserId,
+}: MultiGuestLayoutProps) {
+  const teamA = participants.filter((p) => p.team === 'team_a');
+  const teamB = participants.filter((p) => p.team === 'team_b');
+
+  const getGridConfig = () => {
+    switch (teamSize) {
+      case '1v1': return { columns: 1, rows: 1 };
+      case '2v2': return { columns: 1, rows: 2 };
+      case '3v3': return { columns: 1, rows: 3 };
+      case '4v4': return { columns: 2, rows: 2 };
+      case '5v5': return { columns: 2, rows: 3 };
+      default: return { columns: 1, rows: 1 };
+    }
   };
 
-  const layout = getLayout();
-  const emptySeats = Math.max(0, maxSeats - participantCount);
+  const config = getGridConfig();
+  const cellWidth = (width / 2) - 4;
+  const cellHeight = (height - 200) / config.rows;
 
-  const renderParticipantTile = (participant: Participant, index: number) => {
-    const isHost = participant.is_host;
-    
+  const renderParticipant = (participant: Participant, index: number) => {
+    const isCurrentUser = participant.id === currentUserId;
+
     return (
-      <View key={participant.id} style={[
-        styles.participantTile,
-        layout === 'fullscreen' && styles.fullscreenTile,
-        layout === 'split' && styles.splitTile,
-        (layout.includes('grid')) && styles.gridTile,
-        isHost && styles.hostTile,
-      ]}>
-        {/* Video placeholder */}
+      <View
+        key={participant.id}
+        style={[
+          styles.participantCell,
+          {
+            width: config.columns === 2 ? cellWidth / 2 : cellWidth,
+            height: cellHeight,
+          },
+        ]}
+      >
+        {/* Video Placeholder */}
         <View style={styles.videoContainer}>
-          <Ionicons name="person" size={48} color={theme.colors.textSecondary} />
-          <Text style={styles.username}>@{participant.username || `User ${index + 1}`}</Text>
-        </View>
-
-        {/* Host badge */}
-        {isHost && (
-          <View style={styles.hostBadge}>
-            <Ionicons name="star" size={12} color="#fff" />
-            <Text style={styles.hostBadgeText}>HOST</Text>
+          <View style={[
+            styles.avatarContainer,
+            { backgroundColor: participant.team === 'team_a' ? theme.colors.primary : theme.colors.error }
+          ]}>
+            {participant.avatar_url ? (
+              <Image source={{ uri: participant.avatar_url }} style={styles.avatar} />
+            ) : (
+              <Text style={styles.avatarText}>
+                {participant.username?.charAt(0).toUpperCase() || '?'}
+              </Text>
+            )}
           </View>
-        )}
 
-        {/* Mic/Camera indicators */}
-        <View style={styles.indicators}>
-          {!participant.is_mic_on && (
-            <View style={styles.indicator}>
-              <Ionicons name="mic-off" size={16} color="#fff" />
+          {/* Speaking Indicator */}
+          {participant.is_speaking && (
+            <View style={styles.speakingRing} />
+          )}
+
+          {/* Muted Indicator */}
+          {participant.is_muted && (
+            <View style={styles.mutedBadge}>
+              <Ionicons name="mic-off" size={12} color="#fff" />
             </View>
           )}
-          {!participant.is_camera_on && (
-            <View style={styles.indicator}>
-              <Ionicons name="videocam-off" size={16} color="#fff" />
+        </View>
+
+        {/* Name Tag */}
+        <View style={styles.nameTag}>
+          <Text style={styles.nameText} numberOfLines={1}>
+            {participant.username}
+          </Text>
+          {isCurrentUser && (
+            <View style={styles.youBadge}>
+              <Text style={styles.youBadgeText}>YOU</Text>
             </View>
           )}
         </View>
@@ -77,24 +106,51 @@ export default function MultiGuestLayout({ participants, maxSeats = 10 }: MultiG
     );
   };
 
-  const renderEmptySeat = (index: number) => (
-    <View key={`empty-${index}`} style={[styles.participantTile, styles.gridTile, styles.emptyTile]}>
-      <Ionicons name="person-add-outline" size={32} color={theme.colors.textSecondary} />
-      <Text style={styles.emptyText}>Empty Seat</Text>
+  const renderTeam = (team: Participant[], teamName: string, teamColor: string) => (
+    <View style={styles.teamContainer}>
+      {/* Team Header */}
+      <View style={[styles.teamHeader, { backgroundColor: teamColor }]}>
+        <Text style={styles.teamHeaderText}>{teamName}</Text>
+      </View>
+
+      {/* Participants Grid */}
+      <View style={styles.participantsGrid}>
+        {team.map((p, i) => renderParticipant(p, i))}
+        {/* Empty slots */}
+        {Array.from({ length: Math.max(0, parseInt(teamSize[0]) - team.length) }).map((_, i) => (
+          <View
+            key={`empty-${i}`}
+            style={[
+              styles.participantCell,
+              styles.emptyCell,
+              {
+                width: config.columns === 2 ? cellWidth / 2 : cellWidth,
+                height: cellHeight,
+              },
+            ]}
+          >
+            <Ionicons name="person-outline" size={32} color={theme.colors.textSecondary} />
+            <Text style={styles.emptyText}>Waiting...</Text>
+          </View>
+        ))}
+      </View>
     </View>
   );
 
   return (
     <View style={styles.container}>
-      <View style={[
-        styles.layoutContainer,
-        layout === 'fullscreen' && styles.fullscreenLayout,
-        layout === 'split' && styles.splitLayout,
-        layout.includes('grid') && styles.gridLayout,
-      ]}>
-        {participants.map((participant, index) => renderParticipantTile(participant, index))}
-        {Array.from({ length: Math.min(emptySeats, 9 - participantCount) }).map((_, i) => renderEmptySeat(i))}
+      {/* Team A */}
+      {renderTeam(teamA, 'TEAM A', theme.colors.primary)}
+
+      {/* VS Divider */}
+      <View style={styles.vsDivider}>
+        <View style={styles.vsCircle}>
+          <Text style={styles.vsText}>VS</Text>
+        </View>
       </View>
+
+      {/* Team B */}
+      {renderTeam(teamB, 'TEAM B', theme.colors.error)}
     </View>
   );
 }
@@ -102,90 +158,121 @@ export default function MultiGuestLayout({ participants, maxSeats = 10 }: MultiG
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    flexDirection: 'row',
     backgroundColor: '#000',
   },
-  layoutContainer: {
+  teamContainer: {
     flex: 1,
   },
-  fullscreenLayout: {
-    flexDirection: 'column',
+  teamHeader: {
+    paddingVertical: 8,
+    alignItems: 'center',
   },
-  splitLayout: {
-    flexDirection: 'row',
+  teamHeaderText: {
+    color: '#fff',
+    fontSize: 12,
+    fontWeight: theme.typography.weights.bold,
+    letterSpacing: 1,
   },
-  gridLayout: {
+  participantsGrid: {
+    flex: 1,
     flexDirection: 'row',
     flexWrap: 'wrap',
   },
-  participantTile: {
-    backgroundColor: theme.colors.surfaceLight,
+  participantCell: {
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#111',
     borderWidth: 1,
-    borderColor: '#000',
-    overflow: 'hidden',
+    borderColor: '#222',
   },
-  fullscreenTile: {
-    width: width,
-    height: height,
-  },
-  splitTile: {
-    width: width / 2,
-    height: height,
-  },
-  gridTile: {
-    width: width / 3,
-    height: height / 3,
-  },
-  hostTile: {
-    borderColor: theme.colors.primary,
-    borderWidth: 2,
-  },
-  emptyTile: {
-    backgroundColor: theme.colors.surface,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  videoContainer: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  username: {
-    fontSize: theme.typography.sizes.sm,
-    color: '#fff',
-    marginTop: theme.spacing.sm,
-  },
-  hostBadge: {
-    position: 'absolute',
-    top: theme.spacing.sm,
-    left: theme.spacing.sm,
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: theme.colors.primary,
-    paddingHorizontal: theme.spacing.sm,
-    paddingVertical: 4,
-    borderRadius: theme.borderRadius.sm,
-  },
-  hostBadgeText: {
-    fontSize: 10,
-    fontWeight: theme.typography.weights.bold,
-    color: '#fff',
-    marginLeft: 4,
-  },
-  indicators: {
-    position: 'absolute',
-    bottom: theme.spacing.sm,
-    right: theme.spacing.sm,
-    flexDirection: 'row',
-  },
-  indicator: {
-    backgroundColor: 'rgba(0,0,0,0.7)',
-    padding: 4,
-    borderRadius: theme.borderRadius.sm,
-    marginLeft: 4,
+  emptyCell: {
+    backgroundColor: '#0a0a0a',
   },
   emptyText: {
-    fontSize: theme.typography.sizes.xs,
     color: theme.colors.textSecondary,
-    marginTop: theme.spacing.xs,
+    fontSize: 12,
+    marginTop: 8,
+  },
+  videoContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  avatarContainer: {
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  avatar: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+  },
+  avatarText: {
+    fontSize: 24,
+    fontWeight: theme.typography.weights.bold,
+    color: '#fff',
+  },
+  speakingRing: {
+    position: 'absolute',
+    width: 70,
+    height: 70,
+    borderRadius: 35,
+    borderWidth: 3,
+    borderColor: theme.colors.success,
+  },
+  mutedBadge: {
+    position: 'absolute',
+    bottom: -5,
+    backgroundColor: theme.colors.error,
+    padding: 4,
+    borderRadius: 10,
+  },
+  nameTag: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 8,
+    paddingHorizontal: 8,
+  },
+  nameText: {
+    color: '#fff',
+    fontSize: 12,
+    fontWeight: theme.typography.weights.semibold,
+  },
+  youBadge: {
+    backgroundColor: theme.colors.gold,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 4,
+    marginLeft: 6,
+  },
+  youBadgeText: {
+    color: '#000',
+    fontSize: 9,
+    fontWeight: theme.typography.weights.bold,
+  },
+  vsDivider: {
+    position: 'absolute',
+    left: '50%',
+    top: '50%',
+    transform: [{ translateX: -20 }, { translateY: -20 }],
+    zIndex: 10,
+  },
+  vsCircle: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: theme.colors.gold,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 2,
+    borderColor: '#fff',
+  },
+  vsText: {
+    color: '#000',
+    fontSize: 14,
+    fontWeight: theme.typography.weights.bold,
   },
 });
