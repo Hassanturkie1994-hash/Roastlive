@@ -68,7 +68,32 @@ CREATE POLICY "Hosts can delete own streams"
   ON streams FOR DELETE
   USING (auth.uid() = host_id);
 
--- Stream guests table
+-- Stream invitations
+CREATE TABLE IF NOT EXISTS stream_invitations (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  stream_id UUID NOT NULL REFERENCES streams(id) ON DELETE CASCADE,
+  host_id UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
+  guest_id UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
+  status TEXT CHECK (status IN ('pending', 'accepted', 'declined', 'expired')) DEFAULT 'pending',
+  expires_at TIMESTAMPTZ NOT NULL,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+ALTER TABLE stream_invitations ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Users can view invitations for them"
+  ON stream_invitations FOR SELECT
+  USING (auth.uid() = guest_id OR auth.uid() = host_id);
+
+CREATE POLICY "Hosts can create invitations"
+  ON stream_invitations FOR INSERT
+  WITH CHECK (auth.uid() = host_id);
+
+CREATE POLICY "Guests can update own invitations"
+  ON stream_invitations FOR UPDATE
+  USING (auth.uid() = guest_id);
+
+-- Stream Guests table
 CREATE TABLE IF NOT EXISTS stream_guests (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   stream_id UUID NOT NULL REFERENCES streams(id) ON DELETE CASCADE,
