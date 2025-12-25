@@ -186,7 +186,11 @@ export default function GiftStoreScreen() {
       <ScrollView style={styles.giftList}>
         <View style={styles.giftGrid}>
           {currentTier.gifts.map((gift) => (
-            <TouchableOpacity key={gift.id} style={styles.giftCard}>
+            <TouchableOpacity 
+              key={gift.id} 
+              style={styles.giftCard}
+              onPress={() => handleGiftPress(gift)}
+            >
               <View style={styles.giftIconContainer}>
                 <Text style={styles.giftIcon}>{gift.icon}</Text>
                 {gift.blocksOthers && (
@@ -235,6 +239,13 @@ export default function GiftStoreScreen() {
 
         <View style={{ height: 100 }} />
       </ScrollView>
+
+      {/* Gift Detail Modal */}
+      <GiftDetailModal
+        visible={modalVisible}
+        onClose={() => setModalVisible(false)}
+        gift={selectedGift}
+      />
     </View>
   );
 }
