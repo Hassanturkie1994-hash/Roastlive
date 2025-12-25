@@ -75,9 +75,18 @@ export default function BroadcastScreen() {
     try {
       const channelName = `stream_${user?.id}_${Date.now()}`;
       
-      // Get Agora token
-      const tokenRes = await axios.post(`${API_URL}/api/generate-token`, {
-        channelName,
+      // DEMO MODE: Skip Agora token generation (not available in Expo Go)
+      console.log('🎥 Starting stream in DEMO mode (Expo Go)');
+      console.log('Channel:', channelName);
+      
+      // For dev build with Agora, uncomment this:
+      // const tokenRes = await axios.post(`${API_URL}/api/generate-token`, {
+      //   channelName,
+      //   uid: 0,
+      //   role: 1,
+      // });
+      
+      const demoToken = 'demo-token-expo-go';
         uid: 0,
         role: 1,
       });
