@@ -70,6 +70,55 @@ export default function SettingsScreen() {
     );
   };
 
+  // 🔹 Role-based dashboard configuration
+  // Each role only sees their specific dashboard - not others
+  const getRoleDashboardConfig = () => {
+    if (!role) return null;
+    
+    switch (role) {
+      case 'head_admin':
+        return {
+          id: 'head-admin-dashboard',
+          icon: 'settings',
+          label: 'Head Admin Dashboard',
+          route: '/admin/head-admin',
+          badge: 'HEAD ADMIN',
+          color: '#FFD700', // Gold
+        };
+      case 'admin':
+        return {
+          id: 'admin-dashboard',
+          icon: 'construct',
+          label: 'Admin Dashboard',
+          route: '/admin/admin',
+          badge: 'ADMIN',
+          color: '#FF6B35', // Orange
+        };
+      case 'moderator':
+        return {
+          id: 'moderator-dashboard',
+          icon: 'shield-checkmark',
+          label: 'Moderator Dashboard',
+          route: '/admin/moderator',
+          badge: 'MOD',
+          color: '#4ECDC4', // Teal
+        };
+      case 'support':
+        return {
+          id: 'support-dashboard',
+          icon: 'headset',
+          label: 'Support Dashboard',
+          route: '/admin/support',
+          badge: 'SUPPORT',
+          color: '#9B59B6', // Purple
+        };
+      default:
+        return null;
+    }
+  };
+
+  const roleDashboard = getRoleDashboardConfig();
+
   const settingsSections = [
     {
       title: 'Account',
@@ -135,12 +184,11 @@ export default function SettingsScreen() {
         { id: 'privacy', icon: 'shield-checkmark-outline', label: 'Privacy Policy', route: '/(tabs)/profile/privacy' },
       ],
     },
-    {
-      title: 'Admin',
-      items: [
-        { id: 'admin-panel', icon: 'construct-outline', label: 'Admin Panel', route: '/(tabs)/profile/admin', badge: 'STAFF' },
-      ],
-    },
+    // 🔹 Only show Staff Dashboard section if user has a role
+    ...(roleDashboard ? [{
+      title: 'Staff Dashboard',
+      items: [roleDashboard],
+    }] : []),
   ];
 
   const renderSettingItem = (item: SettingItem) => (
