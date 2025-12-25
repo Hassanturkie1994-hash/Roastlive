@@ -11,10 +11,10 @@ import {
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { theme } from '../../../constants/theme';
-import { useAuth } from '../../../contexts/AuthContext';
-import { useAdminRole } from '../../../hooks/useAdminRole';
-import { supabase } from '../../../lib/supabase';
+import { theme } from '../../constants/theme';
+import { useAuth } from '../../contexts/AuthContext';
+import { useAdminRole } from '../../hooks/useAdminRole';
+import { supabase } from '../../lib/supabase';
 
 interface AuditEntry {
   id: string;
