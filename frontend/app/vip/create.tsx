@@ -127,7 +127,8 @@ export default function CreateVIPClubScreen() {
       </View>
 
       <ScrollView style={styles.content}>
-        <View style={styles.form}>
+        {/* Streaming Time Requirement */}
+        <View style={[\n          styles.requirementCard,\n          streamingTime >= 3600 ? styles.requirementMet : styles.requirementNotMet,\n        ]}>\n          <Ionicons\n            name={streamingTime >= 3600 ? \"checkmark-circle\" : \"time\"}\n            size={32}\n            color={streamingTime >= 3600 ? theme.colors.success : theme.colors.warning}\n          />\n          <View style={styles.requirementText}>\n            <Text style={styles.requirementTitle}>\n              {streamingTime >= 3600 ? 'Requirement Met!' : 'Streaming Time Required'}\n            </Text>\n            <Text style={styles.requirementSubtitle}>\n              Total streaming: {Math.floor(streamingTime / 60)} minutes\n              {streamingTime < 3600 && ` / 60 minutes required`}\n            </Text>\n          </View>\n        </View>\n\n        {streamingTime < 3600 ? (\n          <View style={styles.blockedState}>\n            <Ionicons name=\"lock-closed\" size={64} color={theme.colors.textSecondary} />\n            <Text style={styles.blockedText}>\n              You need to stream for at least 1 hour before creating a VIP club.\n            </Text>\n            <TouchableOpacity\n              style={styles.goStreamButton}\n              onPress={() => router.push('/pre-live-setup')}\n            >\n              <Text style={styles.goStreamButtonText}>Start Streaming</Text>\n            </TouchableOpacity>\n          </View>\n        ) : (\n          <View style={styles.form}>
           <Text style={styles.label}>Club Name</Text>
           <TextInput
             style={styles.input}
