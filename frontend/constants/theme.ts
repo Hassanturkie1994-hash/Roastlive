@@ -22,6 +22,13 @@ export const theme = {
     error: '#FF5252',
     gold: '#FFD700',
     vip: '#9C27B0',
+    info: '#2196F3',
+
+    // Admin role colors
+    headAdmin: '#DC143C', // Crimson
+    admin: '#FF5722', // Deep Orange
+    moderator: '#9C27B0', // Purple
+    support: '#2196F3', // Blue
 
     // Border colors
     border: '#333333',
