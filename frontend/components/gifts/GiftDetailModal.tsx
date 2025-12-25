@@ -100,13 +100,16 @@ export default function GiftDetailModal({
   const videoRef = useRef<Video>(null);
 
   useEffect(() => {
-    // Auto-play animation when modal opens
+    // Auto-play animation when modal opens (disabled for now)
     if (visible && gift) {
+      // Lottie temporarily disabled
+      /*
       if (gift.format === 'lottie') {
         lottieRef.current?.play();
       } else if (gift.format === 'mp4') {
         videoRef.current?.playAsync();
       }
+      */
     }
   }, [visible, gift]);
 
