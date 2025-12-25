@@ -53,7 +53,7 @@ export const GIFT_CATALOG = {
     ],
   },
   HIGH: {
-    name: 'high tiers',
+    name: 'High tiers',
     priceRange: '150-500 SEK',
     color: '#9C27B0',
     gifts: [
