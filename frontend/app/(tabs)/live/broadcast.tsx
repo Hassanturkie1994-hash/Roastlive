@@ -86,10 +86,12 @@ export default function BroadcastScreen() {
       //   role: 1,
       // });
       
-      const demoToken = 'demo-token-expo-go';
+      // Demo token for Expo Go
+      const demoToken = {
+        token: 'demo-token-expo-go',
         uid: 0,
         role: 1,
-      });
+      };
 
       // Create stream in database
       const { data: stream, error } = await supabase
