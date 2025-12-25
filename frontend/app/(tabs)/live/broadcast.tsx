@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import {
   View,
   Text,
@@ -7,120 +7,62 @@ import {
   TextInput,
   Alert,
   ActivityIndicator,
-  Platform,
 } from 'react-native';
+import { CameraView, CameraType, useCameraPermissions } from 'expo-camera';
 import { useRouter } from 'expo-router';
-import { Camera, CameraType } from 'expo-camera';
 import { Ionicons } from '@expo/vector-icons';
 import { theme } from '../../../constants/theme';
 import { useAuth } from '../../../contexts/AuthContext';
-import axios from 'axios';
 import { supabase } from '../../../lib/supabase';
-import ViewerListModal from '../../../components/live/ViewerListModal';
-import VideoGrid from '../../../components/live/VideoGrid';
+import axios from 'axios';
 
 const API_URL = process.env.EXPO_PUBLIC_BACKEND_URL;
 
-interface Guest {
-  user_id: string;
-  username: string;
-  is_muted_audio?: boolean;
-  is_muted_video?: boolean;
-}
-
-export default function Broadcast() {
+export default function BroadcastScreen() {
   const router = useRouter();
   const { user } = useAuth();
-  const cameraRef = useRef<Camera>(null);
-  
-  const [hasPermission, setHasPermission] = useState<boolean | null>(null);
+  const [permission, requestPermission] = useCameraPermissions();
+  const [facing, setFacing] = useState<CameraType>('front');
   const [isLive, setIsLive] = useState(false);
-  const [loading, setLoading] = useState(false);
   const [streamTitle, setStreamTitle] = useState('');
   const [viewerCount, setViewerCount] = useState(0);
   const [streamId, setStreamId] = useState<string | null>(null);
-  const [duration, setDuration] = useState(0);
-  const [cameraType, setCameraType] = useState(CameraType.front);
-  const [showViewerList, setShowViewerList] = useState(false);
-  const [guests, setGuests] = useState<Guest[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [isMuted, setIsMuted] = useState(false);
+  const [showChat, setShowChat] = useState(true);
+  const [guestSeatsLocked, setGuestSeatsLocked] = useState(false);
+  const [guests, setGuests] = useState<any[]>([]);
+  const cameraRef = useRef<any>(null);
 
-  useEffect(() => {
-    requestPermissions();
-  }, []);
+  // Request camera permission
+  if (!permission) {
+    return (
+      <View style={styles.container}>
+        <ActivityIndicator size="large" color={theme.colors.primary} />
+      </View>
+    );
+  }
 
-  useEffect(() => {
-    let interval: NodeJS.Timeout;
-    if (isLive) {
-      interval = setInterval(() => {
-        setDuration(prev => prev + 1);
-      }, 1000);
-    }
-    return () => clearInterval(interval);
-  }, [isLive]);
+  if (!permission.granted) {
+    return (
+      <View style={styles.permissionContainer}>
+        <Ionicons name="videocam-off" size={64} color={theme.colors.textSecondary} />
+        <Text style={styles.permissionTitle}>Camera Permission Required</Text>
+        <Text style={styles.permissionText}>
+          To go live, we need access to your camera and microphone.
+        </Text>
+        <TouchableOpacity style={styles.permissionButton} onPress={requestPermission}>
+          <Text style={styles.permissionButtonText}>Grant Permission</Text>
+        </TouchableOpacity>
+        <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
+          <Text style={styles.backButtonText}>Go Back</Text>
+        </TouchableOpacity>
+      </View>
+    );
+  }
 
-  useEffect(() => {
-    if (isLive && streamId) {
-      subscribeToGuests();
-    }
-  }, [isLive, streamId]);
-
-  const subscribeToGuests = () => {
-    const channel = supabase
-      .channel(`stream:${streamId}:guests`)
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'stream_guests',
-          filter: `stream_id=eq.${streamId}`,
-        },
-        () => {
-          loadGuests();
-        }
-      )
-      .subscribe();
-
-    return () => {
-      channel.unsubscribe();
-    };
-  };
-
-  const loadGuests = async () => {
-    try {
-      const { data } = await supabase
-        .from('stream_guests')
-        .select(`
-          user_id,
-          profiles!user_id(username)
-        `)
-        .eq('stream_id', streamId)
-        .eq('is_active', true);
-
-      const guestList: Guest[] = data?.map((g: any) => ({
-        user_id: g.user_id,
-        username: g.profiles?.username || 'Guest',
-      })) || [];
-
-      setGuests(guestList);
-    } catch (error) {
-      console.error('Load guests error:', error);
-    }
-  };
-
-  const requestPermissions = async () => {
-    const { status: cameraStatus } = await Camera.requestCameraPermissionsAsync();
-    const { status: micStatus } = await Camera.requestMicrophonePermissionsAsync();
-    setHasPermission(cameraStatus === 'granted' && micStatus === 'granted');
-  };
-
-  const formatDuration = (seconds: number) => {
-    const hrs = Math.floor(seconds / 3600);
-    const mins = Math.floor((seconds % 3600) / 60);
-    const secs = seconds % 60;
-    return hrs > 0
-      ? `${hrs}:${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`
-      : `${mins}:${secs.toString().padStart(2, '0')}`;
+  const toggleCamera = () => {
+    setFacing(current => (current === 'back' ? 'front' : 'back'));
   };
 
   const startStream = async () => {
@@ -132,33 +74,45 @@ export default function Broadcast() {
     setLoading(true);
     try {
       const channelName = `stream_${user?.id}_${Date.now()}`;
-
-      const tokenResponse = await axios.post(`${API_URL}/api/streams/token`, {
+      
+      // Get Agora token
+      const tokenRes = await axios.post(`${API_URL}/api/generate-token`, {
         channelName,
-        uid: parseInt(user?.id?.slice(-8) || '0', 16),
-        role: 'host',
+        uid: 0,
+        role: 1,
       });
 
-      const streamResponse = await axios.post(`${API_URL}/api/streams/create`, {
-        hostId: user?.id,
-        title: streamTitle,
-        channelName,
-      });
+      // Create stream in database
+      const { data: stream, error } = await supabase
+        .from('streams')
+        .insert({
+          host_id: user?.id,
+          title: streamTitle,
+          channel_name: channelName,
+          is_live: true,
+          started_at: new Date().toISOString(),
+        })
+        .select()
+        .single();
 
-      await supabase.from('streams').insert({
-        id: streamResponse.data.id,
-        host_id: user?.id,
-        title: streamTitle,
-        channel_name: channelName,
-        is_live: true,
-        viewer_count: 0,
-        started_at: new Date().toISOString(),
-      });
+      if (error) throw error;
 
-      setStreamId(streamResponse.data.id);
+      setStreamId(stream.id);
       setIsLive(true);
 
-      Alert.alert('🔥 You\'re Live!', 'Start your roast battle!');
+      // Subscribe to viewer count updates
+      const channel = supabase
+        .channel(`stream:${stream.id}`)
+        .on('postgres_changes', {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'streams',
+          filter: `id=eq.${stream.id}`,
+        }, (payload) => {
+          setViewerCount(payload.new.viewer_count || 0);
+        })
+        .subscribe();
+
     } catch (error) {
       console.error('Start stream error:', error);
       Alert.alert('Error', 'Failed to start stream');
@@ -170,21 +124,25 @@ export default function Broadcast() {
   const endStream = async () => {
     Alert.alert(
       'End Stream',
-      'Are you sure you want to end this live stream?',
+      'Are you sure you want to end your livestream?',
       [
         { text: 'Cancel', style: 'cancel' },
         {
-          text: 'End',
+          text: 'End Stream',
           style: 'destructive',
           onPress: async () => {
             try {
               if (streamId) {
-                await axios.post(`${API_URL}/api/streams/${streamId}/end`);
                 await supabase
                   .from('streams')
-                  .update({ is_live: false, ended_at: new Date().toISOString() })
+                  .update({
+                    is_live: false,
+                    ended_at: new Date().toISOString(),
+                  })
                   .eq('id', streamId);
               }
+              setIsLive(false);
+              setStreamId(null);
               router.back();
             } catch (error) {
               console.error('End stream error:', error);
@@ -195,146 +153,114 @@ export default function Broadcast() {
     );
   };
 
-  const toggleCamera = () => {
-    setCameraType(current =>
-      current === CameraType.back ? CameraType.front : CameraType.back
-    );
-  };
-
-  if (hasPermission === null) {
-    return (
-      <View style={styles.container}>
-        <ActivityIndicator size="large" color={theme.colors.primary} />
-      </View>
-    );
-  }
-
-  if (hasPermission === false) {
-    return (
-      <View style={styles.container}>
-        <Text style={styles.permissionText}>Camera and microphone permissions are required</Text>
-        <TouchableOpacity style={styles.button} onPress={requestPermissions}>
-          <Text style={styles.buttonText}>Grant Permissions</Text>
-        </TouchableOpacity>
-      </View>
-    );
-  }
-
   return (
     <View style={styles.container}>
-      {/* Camera Preview or Video Grid */}
-      {guests.length > 0 ? (
-        <View style={styles.videoGridContainer}>
-          <VideoGrid guests={[{ user_id: user?.id || '', username: user?.user_metadata?.username || 'Host' }, ...guests]} hostId={user?.id || ''} />
+      <CameraView
+        ref={cameraRef}
+        style={styles.camera}
+        facing={facing}
+        mirror={facing === 'front'}
+      >
+        {/* Top Bar */}
+        <View style={styles.topBar}>
+          <TouchableOpacity
+            style={styles.closeButton}
+            onPress={isLive ? endStream : () => router.back()}
+          >
+            <Ionicons name="close" size={28} color="#fff" />
+          </TouchableOpacity>
+
+          {isLive && (
+            <View style={styles.liveIndicator}>
+              <View style={styles.liveDot} />
+              <Text style={styles.liveText}>LIVE</Text>
+              <View style={styles.viewerBadge}>
+                <Ionicons name="eye" size={14} color="#fff" />
+                <Text style={styles.viewerCount}>{viewerCount}</Text>
+              </View>
+            </View>
+          )}
+
+          <View style={styles.topRightButtons}>
+            <TouchableOpacity style={styles.iconButton} onPress={toggleCamera}>
+              <Ionicons name="camera-reverse" size={24} color="#fff" />
+            </TouchableOpacity>
+          </View>
         </View>
-      ) : (
-        <Camera
-          ref={cameraRef}
-          style={styles.camera}
-          type={cameraType}
-          ratio="16:9"
-        >
-          {/* Overlay Controls */}
-          <View style={styles.overlay}>
-            {/* Top Bar */}
-            <View style={styles.topBar}>
-              <TouchableOpacity onPress={() => router.back()} style={styles.iconButton}>
-                <Ionicons name="close" size={28} color="#fff" />
+
+        {/* Pre-Live Setup */}
+        {!isLive && (
+          <View style={styles.setupOverlay}>
+            <Text style={styles.setupTitle}>Go Live</Text>
+            <TextInput
+              style={styles.titleInput}
+              placeholder="Enter stream title..."
+              placeholderTextColor={theme.colors.textSecondary}
+              value={streamTitle}
+              onChangeText={setStreamTitle}
+              maxLength={100}
+            />
+            <TouchableOpacity
+              style={[styles.goLiveButton, loading && styles.goLiveButtonDisabled]}
+              onPress={startStream}
+              disabled={loading}
+            >
+              {loading ? (
+                <ActivityIndicator color="#fff" />
+              ) : (
+                <>
+                  <Ionicons name="radio" size={24} color="#fff" />
+                  <Text style={styles.goLiveText}>Start Streaming</Text>
+                </>
+              )}
+            </TouchableOpacity>
+          </View>
+        )}
+
+        {/* Live Controls */}
+        {isLive && (
+          <View style={styles.liveControls}>
+            {/* Side Controls */}
+            <View style={styles.sideControls}>
+              <TouchableOpacity
+                style={[styles.controlButton, isMuted && styles.controlButtonActive]}
+                onPress={() => setIsMuted(!isMuted)}
+              >
+                <Ionicons name={isMuted ? 'mic-off' : 'mic'} size={24} color="#fff" />
               </TouchableOpacity>
 
-              {isLive && (
-                <View style={styles.liveIndicator}>
-                  <View style={styles.liveDot} />
-                  <Text style={styles.liveText}>LIVE</Text>
-                  <Text style={styles.durationText}>{formatDuration(duration)}</Text>
-                </View>
-              )}
+              <TouchableOpacity
+                style={[styles.controlButton, !showChat && styles.controlButtonActive]}
+                onPress={() => setShowChat(!showChat)}
+              >
+                <Ionicons name={showChat ? 'chatbubbles' : 'chatbubbles-outline'} size={24} color="#fff" />
+              </TouchableOpacity>
 
-              <TouchableOpacity onPress={toggleCamera} style={styles.iconButton}>
-                <Ionicons name="camera-reverse" size={28} color="#fff" />
+              <TouchableOpacity
+                style={[styles.controlButton, guestSeatsLocked && styles.controlButtonActive]}
+                onPress={() => setGuestSeatsLocked(!guestSeatsLocked)}
+              >
+                <Ionicons name={guestSeatsLocked ? 'lock-closed' : 'lock-open'} size={24} color="#fff" />
+              </TouchableOpacity>
+
+              <TouchableOpacity style={styles.controlButton}>
+                <Ionicons name="people" size={24} color="#fff" />
+                <View style={styles.guestBadge}>
+                  <Text style={styles.guestBadgeText}>{guests.length}/9</Text>
+                </View>
               </TouchableOpacity>
             </View>
 
-            {/* Stats */}
-            {isLive && (
-              <View style={styles.statsContainer}>
-                <View style={styles.statItem}>
-                  <Ionicons name="eye" size={20} color="#fff" />
-                  <Text style={styles.statText}>{viewerCount}</Text>
-                </View>
-              </View>
-            )}
-
-            {/* Bottom Section */}
-            {!isLive ? (
-              <View style={styles.setupContainer}>
-                <Text style={styles.setupTitle}>Ready to go live?</Text>
-                <TextInput
-                  style={styles.input}
-                  placeholder="Stream title (e.g., Epic Roast Battle!)" 
-                  placeholderTextColor={theme.colors.textDisabled}
-                  value={streamTitle}
-                  onChangeText={setStreamTitle}
-                  maxLength={100}
-                />
-                <TouchableOpacity
-                  style={[styles.goLiveButton, loading && styles.goLiveButtonDisabled]}
-                  onPress={startStream}
-                  disabled={loading}
-                >
-                  {loading ? (
-                    <ActivityIndicator color="#fff" />
-                  ) : (
-                    <>
-                      <Ionicons name="videocam" size={24} color="#fff" />
-                      <Text style={styles.goLiveButtonText}>GO LIVE</Text>
-                    </>
-                  )}
-                </TouchableOpacity>
-              </View>
-            ) : (
-              <View style={styles.liveControls}>
-                <TouchableOpacity 
-                  style={styles.controlButton}
-                  onPress={() => setShowViewerList(true)}
-                >
-                  <Ionicons name="people" size={24} color="#fff" />
-                  <Text style={styles.controlText}>Viewers</Text>
-                  {guests.length > 0 && (
-                    <View style={styles.guestBadge}>
-                      <Text style={styles.guestBadgeText}>{guests.length}/9</Text>
-                    </View>
-                  )}
-                </TouchableOpacity>
-
-                <TouchableOpacity style={styles.controlButton}>
-                  <Ionicons name="settings" size={24} color="#fff" />
-                  <Text style={styles.controlText}>Settings</Text>
-                </TouchableOpacity>
-
-                <TouchableOpacity
-                  style={[styles.controlButton, styles.endButton]}
-                  onPress={endStream}
-                >
-                  <Ionicons name="stop-circle" size={24} color="#fff" />
-                  <Text style={styles.controlText}>End</Text>
-                </TouchableOpacity>
-              </View>
-            )}
+            {/* Bottom Controls */}
+            <View style={styles.bottomControls}>
+              <TouchableOpacity style={styles.endButton} onPress={endStream}>
+                <Ionicons name="stop-circle" size={20} color="#fff" />
+                <Text style={styles.endButtonText}>End Stream</Text>
+              </TouchableOpacity>
+            </View>
           </View>
-        </Camera>
-      )}
-
-      {/* Viewer List Modal */}
-      {isLive && streamId && (
-        <ViewerListModal
-          visible={showViewerList}
-          onClose={() => setShowViewerList(false)}
-          streamId={streamId}
-          hostId={user?.id || ''}
-          currentGuestCount={guests.length}
-        />
-      )}
+        )}
+      </CameraView>
     </View>
   );
 }
@@ -342,21 +268,49 @@ export default function Broadcast() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: theme.colors.background,
-    justifyContent: 'center',
-    alignItems: 'center',
+    backgroundColor: '#000',
   },
   camera: {
     flex: 1,
-    width: '100%',
   },
-  videoGridContainer: {
+  permissionContainer: {
     flex: 1,
-    width: '100%',
+    backgroundColor: theme.colors.background,
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: theme.spacing.xl,
   },
-  overlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.3)',
+  permissionTitle: {
+    fontSize: theme.typography.sizes.xl,
+    fontWeight: theme.typography.weights.bold,
+    color: theme.colors.text,
+    marginTop: theme.spacing.lg,
+    marginBottom: theme.spacing.sm,
+  },
+  permissionText: {
+    fontSize: theme.typography.sizes.base,
+    color: theme.colors.textSecondary,
+    textAlign: 'center',
+    marginBottom: theme.spacing.xl,
+  },
+  permissionButton: {
+    backgroundColor: theme.colors.primary,
+    paddingHorizontal: theme.spacing.xl,
+    paddingVertical: theme.spacing.md,
+    borderRadius: theme.borderRadius.full,
+    marginBottom: theme.spacing.md,
+  },
+  permissionButtonText: {
+    fontSize: theme.typography.sizes.lg,
+    fontWeight: theme.typography.weights.bold,
+    color: '#fff',
+  },
+  backButton: {
+    padding: theme.spacing.md,
+  },
+  backButtonText: {
+    fontSize: theme.typography.sizes.base,
+    color: theme.colors.textSecondary,
   },
   topBar: {
     flexDirection: 'row',
@@ -365,7 +319,7 @@ const styles = StyleSheet.create({
     paddingTop: 50,
     paddingHorizontal: theme.spacing.md,
   },
-  iconButton: {
+  closeButton: {
     width: 44,
     height: 44,
     borderRadius: 22,
@@ -376,7 +330,7 @@ const styles = StyleSheet.create({
   liveIndicator: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: theme.colors.live,
+    backgroundColor: 'rgba(0,0,0,0.5)',
     paddingHorizontal: theme.spacing.md,
     paddingVertical: theme.spacing.sm,
     borderRadius: theme.borderRadius.full,
@@ -385,135 +339,130 @@ const styles = StyleSheet.create({
     width: 8,
     height: 8,
     borderRadius: 4,
-    backgroundColor: '#fff',
-    marginRight: theme.spacing.sm,
+    backgroundColor: theme.colors.live,
+    marginRight: theme.spacing.xs,
   },
   liveText: {
-    color: '#fff',
     fontSize: theme.typography.sizes.sm,
     fontWeight: theme.typography.weights.bold,
+    color: theme.colors.live,
     marginRight: theme.spacing.md,
   },
-  durationText: {
-    color: '#fff',
-    fontSize: theme.typography.sizes.sm,
-  },
-  statsContainer: {
-    position: 'absolute',
-    top: 110,
-    left: theme.spacing.md,
-  },
-  statItem: {
+  viewerBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(0,0,0,0.5)',
-    paddingHorizontal: theme.spacing.md,
-    paddingVertical: theme.spacing.sm,
-    borderRadius: theme.borderRadius.full,
   },
-  statText: {
-    color: '#fff',
+  viewerCount: {
     fontSize: theme.typography.sizes.sm,
-    fontWeight: theme.typography.weights.semibold,
-    marginLeft: theme.spacing.xs,
+    color: '#fff',
+    marginLeft: 4,
   },
-  setupContainer: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
+  topRightButtons: {
+    flexDirection: 'row',
+  },
+  iconButton: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginLeft: theme.spacing.sm,
+  },
+  setupOverlay: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
     padding: theme.spacing.xl,
-    backgroundColor: 'rgba(0,0,0,0.8)',
+    backgroundColor: 'rgba(0,0,0,0.4)',
   },
   setupTitle: {
+    fontSize: theme.typography.sizes.xxxl,
+    fontWeight: theme.typography.weights.bold,
+    color: '#fff',
+    marginBottom: theme.spacing.xl,
+  },
+  titleInput: {
+    width: '100%',
+    backgroundColor: 'rgba(255,255,255,0.2)',
+    borderRadius: theme.borderRadius.lg,
+    padding: theme.spacing.lg,
+    fontSize: theme.typography.sizes.lg,
+    color: '#fff',
+    marginBottom: theme.spacing.xl,
+    textAlign: 'center',
+  },
+  goLiveButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: theme.colors.live,
+    paddingHorizontal: theme.spacing.xxl,
+    paddingVertical: theme.spacing.lg,
+    borderRadius: theme.borderRadius.full,
+  },
+  goLiveButtonDisabled: {
+    opacity: 0.7,
+  },
+  goLiveText: {
     fontSize: theme.typography.sizes.xl,
     fontWeight: theme.typography.weights.bold,
     color: '#fff',
-    marginBottom: theme.spacing.md,
-    textAlign: 'center',
-  },
-  input: {
-    backgroundColor: 'rgba(255,255,255,0.2)',
-    borderRadius: theme.borderRadius.md,
-    padding: theme.spacing.md,
-    fontSize: theme.typography.sizes.base,
-    color: '#fff',
-    marginBottom: theme.spacing.md,
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.3)',
-  },
-  goLiveButton: {
-    backgroundColor: theme.colors.primary,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: theme.spacing.lg,
-    borderRadius: theme.borderRadius.md,
-  },
-  goLiveButtonDisabled: {
-    opacity: 0.6,
-  },
-  goLiveButtonText: {
-    color: '#fff',
-    fontSize: theme.typography.sizes.lg,
-    fontWeight: theme.typography.weights.bold,
-    marginLeft: theme.spacing.sm,
+    marginLeft: theme.spacing.md,
   },
   liveControls: {
+    flex: 1,
+    justifyContent: 'space-between',
+  },
+  sideControls: {
     position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    flexDirection: 'row',
-    padding: theme.spacing.lg,
-    backgroundColor: 'rgba(0,0,0,0.8)',
+    right: theme.spacing.md,
+    top: '30%',
   },
   controlButton: {
-    flex: 1,
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+    backgroundColor: 'rgba(0,0,0,0.5)',
     alignItems: 'center',
-    paddingVertical: theme.spacing.sm,
-    position: 'relative',
+    justifyContent: 'center',
+    marginBottom: theme.spacing.md,
   },
-  endButton: {
-    backgroundColor: theme.colors.error,
-    borderRadius: theme.borderRadius.md,
-  },
-  controlText: {
-    color: '#fff',
-    fontSize: theme.typography.sizes.xs,
-    marginTop: theme.spacing.xs,
+  controlButtonActive: {
+    backgroundColor: theme.colors.primary,
   },
   guestBadge: {
     position: 'absolute',
-    top: -4,
-    right: 8,
+    top: -5,
+    right: -5,
     backgroundColor: theme.colors.primary,
-    borderRadius: 10,
-    paddingHorizontal: 6,
+    paddingHorizontal: 4,
     paddingVertical: 2,
-    minWidth: 20,
+    borderRadius: 8,
   },
   guestBadgeText: {
+    fontSize: 8,
     color: '#fff',
-    fontSize: 10,
     fontWeight: theme.typography.weights.bold,
   },
-  permissionText: {
-    fontSize: theme.typography.sizes.base,
-    color: theme.colors.text,
-    textAlign: 'center',
-    marginBottom: theme.spacing.lg,
-    paddingHorizontal: theme.spacing.xl,
+  bottomControls: {
+    position: 'absolute',
+    bottom: 40,
+    left: 0,
+    right: 0,
+    alignItems: 'center',
   },
-  button: {
-    backgroundColor: theme.colors.primary,
+  endButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: theme.colors.error,
     paddingHorizontal: theme.spacing.xl,
     paddingVertical: theme.spacing.md,
-    borderRadius: theme.borderRadius.md,
+    borderRadius: theme.borderRadius.full,
   },
-  buttonText: {
-    color: '#fff',
+  endButtonText: {
     fontSize: theme.typography.sizes.base,
-    fontWeight: theme.typography.weights.semibold,
+    fontWeight: theme.typography.weights.bold,
+    color: '#fff',
+    marginLeft: theme.spacing.sm,
   },
 });
