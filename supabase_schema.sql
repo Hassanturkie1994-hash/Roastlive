@@ -422,14 +422,14 @@ INSERT INTO gifts (id, name, price, icon, tier, format, duration_ms) VALUES
   ('tea_spill', 'Tea Spill', 90, '☕', 'MID', 'lottie', 3500),
   ('cringe', 'Cringe', 100, '😬', 'MID', 'lottie', 3000),
 
--- HIGH TIER (150-500 SEK) - Mostly Lottie, some MP4
+-- HIGH TIER (150-500 SEK) - ALL Lottie
   ('flame_thrower', 'Flame Thrower', 150, '🔥', 'HIGH', 'lottie', 4000),
   ('diss_stamp', 'Diss Stamp', 175, '📝', 'HIGH', 'lottie', 3000),
   ('judge_gavel', 'Judge Gavel', 200, '🧑‍⚖️', 'HIGH', 'lottie', 3500),
   ('roast_crown', 'Roast Crown', 250, '👑', 'HIGH', 'lottie', 4000),
   ('knockout_punch', 'Knockout Punch', 300, '🥊', 'HIGH', 'lottie', 3500),
-  ('bomb', 'Bomb', 350, '💣', 'HIGH', 'mp4', 4000),
-  ('lightning_strike', 'Lightning Strike', 400, '⚡', 'HIGH', 'mp4', 3500),
+  ('bomb', 'Bomb', 350, '💣', 'HIGH', 'lottie', 4000),
+  ('lightning_strike', 'Lightning Strike', 400, '⚡', 'HIGH', 'lottie', 3500),
   ('roast_trophy', 'Roast Trophy', 450, '🏆', 'HIGH', 'lottie', 4000),
   ('roast_hammer', 'Roast Hammer', 475, '🔨', 'HIGH', 'lottie', 3500),
   ('roast_sword', 'Roast Sword', 490, '⚔️', 'HIGH', 'lottie', 4000),
