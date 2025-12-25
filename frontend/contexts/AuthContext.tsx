@@ -59,22 +59,49 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     let mounted = true;
 
     const initAuth = async () => {
-      const {
-        data: { session },
-      } = await supabase.auth.getSession();
+      try {
+        const {
+          data: { session },
+          error,
+        } = await supabase.auth.getSession();
 
-      if (!mounted) return;
+        if (!mounted) return;
 
-      setSession(session);
-      setUser(session?.user ?? null);
-      setIsLoading(false);
+        if (error) {
+          console.error('Session error:', error.message);
+          // Clear invalid session
+          await supabase.auth.signOut({ scope: 'local' });
+          setSession(null);
+          setUser(null);
+        } else {
+          setSession(session);
+          setUser(session?.user ?? null);
+        }
+
+        setIsLoading(false);
+      } catch (error) {
+        console.error('Supabase init error:', error);
+        if (mounted) {
+          setIsLoading(false);
+        }
+      }
     };
 
     initAuth();
 
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
+    } = supabase.auth.onAuthStateChange(async (_event, session) => {
+      console.log('Auth state changed:', _event);
+
+      if (_event === 'TOKEN_REFRESHED') {
+        console.log('✅ Token refreshed successfully');
+      }
+
+      if (_event === 'SIGNED_OUT') {
+        console.log('User signed out');
+      }
+
       setSession(session);
       setUser(session?.user ?? null);
       setIsLoading(false);
