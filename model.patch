@@ -1,0 +1,31 @@
+diff --git a/backend/server.py b/backend/server.py
+index 26624c5..a975fe5 100644
+--- a/backend/server.py
++++ b/backend/server.py
+@@ -13,6 +13,9 @@ import openai
+ from agora_token_builder import RtcTokenBuilder
+ import time
+ 
++# Import AI moderation
++from emergentintegrations.llm.chat import LlmChat, UserMessage
++
+ ROOT_DIR = Path(__file__).parent
+ load_dotenv(ROOT_DIR / '.env')
+ 
+@@ -22,12 +25,15 @@ client = AsyncIOMotorClient(mongo_url)
+ db = client[os.environ['DB_NAME']]
+ 
+ # OpenAI client for moderation
+-openai.api_key = os.environ['OPENAI_API_KEY']
++openai.api_key = os.getenv('OPENAI_API_KEY')
+ 
+ # Agora credentials
+ AGORA_APP_ID = os.environ['AGORA_APP_ID']
+ AGORA_APP_CERTIFICATE = os.environ['AGORA_APP_CERTIFICATE']
+ 
++# Emergent LLM Key for AI moderation
++EMERGENT_LLM_KEY = os.getenv("EMERGENT_LLM_KEY")
++
+ # Create the main app
+ app = FastAPI()
+ api_router = APIRouter(prefix="/api")
