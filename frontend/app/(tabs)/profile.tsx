@@ -167,18 +167,30 @@ export default function Profile() {
             <Ionicons name="chevron-forward" size={20} color={theme.colors.textSecondary} />
           </TouchableOpacity>
 
-          <TouchableOpacity style={styles.menuItem}>
+          <TouchableOpacity 
+            style={styles.menuItem}
+            onPress={() => router.push('/(tabs)/profile/vip-clubs')}
+          >
             <Ionicons name="star-outline" size={24} color={theme.colors.vip} />
             <Text style={styles.menuText}>VIP Clubs</Text>
-            <View style={styles.comingSoonBadge}>
-              <Text style={styles.comingSoonText}>Soon</Text>
-            </View>
             <Ionicons name="chevron-forward" size={20} color={theme.colors.textSecondary} />
           </TouchableOpacity>
 
-          <TouchableOpacity style={styles.menuItem}>
+          <TouchableOpacity 
+            style={styles.menuItem}
+            onPress={() => router.push('/(tabs)/profile/report')}
+          >
+            <Ionicons name="flag-outline" size={24} color={theme.colors.warning} />
+            <Text style={styles.menuText}>Report Content</Text>
+            <Ionicons name="chevron-forward" size={20} color={theme.colors.textSecondary} />
+          </TouchableOpacity>
+
+          <TouchableOpacity 
+            style={styles.menuItem}
+            onPress={() => router.push('/(tabs)/profile/admin')}
+          >
             <Ionicons name="shield-checkmark-outline" size={24} color={theme.colors.text} />
-            <Text style={styles.menuText}>Safety & Privacy</Text>
+            <Text style={styles.menuText}>Admin Panel</Text>
             <Ionicons name="chevron-forward" size={20} color={theme.colors.textSecondary} />
           </TouchableOpacity>
         </View>
