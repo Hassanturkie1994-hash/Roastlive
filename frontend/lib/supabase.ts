@@ -1,14 +1,14 @@
 import 'react-native-url-polyfill/auto';
-import { createClient } from '@supabase/supabase-js';
+import { createClient, SupabaseClient } from '@supabase/supabase-js';
 
 const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL!;
 const supabaseAnonKey = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY!;
 
-// Check if we're in a browser/server environment for SSR
+// Check if we're in a server environment
 const isServer = typeof window === 'undefined';
 
-// Create a universal storage adapter that works in all environments
-const createStorage = () => {
+// Create a storage adapter that works in all environments
+const getStorage = () => {
   // Server-side: return a no-op storage
   if (isServer) {
     return {
@@ -18,37 +18,55 @@ const createStorage = () => {
     };
   }
 
-  // Client-side web: use localStorage
-  if (typeof localStorage !== 'undefined') {
-    return {
-      getItem: async (key: string) => localStorage.getItem(key),
-      setItem: async (key: string, value: string) => localStorage.setItem(key, value),
-      removeItem: async (key: string) => localStorage.removeItem(key),
-    };
-  }
-
-  // Native: use AsyncStorage (lazy import to avoid SSR issues)
+  // Web browser: use localStorage
   return {
     getItem: async (key: string) => {
-      const AsyncStorage = require('@react-native-async-storage/async-storage').default;
-      return AsyncStorage.getItem(key);
+      try {
+        return localStorage.getItem(key);
+      } catch {
+        return null;
+      }
     },
     setItem: async (key: string, value: string) => {
-      const AsyncStorage = require('@react-native-async-storage/async-storage').default;
-      return AsyncStorage.setItem(key, value);
+      try {
+        localStorage.setItem(key, value);
+      } catch {
+        // Ignore
+      }
     },
     removeItem: async (key: string) => {
-      const AsyncStorage = require('@react-native-async-storage/async-storage').default;
-      return AsyncStorage.removeItem(key);
+      try {
+        localStorage.removeItem(key);
+      } catch {
+        // Ignore
+      }
     },
   };
 };
 
-export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
-  auth: {
-    storage: createStorage(),
-    autoRefreshToken: true,
-    persistSession: !isServer,
-    detectSessionInUrl: false,
+// Lazy initialization pattern for Supabase client
+let _supabase: SupabaseClient | null = null;
+
+export const getSupabase = (): SupabaseClient => {
+  if (!_supabase) {
+    _supabase = createClient(supabaseUrl, supabaseAnonKey, {
+      auth: {
+        storage: getStorage(),
+        autoRefreshToken: !isServer,
+        persistSession: !isServer,
+        detectSessionInUrl: false,
+      },
+    });
+  }
+  return _supabase;
+};
+
+// For backwards compatibility, also export a supabase instance
+// This will be lazily initialized on first access
+export const supabase = new Proxy({} as SupabaseClient, {
+  get: (_target, prop) => {
+    const client = getSupabase();
+    const value = (client as any)[prop];
+    return typeof value === 'function' ? value.bind(client) : value;
   },
 });
