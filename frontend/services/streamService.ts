@@ -56,13 +56,19 @@ export const streamService = {
   // Create a new stream
   async createStream(hostId: string, title: string, description?: string): Promise<Stream | null> {
     try {
-      // Get Agora token from backend
       const channelName = `stream_${hostId}_${Date.now()}`;
-      const tokenRes = await axios.post(`${API_URL}/api/generate-token`, {
-        channelName,
-        uid: 0,
-        role: 1, // Publisher
-      });
+      
+      console.log('🎥 Creating stream in DEMO mode');
+      console.log('Channel:', channelName);
+      console.log('Title:', title);
+      
+      // DEMO MODE: Skip Agora token (not available in Expo Go)
+      // For dev build with Agora SDK, uncomment:
+      // const tokenRes = await axios.post(`${API_URL}/api/generate-token`, {
+      //   channelName,
+      //   uid: 0,
+      //   role: 1,
+      // });
 
       // Create stream in Supabase
       const { data, error } = await supabase
@@ -78,19 +84,28 @@ export const streamService = {
         .select()
         .single();
 
-      if (error) throw error;
+      if (error) {
+        console.error('Supabase insert error:', error);
+        throw error;
+      }
 
-      // Add host as a guest with 'host' role
-      await supabase.from('stream_guests').insert({
+      console.log('✅ Stream created:', data.id);
+
+      // Add host as a participant
+      await supabase.from('stream_participants').insert({
         stream_id: data.id,
         user_id: hostId,
         role: 'host',
-        is_active: true,
+        seat_number: 0,
+        is_mic_on: true,
+        is_camera_on: true,
       });
 
-      return { ...data, token: tokenRes.data.token };
-    } catch (error) {
-      console.error('Create stream error:', error);
+      return { ...data, token: 'demo-token' };
+    } catch (error: any) {
+      console.error('❌ Create stream error:', error);
+      console.error('Error details:', error.message);
+      Alert.alert('Error', 'Failed to start stream. Check console for details.');
       return null;
     }
   },
