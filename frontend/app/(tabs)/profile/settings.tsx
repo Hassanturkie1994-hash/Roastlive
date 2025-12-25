@@ -31,8 +31,8 @@ interface SettingItem {
 export default function SettingsScreen() {
   const router = useRouter();
   const { user, signOut } = useAuth();
+  const { theme: themeMode, toggleTheme } = useTheme();
   const [notifications, setNotifications] = useState(true);
-  const [darkMode, setDarkMode] = useState(true);
   const [privateAccount, setPrivateAccount] = useState(false);
 
   const handleSignOut = () => {
