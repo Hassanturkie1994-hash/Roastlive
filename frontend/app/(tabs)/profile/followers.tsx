@@ -7,6 +7,7 @@ import {
   TouchableOpacity,
   Image,
   ActivityIndicator,
+  TextInput,
 } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -14,167 +15,184 @@ import { theme } from '../../../constants/theme';
 import { useAuth } from '../../../contexts/AuthContext';
 import { supabase } from '../../../lib/supabase';
 
-interface Follower {
+interface User {
   id: string;
-  follower_id: string;
   username: string;
-  avatar_url: string | null;
-  full_name: string | null;
-  is_following_back: boolean;
+  avatar_url?: string;
+  is_following?: boolean;
 }
 
 export default function FollowersScreen() {
   const router = useRouter();
   const { user } = useAuth();
   const params = useLocalSearchParams();
-  const userId = params.userId || user?.id;
-  
-  const [followers, setFollowers] = useState<Follower[]>([]);
+  const tab = (params.tab as string) || 'followers';
+
+  const [activeTab, setActiveTab] = useState<'followers' | 'following'>(tab as any);
+  const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
+  const [searchQuery, setSearchQuery] = useState('');
 
   useEffect(() => {
-    loadFollowers();
-  }, []);
+    loadUsers();
+  }, [activeTab]);
 
-  const loadFollowers = async () => {
+  const loadUsers = async () => {
+    if (!user?.id) return;
+    setLoading(true);
+
     try {
-      const { data, error } = await supabase
-        .from('follows')
-        .select(`
-          id,
-          follower_id,
-          profiles:follower_id (
-            id,
-            username,
-            avatar_url,
-            full_name
-          )
-        `)
-        .eq('following_id', userId);
+      let data: any[] = [];
 
-      if (error) throw error;
+      if (activeTab === 'followers') {
+        const { data: followers } = await supabase
+          .from('follows')
+          .select(`
+            follower:follower_id (id, username, avatar_url)
+          `)
+          .eq('following_id', user.id);
+        data = followers?.map((f: any) => f.follower) || [];
+      } else {
+        const { data: following } = await supabase
+          .from('follows')
+          .select(`
+            following:following_id (id, username, avatar_url)
+          `)
+          .eq('follower_id', user.id);
+        data = following?.map((f: any) => f.following) || [];
+      }
 
-      // Check if current user follows them back
-      const followerIds = data?.map((f: any) => f.follower_id) || [];
-      const { data: following } = await supabase
-        .from('follows')
-        .select('following_id')
-        .eq('follower_id', user?.id)
-        .in('following_id', followerIds);
-
-      const followingIds = new Set(following?.map((f: any) => f.following_id) || []);
-
-      const formattedFollowers = data?.map((f: any) => ({
-        id: f.id,
-        follower_id: f.follower_id,
-        username: f.profiles.username,
-        avatar_url: f.profiles.avatar_url,
-        full_name: f.profiles.full_name,
-        is_following_back: followingIds.has(f.follower_id),
-      })) || [];
-
-      setFollowers(formattedFollowers);
+      setUsers(data.filter(Boolean));
     } catch (error) {
-      console.error('Error loading followers:', error);
+      console.error('Error loading users:', error);
     } finally {
       setLoading(false);
     }
   };
 
-  const handleFollow = async (followerId: string, isFollowing: boolean) => {
+  const handleFollow = async (targetId: string, isFollowing: boolean) => {
+    if (!user?.id) return;
+
     try {
       if (isFollowing) {
         await supabase
           .from('follows')
           .delete()
-          .eq('follower_id', user?.id)
-          .eq('following_id', followerId);
+          .eq('follower_id', user.id)
+          .eq('following_id', targetId);
       } else {
-        await supabase
-          .from('follows')
-          .insert({
-            follower_id: user?.id,
-            following_id: followerId,
-          });
+        await supabase.from('follows').insert({
+          follower_id: user.id,
+          following_id: targetId,
+        });
       }
 
-      // Update local state
-      setFollowers(prev =>
-        prev.map(f =>
-          f.follower_id === followerId
-            ? { ...f, is_following_back: !isFollowing }
-            : f
+      setUsers((prev) =>
+        prev.map((u) =>
+          u.id === targetId ? { ...u, is_following: !isFollowing } : u
         )
       );
     } catch (error) {
-      console.error('Error toggling follow:', error);
+      console.error('Error following:', error);
     }
   };
 
-  const renderFollower = ({ item }: { item: Follower }) => (
-    <TouchableOpacity
-      style={styles.followerItem}
-      onPress={() => router.push(`/profile/${item.follower_id}` as any)}
-    >
-      {item.avatar_url ? (
-        <Image source={{ uri: item.avatar_url }} style={styles.avatar} />
-      ) : (
-        <View style={[styles.avatar, styles.avatarPlaceholder]}>
-          <Text style={styles.avatarText}>
-            {item.username?.charAt(0).toUpperCase() || 'U'}
-          </Text>
+  const filteredUsers = users.filter((u) =>
+    u.username?.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
+  const renderUser = ({ item }: { item: User }) => (
+    <View style={styles.userItem}>
+      <TouchableOpacity
+        style={styles.userInfo}
+        onPress={() => router.push(`/user/${item.id}`)}
+      >
+        <View style={styles.avatar}>
+          {item.avatar_url ? (
+            <Image source={{ uri: item.avatar_url }} style={styles.avatarImage} />
+          ) : (
+            <Text style={styles.avatarText}>{item.username?.charAt(0).toUpperCase()}</Text>
+          )}
         </View>
-      )}
-      <View style={styles.followerInfo}>
-        <Text style={styles.username}>@{item.username}</Text>
-        {item.full_name && <Text style={styles.fullName}>{item.full_name}</Text>}
-      </View>
-      {item.follower_id !== user?.id && (
+        <Text style={styles.username}>{item.username}</Text>
+      </TouchableOpacity>
+
+      {item.id !== user?.id && (
         <TouchableOpacity
-          style={[
-            styles.followButton,
-            item.is_following_back && styles.followingButton,
-          ]}
-          onPress={() => handleFollow(item.follower_id, item.is_following_back)}
+          style={[styles.followButton, item.is_following && styles.followingButton]}
+          onPress={() => handleFollow(item.id, !!item.is_following)}
         >
-          <Text
-            style={[
-              styles.followButtonText,
-              item.is_following_back && styles.followingButtonText,
-            ]}
-          >
-            {item.is_following_back ? 'Following' : 'Follow'}
+          <Text style={[styles.followButtonText, item.is_following && styles.followingButtonText]}>
+            {item.is_following ? 'Following' : 'Follow'}
           </Text>
         </TouchableOpacity>
       )}
-    </TouchableOpacity>
+    </View>
   );
 
   return (
     <View style={styles.container}>
+      {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
           <Ionicons name="arrow-back" size={24} color={theme.colors.text} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Followers</Text>
+        <Text style={styles.headerTitle}>
+          {activeTab === 'followers' ? 'Followers' : 'Following'}
+        </Text>
         <View style={{ width: 40 }} />
       </View>
 
+      {/* Tabs */}
+      <View style={styles.tabs}>
+        <TouchableOpacity
+          style={[styles.tab, activeTab === 'followers' && styles.tabActive]}
+          onPress={() => setActiveTab('followers')}
+        >
+          <Text style={[styles.tabText, activeTab === 'followers' && styles.tabTextActive]}>
+            Followers
+          </Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={[styles.tab, activeTab === 'following' && styles.tabActive]}
+          onPress={() => setActiveTab('following')}
+        >
+          <Text style={[styles.tabText, activeTab === 'following' && styles.tabTextActive]}>
+            Following
+          </Text>
+        </TouchableOpacity>
+      </View>
+
+      {/* Search */}
+      <View style={styles.searchContainer}>
+        <Ionicons name="search" size={20} color={theme.colors.textSecondary} />
+        <TextInput
+          style={styles.searchInput}
+          placeholder="Search..."
+          placeholderTextColor={theme.colors.textSecondary}
+          value={searchQuery}
+          onChangeText={setSearchQuery}
+        />
+      </View>
+
+      {/* List */}
       {loading ? (
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color={theme.colors.primary} />
         </View>
-      ) : followers.length === 0 ? (
+      ) : filteredUsers.length === 0 ? (
         <View style={styles.emptyContainer}>
           <Ionicons name="people-outline" size={64} color={theme.colors.textSecondary} />
-          <Text style={styles.emptyText}>No followers yet</Text>
+          <Text style={styles.emptyText}>
+            {activeTab === 'followers' ? 'No followers yet' : 'Not following anyone'}
+          </Text>
         </View>
       ) : (
         <FlatList
-          data={followers}
-          renderItem={renderFollower}
-          keyExtractor={item => item.id}
-          contentContainerStyle={styles.list}
+          data={filteredUsers}
+          keyExtractor={(item) => item.id}
+          renderItem={renderUser}
+          contentContainerStyle={styles.listContent}
         />
       )}
     </View>
@@ -182,105 +200,40 @@ export default function FollowersScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: theme.colors.background,
-  },
+  container: { flex: 1, backgroundColor: theme.colors.background },
   header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: theme.spacing.md,
-    paddingTop: theme.spacing.xxl + 10,
-    paddingBottom: theme.spacing.md,
-    backgroundColor: theme.colors.surface,
-    borderBottomWidth: 1,
-    borderBottomColor: theme.colors.border,
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+    paddingHorizontal: theme.spacing.md, paddingTop: theme.spacing.xxl + 10, paddingBottom: theme.spacing.md,
+    backgroundColor: theme.colors.surface, borderBottomWidth: 1, borderBottomColor: theme.colors.border,
   },
-  backButton: {
-    width: 40,
-    height: 40,
-    alignItems: 'center',
-    justifyContent: 'center',
+  backButton: { width: 40, height: 40, alignItems: 'center', justifyContent: 'center' },
+  headerTitle: { fontSize: theme.typography.sizes.xl, fontWeight: theme.typography.weights.bold, color: theme.colors.text },
+  tabs: { flexDirection: 'row', backgroundColor: theme.colors.surface, borderBottomWidth: 1, borderBottomColor: theme.colors.border },
+  tab: { flex: 1, paddingVertical: theme.spacing.md, alignItems: 'center', borderBottomWidth: 2, borderBottomColor: 'transparent' },
+  tabActive: { borderBottomColor: theme.colors.primary },
+  tabText: { fontSize: theme.typography.sizes.base, color: theme.colors.textSecondary },
+  tabTextActive: { color: theme.colors.primary, fontWeight: theme.typography.weights.semibold },
+  searchContainer: {
+    flexDirection: 'row', alignItems: 'center', backgroundColor: theme.colors.surface,
+    margin: theme.spacing.md, paddingHorizontal: theme.spacing.md, paddingVertical: theme.spacing.sm,
+    borderRadius: theme.borderRadius.lg, borderWidth: 1, borderColor: theme.colors.border,
   },
-  headerTitle: {
-    fontSize: theme.typography.sizes.xl,
-    fontWeight: theme.typography.weights.bold,
-    color: theme.colors.text,
+  searchInput: { flex: 1, fontSize: theme.typography.sizes.base, color: theme.colors.text, marginLeft: theme.spacing.sm },
+  loadingContainer: { flex: 1, alignItems: 'center', justifyContent: 'center' },
+  emptyContainer: { flex: 1, alignItems: 'center', justifyContent: 'center' },
+  emptyText: { fontSize: theme.typography.sizes.base, color: theme.colors.textSecondary, marginTop: theme.spacing.md },
+  listContent: { padding: theme.spacing.md },
+  userItem: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+    backgroundColor: theme.colors.surface, padding: theme.spacing.md, borderRadius: theme.borderRadius.lg, marginBottom: theme.spacing.sm,
   },
-  loadingContainer: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  emptyContainer: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: theme.spacing.xl,
-  },
-  emptyText: {
-    fontSize: theme.typography.sizes.lg,
-    color: theme.colors.textSecondary,
-    marginTop: theme.spacing.md,
-  },
-  list: {
-    padding: theme.spacing.md,
-  },
-  followerItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: theme.spacing.md,
-    backgroundColor: theme.colors.surface,
-    borderRadius: theme.borderRadius.lg,
-    marginBottom: theme.spacing.sm,
-  },
-  avatar: {
-    width: 50,
-    height: 50,
-    borderRadius: 25,
-    marginRight: theme.spacing.md,
-  },
-  avatarPlaceholder: {
-    backgroundColor: theme.colors.primary,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  avatarText: {
-    fontSize: 20,
-    fontWeight: theme.typography.weights.bold,
-    color: theme.colors.text,
-  },
-  followerInfo: {
-    flex: 1,
-  },
-  username: {
-    fontSize: theme.typography.sizes.base,
-    fontWeight: theme.typography.weights.semibold,
-    color: theme.colors.text,
-  },
-  fullName: {
-    fontSize: theme.typography.sizes.sm,
-    color: theme.colors.textSecondary,
-    marginTop: 2,
-  },
-  followButton: {
-    paddingHorizontal: theme.spacing.lg,
-    paddingVertical: theme.spacing.sm,
-    backgroundColor: theme.colors.primary,
-    borderRadius: theme.borderRadius.full,
-  },
-  followingButton: {
-    backgroundColor: 'transparent',
-    borderWidth: 1,
-    borderColor: theme.colors.border,
-  },
-  followButtonText: {
-    fontSize: theme.typography.sizes.sm,
-    fontWeight: theme.typography.weights.semibold,
-    color: '#fff',
-  },
-  followingButtonText: {
-    color: theme.colors.text,
-  },
+  userInfo: { flexDirection: 'row', alignItems: 'center', flex: 1 },
+  avatar: { width: 44, height: 44, borderRadius: 22, backgroundColor: theme.colors.surfaceLight, alignItems: 'center', justifyContent: 'center' },
+  avatarImage: { width: 44, height: 44, borderRadius: 22 },
+  avatarText: { fontSize: theme.typography.sizes.lg, fontWeight: theme.typography.weights.bold, color: theme.colors.text },
+  username: { fontSize: theme.typography.sizes.base, fontWeight: theme.typography.weights.semibold, color: theme.colors.text, marginLeft: theme.spacing.md },
+  followButton: { backgroundColor: theme.colors.primary, paddingHorizontal: theme.spacing.md, paddingVertical: theme.spacing.sm, borderRadius: theme.borderRadius.md },
+  followingButton: { backgroundColor: theme.colors.surface, borderWidth: 1, borderColor: theme.colors.border },
+  followButtonText: { color: '#fff', fontWeight: theme.typography.weights.semibold },
+  followingButtonText: { color: theme.colors.text },
 });
