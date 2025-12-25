@@ -678,6 +678,43 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
+-- Post counter functions
+CREATE OR REPLACE FUNCTION increment_post_likes(post_id UUID)
+RETURNS void AS $$
+BEGIN
+  UPDATE posts SET likes_count = likes_count + 1 WHERE id = post_id;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+CREATE OR REPLACE FUNCTION decrement_post_likes(post_id UUID)
+RETURNS void AS $$
+BEGIN
+  UPDATE posts SET likes_count = GREATEST(0, likes_count - 1) WHERE id = post_id;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+CREATE OR REPLACE FUNCTION increment_post_comments(post_id UUID)
+RETURNS void AS $$
+BEGIN
+  UPDATE posts SET comments_count = comments_count + 1 WHERE id = post_id;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- VIP club counter functions
+CREATE OR REPLACE FUNCTION increment_vip_members(creator_id UUID)
+RETURNS void AS $$
+BEGIN
+  UPDATE vip_clubs SET member_count = member_count + 1 WHERE creator_id = creator_id;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+CREATE OR REPLACE FUNCTION decrement_vip_members(creator_id UUID)
+RETURNS void AS $$
+BEGIN
+  UPDATE vip_clubs SET member_count = GREATEST(0, member_count - 1) WHERE creator_id = creator_id;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
 -- Function to update updated_at timestamp
 CREATE OR REPLACE FUNCTION update_updated_at_column()
 RETURNS TRIGGER AS $$
