@@ -1,88 +1,128 @@
-# Roast Live - Database Setup Guide: Social Features
+# Social Features - Database Setup
 
-## Overview
-This guide covers setting up posts, stories, and comments in Supabase.
-
-## Step 1: Create Social Tables
-
-Run this SQL in your Supabase SQL Editor:
+Run this SQL in your Supabase SQL Editor to enable social features (posts, stories, follows).
 
 ```sql
+-- ============================================================================
+-- SOCIAL FEATURES
+-- ============================================================================
+
 -- Posts table
-CREATE TABLE IF NOT EXISTS posts (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-  user_id UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
+CREATE TABLE IF NOT EXISTS public.posts (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
   caption TEXT,
   image_url TEXT,
   video_url TEXT,
   likes_count INTEGER DEFAULT 0,
   comments_count INTEGER DEFAULT 0,
-  created_at TIMESTAMPTZ DEFAULT NOW(),
-  updated_at TIMESTAMPTZ DEFAULT NOW()
+  is_deleted BOOLEAN DEFAULT false,
+  is_flagged BOOLEAN DEFAULT false,
+  created_at TIMESTAMPTZ DEFAULT now()
 );
 
+CREATE INDEX idx_posts_user ON public.posts(user_id, created_at DESC);
+CREATE INDEX idx_posts_created ON public.posts(created_at DESC);
+
 -- Post likes
-CREATE TABLE IF NOT EXISTS post_likes (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-  post_id UUID NOT NULL REFERENCES posts(id) ON DELETE CASCADE,
-  user_id UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
-  created_at TIMESTAMPTZ DEFAULT NOW(),
+CREATE TABLE IF NOT EXISTS public.post_likes (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  post_id UUID NOT NULL REFERENCES public.posts(id) ON DELETE CASCADE,
+  user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+  created_at TIMESTAMPTZ DEFAULT now(),
   UNIQUE(post_id, user_id)
 );
 
--- Post comments  
-CREATE TABLE IF NOT EXISTS post_comments (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-  post_id UUID NOT NULL REFERENCES posts(id) ON DELETE CASCADE,
-  user_id UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
+CREATE INDEX idx_post_likes_post ON public.post_likes(post_id);
+CREATE INDEX idx_post_likes_user ON public.post_likes(user_id);
+
+-- Post comments
+CREATE TABLE IF NOT EXISTS public.post_comments (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  post_id UUID NOT NULL REFERENCES public.posts(id) ON DELETE CASCADE,
+  user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
   content TEXT NOT NULL,
-  created_at TIMESTAMPTZ DEFAULT NOW()
+  created_at TIMESTAMPTZ DEFAULT now()
 );
 
--- Stories
-CREATE TABLE IF NOT EXISTS stories (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-  user_id UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
+CREATE INDEX idx_post_comments_post ON public.post_comments(post_id, created_at);
+
+-- Stories table (24-hour expiry)
+CREATE TABLE IF NOT EXISTS public.stories (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
   media_url TEXT NOT NULL,
-  media_type TEXT CHECK (media_type IN ('image', 'video')) DEFAULT 'image',
-  likes_count INTEGER DEFAULT 0,
-  views_count INTEGER DEFAULT 0,
-  expires_at TIMESTAMPTZ DEFAULT NOW() + INTERVAL '24 hours',
-  created_at TIMESTAMPTZ DEFAULT NOW()
+  media_type TEXT NOT NULL CHECK (media_type IN ('image', 'video')),
+  created_at TIMESTAMPTZ DEFAULT now(),
+  expires_at TIMESTAMPTZ NOT NULL
 );
+
+CREATE INDEX idx_stories_user ON public.stories(user_id);
+CREATE INDEX idx_stories_expires ON public.stories(expires_at);
+
+-- Story views
+CREATE TABLE IF NOT EXISTS public.story_views (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  story_id UUID NOT NULL REFERENCES public.stories(id) ON DELETE CASCADE,
+  viewer_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+  viewed_at TIMESTAMPTZ DEFAULT now(),
+  UNIQUE(story_id, viewer_id)
+);
+
+CREATE INDEX idx_story_views_story ON public.story_views(story_id);
 
 -- Enable RLS
-ALTER TABLE posts ENABLE ROW LEVEL SECURITY;
-ALTER TABLE post_likes ENABLE ROW LEVEL SECURITY;
-ALTER TABLE post_comments ENABLE ROW LEVEL SECURITY;
-ALTER TABLE stories ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.posts ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.post_likes ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.post_comments ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.stories ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.story_views ENABLE ROW LEVEL SECURITY;
 
--- RPC functions
-CREATE OR REPLACE FUNCTION increment_post_likes(post_id UUID)
+-- RLS Policies
+CREATE POLICY "Posts are viewable by all"
+  ON public.posts FOR SELECT
+  TO authenticated
+  USING (NOT is_deleted);
+
+CREATE POLICY "Users can create posts"
+  ON public.posts FOR INSERT
+  TO authenticated
+  WITH CHECK (auth.uid() = user_id);
+
+CREATE POLICY "Users can update own posts"
+  ON public.posts FOR UPDATE
+  TO authenticated
+  USING (auth.uid() = user_id);
+
+CREATE POLICY "Stories are viewable by all"
+  ON public.stories FOR SELECT
+  TO authenticated
+  USING (expires_at > now());
+
+CREATE POLICY "Users can create stories"
+  ON public.stories FOR INSERT
+  TO authenticated
+  WITH CHECK (auth.uid() = user_id);
+
+-- Grant permissions
+GRANT SELECT, INSERT, UPDATE ON public.posts TO authenticated;
+GRANT SELECT, INSERT, DELETE ON public.post_likes TO authenticated;
+GRANT SELECT, INSERT ON public.post_comments TO authenticated;
+GRANT SELECT, INSERT ON public.stories TO authenticated;
+GRANT SELECT, INSERT ON public.story_views TO authenticated;
+
+-- Helper function to delete expired stories (run via cron)
+CREATE OR REPLACE FUNCTION delete_expired_stories()
 RETURNS void AS $$
 BEGIN
-  UPDATE posts SET likes_count = likes_count + 1 WHERE id = post_id;
+  DELETE FROM public.stories WHERE expires_at < now();
 END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
-
-CREATE OR REPLACE FUNCTION increment_post_comments(post_id UUID)
-RETURNS void AS $$
-BEGIN
-  UPDATE posts SET comments_count = comments_count + 1 WHERE id = post_id;
-END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
+$$ LANGUAGE plpgsql;
 ```
 
-## Step 2: Create Indexes
+## Features
 
-```sql
-CREATE INDEX IF NOT EXISTS idx_posts_user_id ON posts(user_id);
-CREATE INDEX IF NOT EXISTS idx_posts_created_at ON posts(created_at DESC);
-CREATE INDEX IF NOT EXISTS idx_post_likes_post_id ON post_likes(post_id);
-CREATE INDEX IF NOT EXISTS idx_post_comments_post_id ON post_comments(post_id);
-CREATE INDEX IF NOT EXISTS idx_stories_user_id ON stories(user_id);
-CREATE INDEX IF NOT EXISTS idx_stories_expires_at ON stories(expires_at);
-```
-
-## Done!
-Social features are ready in Supabase.
+- **Posts**: Text + image/video
+- **Stories**: Auto-expire after 24 hours
+- **Likes & Comments**: Full engagement system
+- **Story Views**: Track who viewed your stories
