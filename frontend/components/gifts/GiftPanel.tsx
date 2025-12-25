@@ -55,6 +55,8 @@ export default function GiftPanel({
   const [balance, setBalance] = useState(0);
   const [loading, setLoading] = useState(false);
   const [sending, setSending] = useState(false);
+  const [selectedGift, setSelectedGift] = useState<Gift | null>(null);
+  const [detailModalVisible, setDetailModalVisible] = useState(false);
 
   useEffect(() => {
     if (visible) {
