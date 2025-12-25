@@ -1,188 +1,146 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
   StyleSheet,
-  ScrollView,
+  FlatList,
   TouchableOpacity,
-  RefreshControl,
+  Image,
   ActivityIndicator,
+  RefreshControl,
   Dimensions,
 } from 'react-native';
+import { useRouter } from 'expo-router';
+import { Ionicons } from '@expo/vector-icons';
 import { theme } from '../../constants/theme';
 import { useAuth } from '../../contexts/AuthContext';
-import { Ionicons } from '@expo/vector-icons';
-import { useRouter } from 'expo-router';
-import StreamCard from '../../components/stream/StreamCard';
-import axios from 'axios';
+import { postsService } from '../../services/postsService';
 
-const API_URL = process.env.EXPO_PUBLIC_BACKEND_URL;
 const { width } = Dimensions.get('window');
 
-interface Stream {
-  id: string;
-  host_id: string;
-  title: string;
-  channel_name: string;
-  is_live: boolean;
-  viewer_count: number;
-  started_at: string;
-  host_username?: string;
-}
-
-export default function Home() {
-  const { user } = useAuth();
+export default function HomeScreen() {
   const router = useRouter();
-  const [streams, setStreams] = useState<Stream[]>([]);
+  const { user } = useAuth();
+  const [posts, setPosts] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
-  const loadStreams = async () => {
+  useEffect(() => {
+    loadFeed();
+  }, []);
+
+  const loadFeed = async () => {
+    if (!user?.id) return;
     try {
-      const response = await axios.get(`${API_URL}/api/streams/active`);
-      setStreams(response.data.streams || []);
+      const feedPosts = await postsService.getFeedPosts(user.id);
+      setPosts(feedPosts);
     } catch (error) {
-      console.error('Load streams error:', error);
+      console.error('Error loading feed:', error);
     } finally {
       setLoading(false);
       setRefreshing(false);
     }
   };
 
-  useEffect(() => {
-    loadStreams();
-    // Refresh every 30 seconds
-    const interval = setInterval(loadStreams, 30000);
-    return () => clearInterval(interval);
-  }, []);
-
-  const onRefresh = useCallback(() => {
+  const handleRefresh = () => {
     setRefreshing(true);
-    loadStreams();
-  }, []);
-
-  const handleGoLive = () => {
-    if (!user) {
-      router.push('/auth/signin');
-      return;
-    }
-    router.push('/(tabs)/live/broadcast');
+    loadFeed();
   };
+
+  const renderPost = ({ item }: { item: any }) => (
+    <View style={styles.postCard}>
+      {/* Post Header */}
+      <View style={styles.postHeader}>
+        <View style={styles.postUser}>
+          <View style={styles.avatar}>
+            <Ionicons name="person" size={20} color={theme.colors.textSecondary} />
+          </View>
+          <View>
+            <Text style={styles.postUsername}>@{item.profiles?.username || 'user'}</Text>
+            <Text style={styles.postTime}>
+              {new Date(item.created_at).toLocaleDateString()}
+            </Text>
+          </View>
+        </View>
+        <TouchableOpacity>
+          <Ionicons name="ellipsis-horizontal" size={24} color={theme.colors.text} />
+        </TouchableOpacity>
+      </View>
+
+      {/* Post Caption */}
+      {item.caption && (
+        <Text style={styles.postCaption}>{item.caption}</Text>
+      )}
+
+      {/* Post Image */}
+      {item.image_url && (
+        <Image source={{ uri: item.image_url }} style={styles.postImage} />
+      )}
+
+      {/* Post Actions */}
+      <View style={styles.postActions}>
+        <TouchableOpacity style={styles.actionButton}>
+          <Ionicons name="heart-outline" size={24} color={theme.colors.text} />
+          <Text style={styles.actionText}>{item.likes_count || 0}</Text>
+        </TouchableOpacity>
+        <TouchableOpacity style={styles.actionButton}>
+          <Ionicons name="chatbubble-outline" size={24} color={theme.colors.text} />
+          <Text style={styles.actionText}>{item.comments_count || 0}</Text>
+        </TouchableOpacity>
+        <TouchableOpacity style={styles.actionButton}>
+          <Ionicons name="share-outline" size={24} color={theme.colors.text} />
+        </TouchableOpacity>
+      </View>
+    </View>
+  );
+
+  if (loading) {
+    return (
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color={theme.colors.primary} />
+      </View>
+    );
+  }
 
   return (
     <View style={styles.container}>
       {/* Header */}
       <View style={styles.header}>
-        <View style={styles.logoContainer}>
-          <Text style={styles.logoText}>🔥 ROAST</Text>
-          <Text style={styles.logoTextAccent}>LIVE</Text>
-        </View>
-        <View style={styles.headerActions}>
-          <TouchableOpacity style={styles.headerButton}>
-            <Ionicons name="search" size={24} color={theme.colors.text} />
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.headerButton}>
-            <Ionicons name="notifications-outline" size={24} color={theme.colors.text} />
-          </TouchableOpacity>
-        </View>
+        <Text style={styles.headerTitle}>Home</Text>
+        <TouchableOpacity
+          style={styles.createButton}
+          onPress={() => router.push('/posts/create')}
+        >
+          <Ionicons name="add-circle" size={28} color={theme.colors.primary} />
+        </TouchableOpacity>
       </View>
 
-      <ScrollView
-        style={styles.content}
-        contentContainerStyle={styles.contentContainer}
+      {/* Feed */}
+      <FlatList
+        data={posts}
+        renderItem={renderPost}
+        keyExtractor={(item) => item.id}
         refreshControl={
           <RefreshControl
             refreshing={refreshing}
-            onRefresh={onRefresh}
+            onRefresh={handleRefresh}
             tintColor={theme.colors.primary}
           />
         }
-      >
-        {/* Welcome Banner */}
-        <View style={styles.welcomeBanner}>
-          <View style={styles.welcomeContent}>
-            <Text style={styles.welcomeText}>Welcome back,</Text>
-            <Text style={styles.usernameText}>@{user?.user_metadata?.username || 'User'}</Text>
-          </View>
-          <TouchableOpacity style={styles.goLiveButtonSmall} onPress={handleGoLive}>
-            <Ionicons name="videocam" size={18} color="#fff" />
-            <Text style={styles.goLiveTextSmall}>Go Live</Text>
-          </TouchableOpacity>
-        </View>
-
-        {/* Live Now Section */}
-        <View style={styles.section}>
-          <View style={styles.sectionHeader}>
-            <View style={styles.sectionTitleContainer}>
-              <View style={styles.livePulse} />
-              <Text style={styles.sectionTitle}>Live Now</Text>
-            </View>
-            <TouchableOpacity onPress={() => router.push('/(tabs)/live')}>
-              <Text style={styles.seeAllText}>See all</Text>
+        ListEmptyComponent={
+          <View style={styles.emptyState}>
+            <Ionicons name="newspaper-outline" size={64} color={theme.colors.textSecondary} />
+            <Text style={styles.emptyText}>No posts yet</Text>
+            <Text style={styles.emptySubtext}>Follow users to see their posts here</Text>
+            <TouchableOpacity
+              style={styles.discoverButton}
+              onPress={() => router.push('/discover')}
+            >
+              <Text style={styles.discoverButtonText}>Discover Users</Text>
             </TouchableOpacity>
           </View>
-
-          {loading ? (
-            <View style={styles.loadingContainer}>
-              <ActivityIndicator size="large" color={theme.colors.primary} />
-            </View>
-          ) : streams.length > 0 ? (
-            <View style={styles.streamGrid}>
-              {streams.slice(0, 4).map((stream) => (
-                <StreamCard key={stream.id} stream={stream} />
-              ))}
-            </View>
-          ) : (
-            <View style={styles.emptyState}>
-              <View style={styles.emptyIcon}>
-                <Ionicons name="radio-outline" size={48} color={theme.colors.textDisabled} />
-              </View>
-              <Text style={styles.emptyTitle}>No Live Streams</Text>
-              <Text style={styles.emptyText}>Be the first to start a roast battle!</Text>
-              <TouchableOpacity style={styles.emptyButton} onPress={handleGoLive}>
-                <Ionicons name="videocam" size={20} color="#fff" />
-                <Text style={styles.emptyButtonText}>Go Live Now</Text>
-              </TouchableOpacity>
-            </View>
-          )}
-        </View>
-
-        {/* Categories */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Categories</Text>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.categoriesScroll}>
-            {['🎭 Comedy', '🎤 Rap Battles', '🎮 Gaming', '💬 Talk Shows', '🔥 Roasts'].map(
-              (category, index) => (
-                <TouchableOpacity key={index} style={styles.categoryChip}>
-                  <Text style={styles.categoryText}>{category}</Text>
-                </TouchableOpacity>
-              )
-            )}
-          </ScrollView>
-        </View>
-
-        {/* Trending Creators */}
-        <View style={styles.section}>
-          <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>🔥 Top Roasters</Text>
-            <TouchableOpacity>
-              <Text style={styles.seeAllText}>See all</Text>
-            </TouchableOpacity>
-          </View>
-          <View style={styles.creatorsPlaceholder}>
-            <Ionicons name="people" size={32} color={theme.colors.textDisabled} />
-            <Text style={styles.placeholderText}>Coming Soon</Text>
-          </View>
-        </View>
-
-        {/* Bottom spacer for tab bar */}
-        <View style={{ height: 120 }} />
-      </ScrollView>
-
-      {/* Floating Go Live Button */}
-      <TouchableOpacity style={styles.floatingButton} onPress={handleGoLive}>
-        <Ionicons name="videocam" size={28} color="#fff" />
-      </TouchableOpacity>
+        }
+      />
     </View>
   );
 }
@@ -192,203 +150,116 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: theme.colors.background,
   },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
   header: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
+    justifyContent: 'space-between',
     paddingHorizontal: theme.spacing.md,
     paddingTop: theme.spacing.xxl + 10,
     paddingBottom: theme.spacing.md,
-    backgroundColor: theme.colors.background,
+    backgroundColor: theme.colors.surface,
+    borderBottomWidth: 1,
+    borderBottomColor: theme.colors.border,
   },
-  logoContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  logoText: {
-    fontSize: 24,
+  headerTitle: {
+    fontSize: theme.typography.sizes.xxl,
     fontWeight: theme.typography.weights.bold,
     color: theme.colors.text,
   },
-  logoTextAccent: {
-    fontSize: 24,
-    fontWeight: theme.typography.weights.bold,
-    color: theme.colors.primary,
-    marginLeft: 4,
+  createButton: {
+    padding: theme.spacing.xs,
   },
-  headerActions: {
+  postCard: {
+    backgroundColor: theme.colors.surface,
+    marginBottom: theme.spacing.md,
+    paddingBottom: theme.spacing.md,
+  },
+  postHeader: {
     flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    padding: theme.spacing.md,
   },
-  headerButton: {
+  postUser: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  avatar: {
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: theme.colors.surface,
+    backgroundColor: theme.colors.surfaceLight,
     alignItems: 'center',
     justifyContent: 'center',
-    marginLeft: theme.spacing.sm,
-  },
-  content: {
-    flex: 1,
-  },
-  contentContainer: {
-    paddingHorizontal: theme.spacing.md,
-  },
-  welcomeBanner: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    backgroundColor: theme.colors.surface,
-    borderRadius: theme.borderRadius.lg,
-    padding: theme.spacing.lg,
-    marginBottom: theme.spacing.lg,
-    borderLeftWidth: 4,
-    borderLeftColor: theme.colors.primary,
-  },
-  welcomeContent: {
-    flex: 1,
-  },
-  welcomeText: {
-    fontSize: theme.typography.sizes.sm,
-    color: theme.colors.textSecondary,
-  },
-  usernameText: {
-    fontSize: theme.typography.sizes.lg,
-    fontWeight: theme.typography.weights.bold,
-    color: theme.colors.text,
-  },
-  goLiveButtonSmall: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: theme.colors.primary,
-    paddingHorizontal: theme.spacing.md,
-    paddingVertical: theme.spacing.sm,
-    borderRadius: theme.borderRadius.full,
-  },
-  goLiveTextSmall: {
-    fontSize: theme.typography.sizes.sm,
-    fontWeight: theme.typography.weights.semibold,
-    color: '#fff',
-    marginLeft: theme.spacing.xs,
-  },
-  section: {
-    marginBottom: theme.spacing.xl,
-  },
-  sectionHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: theme.spacing.md,
-  },
-  sectionTitleContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  livePulse: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: theme.colors.live,
     marginRight: theme.spacing.sm,
   },
-  sectionTitle: {
-    fontSize: theme.typography.sizes.lg,
-    fontWeight: theme.typography.weights.bold,
+  postUsername: {
+    fontSize: theme.typography.sizes.base,
+    fontWeight: theme.typography.weights.semibold,
     color: theme.colors.text,
   },
-  seeAllText: {
-    fontSize: theme.typography.sizes.sm,
-    color: theme.colors.primary,
+  postTime: {
+    fontSize: theme.typography.sizes.xs,
+    color: theme.colors.textSecondary,
+    marginTop: 2,
   },
-  loadingContainer: {
-    padding: theme.spacing.xxl,
-    alignItems: 'center',
+  postCaption: {
+    fontSize: theme.typography.sizes.base,
+    color: theme.colors.text,
+    paddingHorizontal: theme.spacing.md,
+    marginBottom: theme.spacing.md,
   },
-  streamGrid: {
+  postImage: {
+    width: width,
+    height: width,
+    backgroundColor: theme.colors.surfaceLight,
+  },
+  postActions: {
     flexDirection: 'row',
-    flexWrap: 'wrap',
-    justifyContent: 'space-between',
+    paddingHorizontal: theme.spacing.md,
+    marginTop: theme.spacing.md,
+  },
+  actionButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginRight: theme.spacing.lg,
+  },
+  actionText: {
+    fontSize: theme.typography.sizes.sm,
+    color: theme.colors.text,
+    marginLeft: theme.spacing.xs,
   },
   emptyState: {
     alignItems: 'center',
     padding: theme.spacing.xxl,
-    backgroundColor: theme.colors.surface,
-    borderRadius: theme.borderRadius.lg,
+    marginTop: theme.spacing.xxl,
   },
-  emptyIcon: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    backgroundColor: theme.colors.surfaceLight,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: theme.spacing.md,
-  },
-  emptyTitle: {
+  emptyText: {
     fontSize: theme.typography.sizes.lg,
     fontWeight: theme.typography.weights.bold,
     color: theme.colors.text,
-    marginBottom: theme.spacing.xs,
+    marginTop: theme.spacing.md,
   },
-  emptyText: {
-    fontSize: theme.typography.sizes.base,
+  emptySubtext: {
+    fontSize: theme.typography.sizes.sm,
     color: theme.colors.textSecondary,
-    marginBottom: theme.spacing.lg,
+    marginTop: theme.spacing.xs,
+    marginBottom: theme.spacing.xl,
   },
-  emptyButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
+  discoverButton: {
     backgroundColor: theme.colors.primary,
     paddingHorizontal: theme.spacing.xl,
     paddingVertical: theme.spacing.md,
     borderRadius: theme.borderRadius.full,
   },
-  emptyButtonText: {
+  discoverButtonText: {
     fontSize: theme.typography.sizes.base,
-    fontWeight: theme.typography.weights.semibold,
+    fontWeight: theme.typography.weights.bold,
     color: '#fff',
-    marginLeft: theme.spacing.sm,
-  },
-  categoriesScroll: {
-    marginTop: theme.spacing.sm,
-  },
-  categoryChip: {
-    backgroundColor: theme.colors.surface,
-    paddingHorizontal: theme.spacing.lg,
-    paddingVertical: theme.spacing.sm,
-    borderRadius: theme.borderRadius.full,
-    marginRight: theme.spacing.sm,
-  },
-  categoryText: {
-    fontSize: theme.typography.sizes.sm,
-    color: theme.colors.text,
-    fontWeight: theme.typography.weights.medium,
-  },
-  creatorsPlaceholder: {
-    alignItems: 'center',
-    padding: theme.spacing.xl,
-    backgroundColor: theme.colors.surface,
-    borderRadius: theme.borderRadius.lg,
-  },
-  placeholderText: {
-    fontSize: theme.typography.sizes.sm,
-    color: theme.colors.textSecondary,
-    marginTop: theme.spacing.sm,
-  },
-  floatingButton: {
-    position: 'absolute',
-    bottom: 100,
-    right: theme.spacing.md,
-    width: 60,
-    height: 60,
-    borderRadius: 30,
-    backgroundColor: theme.colors.primary,
-    alignItems: 'center',
-    justifyContent: 'center',
-    shadowColor: theme.colors.primary,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.4,
-    shadowRadius: 10,
-    elevation: 10,
   },
 });
