@@ -114,6 +114,18 @@ async def get_status_checks():
 async def moderate_text(request: ModerationRequest):
     """Moderate text content using OpenAI Moderation API"""
     try:
+        # Check if API key is available
+        if not openai.api_key or openai.api_key.startswith('sk-emerg'):
+            # Return a permissive response if no valid API key
+            logging.warning("AI moderation skipped: No valid API key configured")
+            return ModerationResult(
+                action='allow',
+                flagged=False,
+                severity='low',
+                categories={},
+                message='Content moderation unavailable'
+            )
+        
         response = openai.moderations.create(
             model="omni-moderation-latest",
             input=request.text
