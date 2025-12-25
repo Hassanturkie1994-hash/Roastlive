@@ -749,4 +749,118 @@ const styles = StyleSheet.create({
     color: theme.colors.text,
     marginLeft: theme.spacing.sm,
   },
+  // New styles for labels and interaction settings
+  sectionContainer: {
+    marginBottom: theme.spacing.xl,
+  },
+  labelHint: {
+    fontSize: theme.typography.sizes.sm,
+    color: theme.colors.textSecondary,
+    marginBottom: theme.spacing.md,
+  },
+  labelsContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: theme.spacing.sm,
+  },
+  labelChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: theme.colors.surface,
+    paddingHorizontal: theme.spacing.md,
+    paddingVertical: theme.spacing.sm,
+    borderRadius: theme.borderRadius.full,
+    borderWidth: 1,
+    borderColor: theme.colors.border,
+    marginBottom: theme.spacing.xs,
+  },
+  labelChipText: {
+    fontSize: theme.typography.sizes.sm,
+    color: theme.colors.text,
+    marginRight: theme.spacing.xs,
+  },
+  settingRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: theme.colors.surface,
+    paddingHorizontal: theme.spacing.md,
+    paddingVertical: theme.spacing.md,
+    borderRadius: theme.borderRadius.lg,
+    marginBottom: theme.spacing.sm,
+  },
+  settingLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+  },
+  settingInfo: {
+    marginLeft: theme.spacing.md,
+    flex: 1,
+  },
+  settingTitle: {
+    fontSize: theme.typography.sizes.base,
+    fontWeight: theme.typography.weights.semibold,
+    color: theme.colors.text,
+  },
+  settingDesc: {
+    fontSize: theme.typography.sizes.sm,
+    color: theme.colors.textSecondary,
+    marginTop: 2,
+  },
+  toggleButton: {
+    width: 50,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: theme.colors.border,
+    justifyContent: 'center',
+    paddingHorizontal: 2,
+  },
+  toggleButtonActive: {
+    backgroundColor: theme.colors.primary,
+  },
+  toggleCircle: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: '#fff',
+  },
+  toggleCircleActive: {
+    alignSelf: 'flex-end',
+  },
+  slowModeContainer: {
+    backgroundColor: theme.colors.surface,
+    paddingHorizontal: theme.spacing.md,
+    paddingVertical: theme.spacing.md,
+    borderRadius: theme.borderRadius.lg,
+    marginTop: theme.spacing.sm,
+  },
+  slowModeLabel: {
+    fontSize: theme.typography.sizes.sm,
+    color: theme.colors.textSecondary,
+    marginBottom: theme.spacing.sm,
+  },
+  slowModeButtons: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+  },
+  slowModeButton: {
+    flex: 1,
+    backgroundColor: theme.colors.surfaceLight,
+    paddingVertical: theme.spacing.sm,
+    borderRadius: theme.borderRadius.md,
+    marginHorizontal: 2,
+    alignItems: 'center',
+  },
+  slowModeButtonActive: {
+    backgroundColor: theme.colors.primary,
+  },
+  slowModeButtonText: {
+    fontSize: theme.typography.sizes.sm,
+    color: theme.colors.textSecondary,
+    fontWeight: theme.typography.weights.semibold,
+  },
+  slowModeButtonTextActive: {
+    color: '#fff',
+  },
 });
