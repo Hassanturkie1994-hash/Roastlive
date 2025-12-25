@@ -314,6 +314,305 @@ CREATE POLICY "Users can update own notifications"
   ON notifications FOR UPDATE
   USING (auth.uid() = user_id);
 
+-- Posts table (Phase 4: Social Features)
+CREATE TABLE IF NOT EXISTS posts (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  user_id UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
+  caption TEXT,
+  image_url TEXT,
+  video_url TEXT,
+  likes_count INTEGER DEFAULT 0,
+  comments_count INTEGER DEFAULT 0,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+ALTER TABLE posts ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Anyone can view posts"
+  ON posts FOR SELECT
+  USING (true);
+
+CREATE POLICY "Users can create posts"
+  ON posts FOR INSERT
+  WITH CHECK (auth.uid() = user_id);
+
+CREATE POLICY "Users can update own posts"
+  ON posts FOR UPDATE
+  USING (auth.uid() = user_id);
+
+CREATE POLICY "Users can delete own posts"
+  ON posts FOR DELETE
+  USING (auth.uid() = user_id);
+
+-- Post likes table
+CREATE TABLE IF NOT EXISTS post_likes (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  post_id UUID NOT NULL REFERENCES posts(id) ON DELETE CASCADE,
+  user_id UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  UNIQUE(post_id, user_id)
+);
+
+ALTER TABLE post_likes ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Anyone can view post likes"
+  ON post_likes FOR SELECT
+  USING (true);
+
+CREATE POLICY "Users can like posts"
+  ON post_likes FOR INSERT
+  WITH CHECK (auth.uid() = user_id);
+
+CREATE POLICY "Users can unlike posts"
+  ON post_likes FOR DELETE
+  USING (auth.uid() = user_id);
+
+-- Post comments table
+CREATE TABLE IF NOT EXISTS post_comments (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  post_id UUID NOT NULL REFERENCES posts(id) ON DELETE CASCADE,
+  user_id UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
+  content TEXT NOT NULL,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+ALTER TABLE post_comments ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Anyone can view comments"
+  ON post_comments FOR SELECT
+  USING (true);
+
+CREATE POLICY "Users can comment"
+  ON post_comments FOR INSERT
+  WITH CHECK (auth.uid() = user_id);
+
+CREATE POLICY "Users can delete own comments"
+  ON post_comments FOR DELETE
+  USING (auth.uid() = user_id);
+
+-- Stories table
+CREATE TABLE IF NOT EXISTS stories (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  user_id UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
+  media_url TEXT NOT NULL,
+  media_type TEXT CHECK (media_type IN ('image', 'video')) DEFAULT 'image',
+  likes_count INTEGER DEFAULT 0,
+  views_count INTEGER DEFAULT 0,
+  expires_at TIMESTAMPTZ DEFAULT NOW() + INTERVAL '24 hours',
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+ALTER TABLE stories ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Anyone can view active stories"
+  ON stories FOR SELECT
+  USING (expires_at > NOW());
+
+CREATE POLICY "Users can create stories"
+  ON stories FOR INSERT
+  WITH CHECK (auth.uid() = user_id);
+
+-- VIP Clubs table (Phase 3: VIP System)
+CREATE TABLE IF NOT EXISTS vip_clubs (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  creator_id UUID UNIQUE NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
+  badge_text TEXT DEFAULT 'VIP',
+  badge_color TEXT DEFAULT '#9C27B0',
+  monthly_price DECIMAL DEFAULT 2.55,
+  member_count INTEGER DEFAULT 0,
+  monthly_revenue DECIMAL DEFAULT 0,
+  total_revenue DECIMAL DEFAULT 0,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+ALTER TABLE vip_clubs ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Anyone can view VIP clubs"
+  ON vip_clubs FOR SELECT
+  USING (true);
+
+CREATE POLICY "Creators can manage own club"
+  ON vip_clubs FOR ALL
+  USING (auth.uid() = creator_id);
+
+-- VIP Club subscriptions (updated)
+ALTER TABLE vip_subscriptions DROP CONSTRAINT IF EXISTS vip_subscriptions_creator_id_fkey;
+ALTER TABLE vip_subscriptions ADD CONSTRAINT vip_subscriptions_creator_id_fkey
+  FOREIGN KEY (creator_id) REFERENCES vip_clubs(creator_id) ON DELETE CASCADE;
+
+-- Admin roles table (Phase 5: Moderation)
+CREATE TABLE IF NOT EXISTS admin_roles (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  user_id UUID UNIQUE NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
+  role TEXT CHECK (role IN ('head_admin', 'admin', 'moderator', 'support')) NOT NULL,
+  assigned_by UUID REFERENCES profiles(id),
+  assigned_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+ALTER TABLE admin_roles ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Anyone can view admin roles"
+  ON admin_roles FOR SELECT
+  USING (true);
+
+-- User reports table (Phase 5)
+CREATE TABLE IF NOT EXISTS user_reports (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  reporter_id UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
+  reported_id UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
+  report_type TEXT CHECK (report_type IN ('stream', 'profile', 'message', 'post', 'story')) NOT NULL,
+  reason TEXT NOT NULL,
+  description TEXT,
+  status TEXT CHECK (status IN ('open', 'in_review', 'resolved', 'closed')) DEFAULT 'open',
+  reviewed_by UUID REFERENCES profiles(id),
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+ALTER TABLE user_reports ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY \"Users can create reports\"
+  ON user_reports FOR INSERT
+  WITH CHECK (auth.uid() = reporter_id);
+
+CREATE POLICY \"Admins can view all reports\"
+  ON user_reports FOR SELECT
+  USING (
+    EXISTS (SELECT 1 FROM admin_roles WHERE user_id = auth.uid())
+  );
+
+CREATE POLICY \"Admins can update reports\"
+  ON user_reports FOR UPDATE
+  USING (
+    EXISTS (SELECT 1 FROM admin_roles WHERE user_id = auth.uid())
+  );
+
+-- User penalties table (Phase 5)
+CREATE TABLE IF NOT EXISTS user_penalties (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  user_id UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
+  penalty_type TEXT CHECK (penalty_type IN ('warning', 'timeout', 'ban', 'suspend')) NOT NULL,
+  reason TEXT NOT NULL,
+  duration_minutes INTEGER,
+  issued_by UUID NOT NULL REFERENCES profiles(id),
+  expires_at TIMESTAMPTZ,
+  is_active BOOLEAN DEFAULT true,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+ALTER TABLE user_penalties ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY \"Users can view own penalties\"
+  ON user_penalties FOR SELECT
+  USING (auth.uid() = user_id);
+
+CREATE POLICY \"Admins can manage penalties\"
+  ON user_penalties FOR ALL
+  USING (
+    EXISTS (SELECT 1 FROM admin_roles WHERE user_id = auth.uid())
+  );
+
+-- Admin action log (Phase 5)
+CREATE TABLE IF NOT EXISTS admin_actions (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  admin_id UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
+  action_type TEXT NOT NULL,
+  target_user_id UUID REFERENCES profiles(id),
+  target_content_id UUID,
+  details JSONB,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+ALTER TABLE admin_actions ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY \"Admins can view action logs\"
+  ON admin_actions FOR SELECT
+  USING (
+    EXISTS (SELECT 1 FROM admin_roles WHERE user_id = auth.uid())
+  );
+
+CREATE POLICY \"Admins can create action logs\"
+  ON admin_actions FOR INSERT
+  WITH CHECK (
+    auth.uid() = admin_id AND
+    EXISTS (SELECT 1 FROM admin_roles WHERE user_id = auth.uid())
+  );
+
+-- AI Violations table (Phase 6: AI Moderation)
+CREATE TABLE IF NOT EXISTS ai_violations (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  user_id UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
+  content TEXT NOT NULL,
+  content_type TEXT CHECK (content_type IN ('message', 'username', 'bio', 'post', 'story')) NOT NULL,
+  toxicity_score DECIMAL,
+  harassment_score DECIMAL,
+  hate_speech_score DECIMAL,
+  sexual_score DECIMAL,
+  threats_score DECIMAL,
+  spam_score DECIMAL,
+  overall_score DECIMAL NOT NULL,
+  action_taken TEXT CHECK (action_taken IN ('allow', 'flag', 'hide', 'timeout', 'block')) NOT NULL,
+  stream_id UUID REFERENCES streams(id),
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+ALTER TABLE ai_violations ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY \"Admins can view violations\"
+  ON ai_violations FOR SELECT
+  USING (
+    EXISTS (SELECT 1 FROM admin_roles WHERE user_id = auth.uid())
+  );
+
+-- AI Strikes table (Phase 6)
+CREATE TABLE IF NOT EXISTS ai_strikes (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  user_id UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
+  creator_id UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
+  strike_level INTEGER CHECK (strike_level BETWEEN 1 AND 4) NOT NULL,
+  violation_id UUID REFERENCES ai_violations(id),
+  expires_at TIMESTAMPTZ DEFAULT NOW() + INTERVAL '30 days',
+  is_active BOOLEAN DEFAULT true,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  UNIQUE(user_id, creator_id, strike_level)
+);
+
+ALTER TABLE ai_strikes ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY \"Users can view own strikes\"
+  ON ai_strikes FOR SELECT
+  USING (auth.uid() = user_id);
+
+-- Stream ranking metrics (Phase 7: Discovery)
+CREATE TABLE IF NOT EXISTS stream_ranking_metrics (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  stream_id UUID UNIQUE NOT NULL REFERENCES streams(id) ON DELETE CASCADE,
+  viewer_count INTEGER DEFAULT 0,
+  avg_watch_time_seconds INTEGER DEFAULT 0,
+  gift_volume_10min INTEGER DEFAULT 0,
+  comment_rate DECIMAL DEFAULT 0,
+  follower_conversion_rate DECIMAL DEFAULT 0,
+  rank_score DECIMAL DEFAULT 0,
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Creator ranking metrics (Phase 7)
+CREATE TABLE IF NOT EXISTS creator_ranking_metrics (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  user_id UUID UNIQUE NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
+  account_age_days INTEGER DEFAULT 0,
+  profile_completeness INTEGER DEFAULT 0,
+  stream_frequency_30d INTEGER DEFAULT 0,
+  total_views INTEGER DEFAULT 0,
+  total_gifts_received INTEGER DEFAULT 0,
+  avg_viewer_count DECIMAL DEFAULT 0,
+  follower_growth_rate DECIMAL DEFAULT 0,
+  rank_score DECIMAL DEFAULT 0,
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
 -- Create indexes for performance
 CREATE INDEX IF NOT EXISTS idx_streams_host_id ON streams(host_id);
 CREATE INDEX IF NOT EXISTS idx_streams_is_live ON streams(is_live);
