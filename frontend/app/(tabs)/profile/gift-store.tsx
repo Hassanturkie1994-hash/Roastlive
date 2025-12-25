@@ -16,7 +16,7 @@ const { width } = Dimensions.get('window');
 // Complete gift catalog with all 45 gifts organized by tier
 export const GIFT_CATALOG = {
   LOW: {
-    name: 'Fun Tier',
+    name: 'low tiers',
     priceRange: '1-10 SEK',
     color: '#4CAF50',
     gifts: [
@@ -35,7 +35,7 @@ export const GIFT_CATALOG = {
     ],
   },
   MID: {
-    name: 'Mid Tier',
+    name: 'mid tiers',
     priceRange: '20-100 SEK',
     color: '#2196F3',
     gifts: [
@@ -53,7 +53,7 @@ export const GIFT_CATALOG = {
     ],
   },
   HIGH: {
-    name: 'Premium Tier',
+    name: 'high tiers',
     priceRange: '150-500 SEK',
     color: '#9C27B0',
     gifts: [
@@ -71,7 +71,7 @@ export const GIFT_CATALOG = {
     ],
   },
   ULTRA: {
-    name: 'Ultra Tier',
+    name: 'ultra tiers',
     priceRange: '700-1500 SEK',
     color: '#FF5722',
     gifts: [
@@ -86,7 +86,7 @@ export const GIFT_CATALOG = {
     ],
   },
   NUCLEAR: {
-    name: 'Nuclear Tier',
+    name: 'nuclear tiers',
     priceRange: '2000-4500 SEK',
     color: '#F44336',
     gifts: [
