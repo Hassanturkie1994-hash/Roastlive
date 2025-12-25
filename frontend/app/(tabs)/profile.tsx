@@ -165,7 +165,6 @@ export default function Profile() {
             <Text style={styles.editButtonText}>Edit Profile</Text>
           </TouchableOpacity>
         </View>
-        </View>
 
         {/* Tabs */}
         <View style={styles.tabBar}>
