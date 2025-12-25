@@ -31,13 +31,70 @@ interface DashboardStats {
 
 export default function HeadAdminDashboard() {
   const router = useRouter();
-  const [stats] = useState<DashboardStats>({
+  const { role, permissions, loading: roleLoading } = useAdminRole();
+  const [loading, setLoading] = useState(true);
+  const [stats, setStats] = useState<DashboardStats>({
     reports: { open: 0, inReview: 0, closed: 0, total: 0 },
     liveStreams: 0,
     penalties: 0,
     vipSubscribers: 0,
     todayTransactions: 0,
   });
+
+  useEffect(() => {
+    if (!roleLoading && role !== 'head_admin') {
+      Alert.alert('Access Denied', 'You do not have Head Admin permissions');
+      router.back();
+      return;
+    }
+    if (!roleLoading) {
+      loadStats();
+    }
+  }, [roleLoading]);
+
+  const loadStats = async () => {
+    setLoading(true);
+    try {
+      const [pendingReports, inReviewReports, closedReports, streams, bans, vip, transactions] =
+        await Promise.all([
+          supabase.from('user_reports').select('*', { count: 'exact', head: true }).eq('status', 'pending'),
+          supabase.from('user_reports').select('*', { count: 'exact', head: true }).eq('status', 'in_review'),
+          supabase.from('user_reports').select('*', { count: 'exact', head: true }).in('status', ['resolved', 'dismissed']),
+          supabase.from('streams').select('*', { count: 'exact', head: true }).eq('is_live', true),
+          supabase.from('banned_users').select('*', { count: 'exact', head: true }).eq('is_active', true),
+          supabase.from('club_subscriptions').select('*', { count: 'exact', head: true }).eq('is_active', true),
+          supabase
+            .from('wallet_transactions')
+            .select('*', { count: 'exact', head: true })
+            .gte('created_at', new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString()),
+        ]);
+
+      setStats({
+        reports: {
+          open: pendingReports.count || 0,
+          inReview: inReviewReports.count || 0,
+          closed: closedReports.count || 0,
+          total: (pendingReports.count || 0) + (inReviewReports.count || 0) + (closedReports.count || 0),
+        },
+        liveStreams: streams.count || 0,
+        penalties: bans.count || 0,
+        vipSubscribers: vip.count || 0,
+        todayTransactions: transactions.count || 0,
+      });
+    } catch (error) {
+      console.error('Error loading stats:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (roleLoading || loading) {
+    return (
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color={theme.colors.primary} />
+      </View>
+    );
+  }
 
   return (
     <View style={styles.container}>
