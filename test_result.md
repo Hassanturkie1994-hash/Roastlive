@@ -101,3 +101,110 @@
 #====================================================================================================
 # Testing Data - Main Agent and testing sub agent both should log testing data below this section
 #====================================================================================================
+
+user_problem_statement: "Test the Roast Live app on mobile dimensions to verify app loads, onboarding flow, authentication, and main navigation works properly"
+
+frontend:
+  - task: "Mobile App Loading"
+    implemented: true
+    working: "NA"
+    file: "/app/frontend/app/index.tsx"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+        -working: "NA"
+        -agent: "testing"
+        -comment: "Initial test setup - need to verify app loads on mobile viewport"
+
+  - task: "Onboarding Screen Flow"
+    implemented: true
+    working: "NA"
+    file: "/app/frontend/app/onboarding.tsx"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+        -working: "NA"
+        -agent: "testing"
+        -comment: "Need to test age confirmation checkboxes and navigation to auth screen"
+
+  - task: "Authentication Screen"
+    implemented: true
+    working: "NA"
+    file: "/app/frontend/app/auth/welcome.tsx"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+        -working: "NA"
+        -agent: "testing"
+        -comment: "Need to verify login/signup options are displayed correctly"
+
+  - task: "Bottom Tab Navigation"
+    implemented: true
+    working: "NA"
+    file: "/app/frontend/app/(tabs)/_layout.tsx"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+        -working: "NA"
+        -agent: "testing"
+        -comment: "Need to verify tab navigation is visible after authentication"
+
+  - task: "Home Screen with Live Streams"
+    implemented: true
+    working: "NA"
+    file: "/app/frontend/app/(tabs)/home.tsx"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+        -working: "NA"
+        -agent: "testing"
+        -comment: "Need to verify home screen loads with live streams section"
+
+  - task: "Live Screen"
+    implemented: true
+    working: "NA"
+    file: "/app/frontend/app/(tabs)/live.tsx"
+    stuck_count: 0
+    priority: "medium"
+    needs_retesting: true
+    status_history:
+        -working: "NA"
+        -agent: "testing"
+        -comment: "Need to verify live screen functionality"
+
+  - task: "Profile Screen"
+    implemented: true
+    working: "NA"
+    file: "/app/frontend/app/(tabs)/profile.tsx"
+    stuck_count: 0
+    priority: "medium"
+    needs_retesting: true
+    status_history:
+        -working: "NA"
+        -agent: "testing"
+        -comment: "Need to verify profile screen functionality"
+
+metadata:
+  created_by: "testing_agent"
+  version: "1.0"
+  test_sequence: 1
+
+test_plan:
+  current_focus:
+    - "Mobile App Loading"
+    - "Onboarding Screen Flow"
+    - "Authentication Screen"
+    - "Bottom Tab Navigation"
+    - "Home Screen with Live Streams"
+  stuck_tasks: []
+  test_all: false
+  test_priority: "high_first"
+
+agent_communication:
+    -agent: "testing"
+    -message: "Starting mobile app testing for Roast Live. Will test core user flow: app loading -> onboarding -> auth -> main navigation -> home screen. Testing on mobile viewport (390x844) as requested."
