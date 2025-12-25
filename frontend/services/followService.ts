@@ -1,103 +1,72 @@
 import { supabase } from '../lib/supabase';
-import { notificationService } from './notificationService';
-
-export interface Follow {
-  id: string;
-  follower_id: string;
-  following_id: string;
-  created_at: string;
-}
 
 export const followService = {
-  // Follow a user
-  async followUser(followerId: string, followingId: string): Promise<boolean> {
-    const { error } = await supabase.from('follows').insert({
-      follower_id: followerId,
-      following_id: followingId,
-    });
+  async followUser(followerId: string, followingId: string): Promise<{ success: boolean; error?: string }> {
+    try {
+      const { error } = await supabase.from('follows').insert({
+        follower_id: followerId,
+        following_id: followingId,
+      });
 
-    if (!error) {
+      if (error) throw error;
+
       // Update follower counts
       await Promise.all([
+        supabase.rpc('increment_follower_count', { user_id: followingId }),
         supabase.rpc('increment_following_count', { user_id: followerId }),
-        supabase.rpc('increment_followers_count', { user_id: followingId }),
       ]);
 
-      // Send notification
-      const { data: follower } = await supabase
-        .from('profiles')
-        .select('username')
-        .eq('id', followerId)
-        .single();
+      // Create notification
+      await supabase.from('notifications').insert({
+        user_id: followingId,
+        type: 'follow',
+        title: 'New Follower',
+        body: `Someone started following you!`,
+      });
 
-      if (follower) {
-        await notificationService.createNotification(
-          followingId,
-          'new_follower',
-          'New Follower',
-          `@${follower.username} started following you`,
-          { follower_id: followerId }
-        );
-      }
+      return { success: true };
+    } catch (error: any) {
+      return { success: false, error: error.message };
     }
-
-    return !error;
   },
 
-  // Unfollow a user
-  async unfollowUser(followerId: string, followingId: string): Promise<boolean> {
-    const { error } = await supabase
-      .from('follows')
-      .delete()
-      .eq('follower_id', followerId)
-      .eq('following_id', followingId);
+  async unfollowUser(followerId: string, followingId: string): Promise<{ success: boolean }> {
+    try {
+      await supabase
+        .from('follows')
+        .delete()
+        .eq('follower_id', followerId)
+        .eq('following_id', followingId);
 
-    if (!error) {
       // Update follower counts
       await Promise.all([
+        supabase.rpc('decrement_follower_count', { user_id: followingId }),
         supabase.rpc('decrement_following_count', { user_id: followerId }),
-        supabase.rpc('decrement_followers_count', { user_id: followingId }),
       ]);
-    }
 
-    return !error;
+      return { success: true };
+    } catch (error) {
+      return { success: false };
+    }
   },
 
-  // Check if following
   async isFollowing(followerId: string, followingId: string): Promise<boolean> {
-    const { data, error } = await supabase
+    const { data } = await supabase
       .from('follows')
       .select('id')
       .eq('follower_id', followerId)
       .eq('following_id', followingId)
       .single();
 
-    return !error && !!data;
+    return !!data;
   },
 
-  // Get followers
-  async getFollowers(userId: string): Promise<any[]> {
-    const { data, error } = await supabase
-      .from('follows')
-      .select(`
-        follower:profiles!follower_id(id, username, avatar_url, bio)
-      `)
-      .eq('following_id', userId);
+  async isMutual(userId1: string, userId2: string): Promise<boolean> {
+    const [following, followedBy] = await Promise.all([
+      this.isFollowing(userId1, userId2),
+      this.isFollowing(userId2, userId1),
+    ]);
 
-    if (error) return [];
-    return (data || []).map((f: any) => f.follower);
-  },
-
-  // Get following
-  async getFollowing(userId: string): Promise<any[]> {
-    const { data, error } = await supabase
-      .from('follows')
-      .select(`
-        following:profiles!following_id(id, username, avatar_url, bio)
-      `)
-      .eq('follower_id', userId);
-
-    if (error) return [];
-    return (data || []).map((f: any) => f.following);
+    return following && followedBy;
   },
 };
