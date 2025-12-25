@@ -145,13 +145,18 @@ CREATE POLICY "Authenticated users can send messages"
   ON messages FOR INSERT
   WITH CHECK (auth.uid() = user_id);
 
--- Gifts table
+-- Gifts table (updated with all tiers)
 CREATE TABLE IF NOT EXISTS gifts (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id TEXT PRIMARY KEY, -- Use gift ID as primary key for easy reference
   name TEXT NOT NULL,
   price INTEGER NOT NULL,
-  icon TEXT,
-  tier TEXT CHECK (tier IN ('fun', 'mid', 'premium', 'god')) DEFAULT 'fun',
+  icon TEXT NOT NULL,
+  tier TEXT CHECK (tier IN ('LOW', 'MID', 'HIGH', 'ULTRA', 'NUCLEAR')) NOT NULL,
+  format TEXT CHECK (format IN ('lottie', 'mp4')) DEFAULT 'lottie',
+  blocks_others BOOLEAN DEFAULT false,
+  is_cinematic BOOLEAN DEFAULT false,
+  animation_url TEXT,
+  duration_ms INTEGER DEFAULT 3000,
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
