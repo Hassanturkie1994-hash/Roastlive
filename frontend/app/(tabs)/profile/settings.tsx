@@ -237,21 +237,14 @@ export default function SettingsScreen() {
       </View>
 
       <ScrollView style={styles.content}>
-        {settingsSections.map((section) => {
-          // 🔹 Admin section only visible after role is loaded
-          if (section.title === 'Admin' && !isAdmin()) {
-            return null;
-          }
-
-          return (
-            <View key={section.title} style={styles.section}>
-              <Text style={styles.sectionTitle}>{section.title}</Text>
-              <View style={styles.sectionContent}>
-                {section.items.map(renderSettingItem)}
-              </View>
+        {settingsSections.map((section) => (
+          <View key={section.title} style={styles.section}>
+            <Text style={styles.sectionTitle}>{section.title}</Text>
+            <View style={styles.sectionContent}>
+              {section.items.map(renderSettingItem)}
             </View>
-          );
-        })}
+          </View>
+        ))}
 
         {/* Sign Out */}
         <TouchableOpacity style={styles.signOutButton} onPress={handleSignOut}>
