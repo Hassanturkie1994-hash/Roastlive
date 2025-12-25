@@ -8,7 +8,7 @@ import {
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { theme } from '../../../../constants/theme';
+import { theme } from '../../constants/theme';
 
 interface Report {
   id: string;
@@ -95,12 +95,12 @@ export default function AdminReportsScreen() {
         renderItem={renderReport}
         keyExtractor={item => item.id}
         contentContainerStyle={styles.list}
-        ListEmptyComponent=(
+        ListEmptyComponent={
           <View style={styles.emptyContainer}>
             <Ionicons name="checkmark-circle-outline" size={64} color={theme.colors.success} />
             <Text style={styles.emptyText}>No {filter === 'all' ? '' : filter} reports</Text>
           </View>
-        )
+        }
       />
     </View>
   );

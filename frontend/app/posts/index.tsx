@@ -82,7 +82,7 @@ export default function PostsScreen() {
         renderItem={renderPost}
         keyExtractor={item => item.id}
         contentContainerStyle={styles.list}
-        ListEmptyComponent=(
+        ListEmptyComponent={
           <View style={styles.emptyContainer}>
             <Ionicons name="images-outline" size={64} color={theme.colors.textSecondary} />
             <Text style={styles.emptyText}>No posts yet</Text>
@@ -94,7 +94,7 @@ export default function PostsScreen() {
               <Text style={styles.createButtonText}>Create Your First Post</Text>
             </TouchableOpacity>
           </View>
-        )
+        }
       />
     </View>
   );

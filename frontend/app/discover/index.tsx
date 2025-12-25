@@ -115,12 +115,12 @@ export default function DiscoverScreen() {
           keyExtractor={item => item.id}
           numColumns={2}
           contentContainerStyle={styles.streamList}
-          ListEmptyComponent=(
+          ListEmptyComponent={
             <View style={styles.emptyContainer}>
               <Ionicons name="search-outline" size={64} color={theme.colors.textSecondary} />
               <Text style={styles.emptyText}>No trending streams right now</Text>
             </View>
-          )
+          }
         />
       ) : (
         <FlatList
@@ -129,12 +129,12 @@ export default function DiscoverScreen() {
           keyExtractor={item => item.id}
           numColumns={3}
           contentContainerStyle={styles.creatorList}
-          ListEmptyComponent=(
+          ListEmptyComponent={
             <View style={styles.emptyContainer}>
               <Ionicons name="star-outline" size={64} color={theme.colors.textSecondary} />
               <Text style={styles.emptyText}>No trending creators right now</Text>
             </View>
-          )
+          }
         />
       )}
     </View>
