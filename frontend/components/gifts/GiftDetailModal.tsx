@@ -159,15 +159,37 @@ export default function GiftDetailModal({
             </TouchableOpacity>
           </View>
 
-          {/* Gift Icon */}
-          <Animated.View
-            style={[
-              styles.iconContainer,
-              { transform: [{ scale: scaleAnim }] },
-            ]}
-          >
-            <Text style={styles.giftIcon}>{gift.icon}</Text>
-          </Animated.View>
+          {/* Gift Animation Preview */}
+          <View style={styles.animationContainer}>
+            {isLottie ? (
+              <LottieView
+                ref={lottieRef}
+                source={{ uri: `https://assets.example.com/lottie/${gift.id}.json` }}
+                autoPlay
+                loop
+                style={styles.lottieAnimation}
+              />
+            ) : isVideo ? (
+              <Video
+                ref={videoRef}
+                source={{ uri: `https://assets.example.com/videos/${gift.id}.mp4` }}
+                style={styles.videoAnimation}
+                resizeMode={ResizeMode.CONTAIN}
+                shouldPlay
+                isLooping
+                volume={0.5}
+              />
+            ) : (
+              <Animated.View
+                style={[
+                  styles.iconContainer,
+                  { transform: [{ scale: scaleAnim }] },
+                ]}
+              >
+                <Text style={styles.giftIcon}>{gift.icon}</Text>
+              </Animated.View>
+            )}
+          </View>
 
           {/* Gift Info */}
           <Text style={styles.giftName}>{gift.name}</Text>
