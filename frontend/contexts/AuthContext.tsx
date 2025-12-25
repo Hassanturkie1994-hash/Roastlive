@@ -1,16 +1,35 @@
 'use client';
 
-import React, { createContext, useState, useEffect, useContext } from 'react';
+import React, {
+  createContext,
+  useState,
+  useEffect,
+  useContext,
+  ReactNode,
+} from 'react';
 import { Session, User } from '@supabase/supabase-js';
+import { supabase } from '../lib/supabase';
+
+/* =======================
+   Types
+======================= */
 
 interface AuthContextType {
   user: User | null;
   session: Session | null;
   isLoading: boolean;
-  signUp: (email: string, password: string, username: string) => Promise<{ error: any }>;
+  signUp: (
+    email: string,
+    password: string,
+    username: string
+  ) => Promise<{ error: any }>;
   signIn: (email: string, password: string) => Promise<{ error: any }>;
   signOut: () => Promise<void>;
 }
+
+/* =======================
+   Context
+======================= */
 
 const AuthContext = createContext<AuthContextType>({
   user: null,
@@ -23,42 +42,61 @@ const AuthContext = createContext<AuthContextType>({
 
 export const useAuth = () => useContext(AuthContext);
 
-export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+/* =======================
+   Provider
+======================= */
+
+export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [supabaseClient, setSupabaseClient] = useState<any>(null);
 
-  // Initialize supabase client only on client-side
+  /* =======================
+     Init auth state
+  ======================= */
+
   useEffect(() => {
-    const initSupabase = async () => {
-      const { supabase } = await import('../lib/supabase');
-      setSupabaseClient(supabase);
-      
-      // Get initial session
-      const { data: { session } } = await supabase.auth.getSession();
+    let mounted = true;
+
+    const initAuth = async () => {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+
+      if (!mounted) return;
+
       setSession(session);
       setUser(session?.user ?? null);
       setIsLoading(false);
-
-      // Listen for auth changes
-      const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-        setSession(session);
-        setUser(session?.user ?? null);
-        setIsLoading(false);
-      });
-
-      return () => subscription.unsubscribe();
     };
 
-    initSupabase();
+    initAuth();
+
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      setSession(session);
+      setUser(session?.user ?? null);
+      setIsLoading(false);
+    });
+
+    return () => {
+      mounted = false;
+      subscription.unsubscribe();
+    };
   }, []);
 
-  const signUp = async (email: string, password: string, username: string) => {
-    if (!supabaseClient) return { error: new Error('Supabase not initialized') };
-    
+  /* =======================
+     Sign up
+  ======================= */
+
+  const signUp = async (
+    email: string,
+    password: string,
+    username: string
+  ) => {
     try {
-      const { data, error } = await supabaseClient.auth.signUp({
+      const { data, error } = await supabase.auth.signUp({
         email,
         password,
         options: {
@@ -74,53 +112,61 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         return { error };
       }
 
-      // Profile will be auto-created by database trigger
-      // Wait a moment for trigger to complete
-      if (data.user) {
-        await new Promise(resolve => setTimeout(resolve, 1000));
-        
-        // Verify profile was created
-        const { data: profile, error: profileError } = await supabaseClient
-          .from('profiles')
-          .select('id')
-          .eq('id', data.user.id)
-          .single();
-
-        if (profileError || !profile) {
-          console.warn('Profile not found after signup, creating manually...');
-          // Fallback: Create profile manually if trigger failed
-          await supabaseClient.from('profiles').insert({
-            id: data.user.id,
-            username,
-            created_at: new Date().toISOString(),
-          });
-        }
-      }
-
+      // Profiles are created by DB trigger.
+      // No role logic here by design.
       return { error: null };
-    } catch (err: any) {
+    } catch (err) {
       console.error('Signup exception:', err);
       return { error: err };
     }
   };
 
+  /* =======================
+     Sign in
+     (IMPORTANT PART FROM EMERGENT)
+  ======================= */
+
   const signIn = async (email: string, password: string) => {
-    if (!supabaseClient) return { error: new Error('Supabase not initialized') };
-    
-    const { error } = await supabaseClient.auth.signInWithPassword({
+    const { data, error } = await supabase.auth.signInWithPassword({
       email,
       password,
     });
+
+    // ⭐ FORCE STATE UPDATE AFTER LOGIN
+    // This guarantees that useAdminRole() re-runs
+    if (!error && data?.session) {
+      setSession(data.session);
+      setUser(data.session.user);
+    }
+
     return { error };
   };
 
+  /* =======================
+     Sign out
+  ======================= */
+
   const signOut = async () => {
-    if (!supabaseClient) return;
-    await supabaseClient.auth.signOut();
+    await supabase.auth.signOut();
+    setSession(null);
+    setUser(null);
   };
 
+  /* =======================
+     Provider value
+  ======================= */
+
   return (
-    <AuthContext.Provider value={{ user, session, isLoading, signUp, signIn, signOut }}>
+    <AuthContext.Provider
+      value={{
+        user,
+        session,
+        isLoading,
+        signUp,
+        signIn,
+        signOut,
+      }}
+    >
       {children}
     </AuthContext.Provider>
   );

@@ -31,7 +31,10 @@ interface DashboardStats {
 
 export default function HeadAdminDashboard() {
   const router = useRouter();
+
+  // ⭐ EMERGENT + ORIGINAL (merged correctly)
   const { role, permissions, loading: roleLoading } = useAdminRole();
+
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState<DashboardStats>({
     reports: { open: 0, inReview: 0, closed: 0, total: 0 },
@@ -41,40 +44,52 @@ export default function HeadAdminDashboard() {
     todayTransactions: 0,
   });
 
+  // ⭐ EMERGENT ACCESS CHECK (added, not replacing anything)
   useEffect(() => {
     if (!roleLoading && role !== 'head_admin') {
       Alert.alert('Access Denied', 'You do not have Head Admin permissions');
       router.back();
       return;
     }
-    if (!roleLoading) {
+
+    if (!roleLoading && role === 'head_admin') {
       loadStats();
     }
-  }, [roleLoading]);
+  }, [role, roleLoading]);
 
   const loadStats = async () => {
     setLoading(true);
     try {
-      const [pendingReports, inReviewReports, closedReports, streams, bans, vip, transactions] =
-        await Promise.all([
-          supabase.from('user_reports').select('*', { count: 'exact', head: true }).eq('status', 'pending'),
-          supabase.from('user_reports').select('*', { count: 'exact', head: true }).eq('status', 'in_review'),
-          supabase.from('user_reports').select('*', { count: 'exact', head: true }).in('status', ['resolved', 'dismissed']),
-          supabase.from('streams').select('*', { count: 'exact', head: true }).eq('is_live', true),
-          supabase.from('banned_users').select('*', { count: 'exact', head: true }).eq('is_active', true),
-          supabase.from('club_subscriptions').select('*', { count: 'exact', head: true }).eq('is_active', true),
-          supabase
-            .from('wallet_transactions')
-            .select('*', { count: 'exact', head: true })
-            .gte('created_at', new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString()),
-        ]);
+      const [
+        pendingReports,
+        inReviewReports,
+        closedReports,
+        streams,
+        bans,
+        vip,
+        transactions,
+      ] = await Promise.all([
+        supabase.from('user_reports').select('*', { count: 'exact', head: true }).eq('status', 'pending'),
+        supabase.from('user_reports').select('*', { count: 'exact', head: true }).eq('status', 'in_review'),
+        supabase.from('user_reports').select('*', { count: 'exact', head: true }).in('status', ['resolved', 'dismissed']),
+        supabase.from('streams').select('*', { count: 'exact', head: true }).eq('is_live', true),
+        supabase.from('banned_users').select('*', { count: 'exact', head: true }).eq('is_active', true),
+        supabase.from('club_subscriptions').select('*', { count: 'exact', head: true }).eq('is_active', true),
+        supabase
+          .from('wallet_transactions')
+          .select('*', { count: 'exact', head: true })
+          .gte('created_at', new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString()),
+      ]);
 
       setStats({
         reports: {
           open: pendingReports.count || 0,
           inReview: inReviewReports.count || 0,
           closed: closedReports.count || 0,
-          total: (pendingReports.count || 0) + (inReviewReports.count || 0) + (closedReports.count || 0),
+          total:
+            (pendingReports.count || 0) +
+            (inReviewReports.count || 0) +
+            (closedReports.count || 0),
         },
         liveStreams: streams.count || 0,
         penalties: bans.count || 0,
@@ -88,12 +103,18 @@ export default function HeadAdminDashboard() {
     }
   };
 
+  // ⭐ EMERGENT LOADING STATE (explicit)
   if (roleLoading || loading) {
     return (
       <View style={styles.loadingContainer}>
         <ActivityIndicator size="large" color={theme.colors.primary} />
       </View>
     );
+  }
+
+  // ⭐ EXTRA SAFETY (matches emergent logic)
+  if (role !== 'head_admin') {
+    return null;
   }
 
   return (
@@ -161,15 +182,6 @@ export default function HeadAdminDashboard() {
             <View style={styles.actionContent}>
               <Text style={styles.actionTitle}>User Penalties</Text>
               <Text style={styles.actionDescription}>{stats.penalties} users under penalty</Text>
-            </View>
-            <Ionicons name="chevron-forward" size={20} color={theme.colors.textSecondary} />
-          </TouchableOpacity>
-
-          <TouchableOpacity style={styles.actionCard}>
-            <Ionicons name="mail-outline" size={24} color={theme.colors.primary} />
-            <View style={styles.actionContent}>
-              <Text style={styles.actionTitle}>Send Messages</Text>
-              <Text style={styles.actionDescription}>Official warnings & notices</Text>
             </View>
             <Ionicons name="chevron-forward" size={20} color={theme.colors.textSecondary} />
           </TouchableOpacity>

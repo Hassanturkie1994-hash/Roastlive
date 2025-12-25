@@ -1,6 +1,11 @@
-import { useState, useEffect } from 'react';
-import { useAuth } from '../contexts/AuthContext';
+// hooks/useAdminRole.ts
+import { useEffect, useState, useCallback } from 'react';
 import { supabase } from '../lib/supabase';
+import { useAuth } from '../contexts/AuthContext';
+
+/* =======================
+   Types
+======================= */
 
 export type AdminRole = 'head_admin' | 'admin' | 'moderator' | 'support' | null;
 
@@ -16,14 +21,22 @@ export interface AdminPermissions {
   canViewLogs: boolean;
 }
 
-const ROLE_HIERARCHY: Record<AdminRole & string, number> = {
+/* =======================
+   Role hierarchy
+======================= */
+
+const ROLE_HIERARCHY: Record<Exclude<AdminRole, null>, number> = {
   head_admin: 4,
   admin: 3,
   moderator: 2,
   support: 1,
 };
 
-const ROLE_PERMISSIONS: Record<AdminRole & string, AdminPermissions> = {
+/* =======================
+   Permissions per role
+======================= */
+
+const ROLE_PERMISSIONS: Record<Exclude<AdminRole, null>, AdminPermissions> = {
   head_admin: {
     canManageAdmins: true,
     canBanUsers: true,
@@ -42,7 +55,7 @@ const ROLE_PERMISSIONS: Record<AdminRole & string, AdminPermissions> = {
     canViewReports: true,
     canResolveReports: true,
     canViewAnalytics: true,
-    canManageVIP: false,
+    canManageVIP: true,
     canSendWarnings: true,
     canViewLogs: true,
   },
@@ -60,82 +73,136 @@ const ROLE_PERMISSIONS: Record<AdminRole & string, AdminPermissions> = {
   support: {
     canManageAdmins: false,
     canBanUsers: false,
-    canDeleteContent: false,
+    canDeleteContent: true,
     canViewReports: true,
-    canResolveReports: false,
+    canResolveReports: true,
     canViewAnalytics: false,
     canManageVIP: false,
-    canSendWarnings: false,
+    canSendWarnings: true,
     canViewLogs: false,
   },
 };
 
+const EMPTY_PERMISSIONS: AdminPermissions = {
+  canManageAdmins: false,
+  canBanUsers: false,
+  canDeleteContent: false,
+  canViewReports: false,
+  canResolveReports: false,
+  canViewAnalytics: false,
+  canManageVIP: false,
+  canSendWarnings: false,
+  canViewLogs: false,
+};
+
+/* =======================
+   Hook
+======================= */
+
 export function useAdminRole() {
   const { user } = useAuth();
+
   const [role, setRole] = useState<AdminRole>(null);
-  const [permissions, setPermissions] = useState<AdminPermissions>({
-    canManageAdmins: false,
-    canBanUsers: false,
-    canDeleteContent: false,
-    canViewReports: false,
-    canResolveReports: false,
-    canViewAnalytics: false,
-    canManageVIP: false,
-    canSendWarnings: false,
-    canViewLogs: false,
-  });
+  const [permissions, setPermissions] = useState<AdminPermissions>(EMPTY_PERMISSIONS);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    loadAdminRole();
-  }, [user?.id]);
+  /* =======================
+     Fetch role from DB
+     (source of truth)
+  ======================= */
 
-  const loadAdminRole = async () => {
+  const fetchRole = useCallback(async () => {
     if (!user?.id) {
       setRole(null);
+      setPermissions(EMPTY_PERMISSIONS);
       setLoading(false);
       return;
     }
 
+    setLoading(true);
+
     try {
+      // Preferred: VIEW that uses auth.uid()
       const { data, error } = await supabase
-        .from('admin_roles')
-        .select('role, is_active')
-        .eq('user_id', user.id)
-        .eq('is_active', true)
+        .from('current_user_admin_role')
+        .select('role')
         .single();
 
       if (error || !data) {
+        // User is NOT an admin
         setRole(null);
-        setPermissions(ROLE_PERMISSIONS.support);
+        setPermissions(EMPTY_PERMISSIONS);
       } else {
         const adminRole = data.role as AdminRole;
         setRole(adminRole);
-        setPermissions(ROLE_PERMISSIONS[adminRole] || ROLE_PERMISSIONS.support);
+        setPermissions(ROLE_PERMISSIONS[adminRole]);
       }
-    } catch (error) {
-      console.error('Error loading admin role:', error);
+    } catch (err) {
+      console.error('Failed to fetch admin role:', err);
       setRole(null);
+      setPermissions(EMPTY_PERMISSIONS);
     } finally {
       setLoading(false);
     }
-  };
+  }, [user?.id]);
 
-  const hasRole = (requiredRole: AdminRole): boolean => {
-    if (!role || !requiredRole) return false;
+  /* =======================
+     Fetch on login / change
+  ======================= */
+
+  useEffect(() => {
+    fetchRole();
+  }, [fetchRole]);
+
+  /* =======================
+     Realtime updates
+  ======================= */
+
+  useEffect(() => {
+    if (!user?.id) return;
+
+    const channel = supabase
+      .channel(`admin-role-${user.id}`)
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'admin_roles',
+          filter: `user_id=eq.${user.id}`,
+        },
+        () => {
+          fetchRole();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [user?.id, fetchRole]);
+
+  /* =======================
+     Helpers
+  ======================= */
+
+  const hasRole = (requiredRole: Exclude<AdminRole, null>): boolean => {
+    if (!role) return false;
     return ROLE_HIERARCHY[role] >= ROLE_HIERARCHY[requiredRole];
   };
 
-  const isAdmin = (): boolean => {
-    return role !== null;
-  };
+  const isAdmin = (): boolean => role !== null;
+
+  /* =======================
+     Public API
+  ======================= */
 
   return {
     role,
     permissions,
     loading,
-    hasRole,
     isAdmin,
-    refreshRole: loadAdminRole,
+    hasRole,
+    refreshRole: fetchRole,
   };
 }

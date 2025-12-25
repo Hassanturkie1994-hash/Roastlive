@@ -33,9 +33,24 @@ export default function SettingsScreen() {
   const router = useRouter();
   const { user, signOut } = useAuth();
   const { theme: themeMode, toggleTheme } = useTheme();
-  const { role, isAdmin } = useAdminRole();
+
+  // 🔹 EMERGENT ADDITION (DO NOT REMOVE)
+  const { role, isAdmin, loading } = useAdminRole();
+
   const [notifications, setNotifications] = useState(true);
   const [privateAccount, setPrivateAccount] = useState(false);
+
+  // 🔹 EMERGENT ADDITION (DO NOT REMOVE)
+  // Prevent UI from rendering before admin role is resolved
+  if (loading) {
+    return (
+      <View style={styles.container}>
+        <View style={styles.loadingContainer}>
+          <Text style={styles.loadingText}>Loading settings...</Text>
+        </View>
+      </View>
+    );
+  }
 
   const handleSignOut = () => {
     Alert.alert(
@@ -175,11 +190,11 @@ export default function SettingsScreen() {
 
       <ScrollView style={styles.content}>
         {settingsSections.map((section) => {
-          // Hide Admin section if user is not an admin
+          // 🔹 Admin section only visible after role is loaded
           if (section.title === 'Admin' && !isAdmin()) {
             return null;
           }
-          
+
           return (
             <View key={section.title} style={styles.section}>
               <Text style={styles.sectionTitle}>{section.title}</Text>
@@ -209,6 +224,15 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: theme.colors.background,
+  },
+  loadingContainer: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  loadingText: {
+    color: theme.colors.textSecondary,
+    fontSize: 16,
   },
   header: {
     flexDirection: 'row',
