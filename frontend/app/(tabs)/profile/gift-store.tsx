@@ -86,7 +86,7 @@ export const GIFT_CATALOG = {
     ],
   },
   NUCLEAR: {
-    name: 'nuclear tiers',
+    name: 'Nuclear tiers',
     priceRange: '2000-4500 SEK',
     color: '#F44336',
     gifts: [
