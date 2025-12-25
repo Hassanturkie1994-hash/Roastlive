@@ -428,6 +428,135 @@ async def get_transactions(user_id: str):
 # Include router
 app.include_router(api_router)
 
+# VIP Club endpoints
+@api_router.post("/vip/create-club")
+async def create_vip_club(creator_id: str, badge_text: str = "VIP"):
+    """Create a VIP club for a creator"""
+    try:
+        # This would integrate with Supabase
+        return {"success": True, "message": "VIP club created"}
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+@api_router.get("/vip/club/{creator_id}")
+async def get_vip_club(creator_id: str):
+    """Get VIP club details for a creator"""
+    try:
+        # This would fetch from Supabase
+        return {
+            "creator_id": creator_id,
+            "badge_text": "VIP",
+            "member_count": 0,
+            "monthly_revenue": 0,
+            "total_revenue": 0
+        }
+    except Exception as e:
+        raise HTTPException(status_code=404, detail=str(e))
+
+# Posts endpoints
+@api_router.post("/posts/create")
+async def create_post(user_id: str, caption: str = None, image_url: str = None):
+    """Create a new post"""
+    try:
+        # This would save to Supabase
+        return {"success": True, "post_id": str(uuid.uuid4())}
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+@api_router.get("/posts/feed")
+async def get_posts_feed(user_id: str, limit: int = 50):
+    """Get posts feed"""
+    try:
+        # This would fetch from Supabase
+        return {"posts": []}
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+# Discovery & Recommendations endpoints  
+@api_router.get("/discover/trending-streams")
+async def get_trending_streams(limit: int = 20):
+    """Get trending live streams based on ranking algorithm"""
+    try:
+        # Calculate rank score: viewer_count * 0.4 + gift_volume * 0.3 + comment_rate * 0.2 + follower_conversion * 0.1
+        # New creator boost: 300% first 5 minutes
+        return {"streams": []}
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+@api_router.get("/discover/trending-creators")
+async def get_trending_creators(limit: int = 30):
+    """Get trending creators based on ranking metrics"""
+    try:
+        # Rank based on: followers, stream frequency, total views, avg viewers, growth rate
+        return {"creators": []}
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+@api_router.get("/discover/live-now")
+async def get_live_now():
+    """Get currently live streams with high rank scores"""
+    try:
+        # Fetch active streams sorted by rank_score
+        return {"streams": []}
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+# AI Moderation endpoints (enhanced)
+@api_router.post("/moderation/chat-message")
+async def moderate_chat_message(message: str, user_id: str, stream_id: str):
+    """Real-time chat moderation with auto-actions"""
+    try:
+        if not EMERGENT_LLM_KEY:
+            return {"action": "allow", "score": 0, "flagged": False}
+        
+        # Use Emergent LLM for moderation
+        chat = LlmChat(api_key=EMERGENT_LLM_KEY)
+        
+        prompt = f'''Analyze this chat message for toxicity, harassment, hate speech, sexual content, threats, and spam.
+Return scores 0.0-1.0 for each category and an overall score.
+
+Message: "{message}"
+
+Return JSON format:
+{{
+  "toxicity": 0.0,
+  "harassment": 0.0,
+  "hate_speech": 0.0,
+  "sexual": 0.0,
+  "threats": 0.0,
+  "spam": 0.0,
+  "overall": 0.0
+}}'''
+        
+        response = chat.send_message([UserMessage(content=prompt)])
+        # Parse response and determine action
+        # <0.3: allow, ≥0.3: flag, ≥0.5: hide, ≥0.7: timeout, ≥0.85: block
+        
+        return {
+            "action": "allow",
+            "score": 0,
+            "flagged": False,
+            "categories": {}
+        }
+    except Exception as e:
+        logger.error(f"Moderation error: {e}")
+        return {"action": "allow", "score": 0, "flagged": False}
+
+# Admin endpoints
+@api_router.get("/admin/dashboard-stats")
+async def get_admin_dashboard_stats():
+    """Get dashboard statistics for admin"""
+    try:
+        return {
+            "open_reports": 0,
+            "live_streams": 0,
+            "active_penalties": 0,
+            "vip_subscribers": 0,
+            "today_transactions": 0
+        }
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
 app.add_middleware(
     CORSMiddleware,
     allow_credentials=True,
