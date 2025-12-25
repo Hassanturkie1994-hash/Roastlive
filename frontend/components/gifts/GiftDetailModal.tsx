@@ -303,6 +303,11 @@ const styles = StyleSheet.create({
   giftIcon: {
     fontSize: 100,
   },
+  placeholderText: {
+    fontSize: theme.typography.sizes.sm,
+    color: theme.colors.textSecondary,
+    marginTop: theme.spacing.sm,
+  },
   giftName: {
     fontSize: theme.typography.sizes.xxl,
     fontWeight: theme.typography.weights.bold,
