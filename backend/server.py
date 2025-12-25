@@ -31,6 +31,9 @@ openai.api_key = os.environ['OPENAI_API_KEY']
 AGORA_APP_ID = os.environ['AGORA_APP_ID']
 AGORA_APP_CERTIFICATE = os.environ['AGORA_APP_CERTIFICATE']
 
+# Emergent LLM Key for AI moderation
+EMERGENT_LLM_KEY = os.getenv("EMERGENT_LLM_KEY")
+
 # Create the main app
 app = FastAPI()
 api_router = APIRouter(prefix="/api")
