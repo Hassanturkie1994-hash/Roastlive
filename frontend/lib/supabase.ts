@@ -1,17 +1,19 @@
 import 'react-native-url-polyfill/auto';
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
-import { Platform } from 'react-native';
 
 const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL!;
 const supabaseAnonKey = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY!;
 
-// Check if we're in a web browser environment
-const isBrowser = typeof window !== 'undefined';
+// Safely check if we're in a browser environment
+const isBrowser = typeof window !== 'undefined' && typeof document !== 'undefined';
 
-// Create appropriate storage based on platform
-const getStorage = () => {
+// Detect if we're running on native (React Native) or web
+const isNative = typeof navigator !== 'undefined' && navigator.product === 'ReactNative';
+
+// Create appropriate storage based on environment
+const createStorage = () => {
+  // SSR/Server environment - no storage needed
   if (!isBrowser) {
-    // SSR/Server - return no-op storage
     return {
       getItem: () => Promise.resolve(null),
       setItem: () => Promise.resolve(),
@@ -20,7 +22,7 @@ const getStorage = () => {
   }
 
   // Web browser - use localStorage
-  if (Platform.OS === 'web') {
+  if (!isNative && typeof localStorage !== 'undefined') {
     return {
       getItem: (key: string) => Promise.resolve(localStorage.getItem(key)),
       setItem: (key: string, value: string) => {
@@ -34,15 +36,23 @@ const getStorage = () => {
     };
   }
 
-  // Native - use AsyncStorage
-  // Lazy import to avoid SSR issues
-  const AsyncStorage = require('@react-native-async-storage/async-storage').default;
-  return AsyncStorage;
+  // Native (React Native) - use AsyncStorage
+  try {
+    const AsyncStorage = require('@react-native-async-storage/async-storage').default;
+    return AsyncStorage;
+  } catch {
+    // Fallback to no-op storage
+    return {
+      getItem: () => Promise.resolve(null),
+      setItem: () => Promise.resolve(),
+      removeItem: () => Promise.resolve(),
+    };
+  }
 };
 
 export const supabase: SupabaseClient = createClient(supabaseUrl, supabaseAnonKey, {
   auth: {
-    storage: getStorage(),
+    storage: createStorage(),
     autoRefreshToken: isBrowser,
     persistSession: isBrowser,
     detectSessionInUrl: false,
