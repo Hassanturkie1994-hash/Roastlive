@@ -15,7 +15,6 @@ import { useAuth } from '../../contexts/AuthContext';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { supabase } from '../../lib/supabase';
-import { useAdminRole } from '../../hooks/useAdminRole';
 import { postsService } from '../../services/postsService';
 
 const { width } = Dimensions.get('window');
