@@ -8,7 +8,12 @@ export interface Gift {
   name: string;
   price: number;
   icon: string;
-  tier: 'fun' | 'mid' | 'premium' | 'god';
+  tier: 'LOW' | 'MID' | 'HIGH' | 'ULTRA' | 'NUCLEAR';
+  format: 'lottie' | 'mp4';
+  blocks_others?: boolean;
+  is_cinematic?: boolean;
+  animation_url?: string;
+  duration_ms: number;
 }
 
 export interface GiftTransaction {
@@ -47,13 +52,28 @@ export const giftService = {
     return data || [];
   },
 
+  // Get gifts by tier
+  async getGiftsByTier(tier: Gift['tier']): Promise<Gift[]> {
+    const { data, error } = await supabase
+      .from('gifts')
+      .select('*')
+      .eq('tier', tier)
+      .order('price', { ascending: true });
+
+    if (error) {
+      console.error('Get gifts by tier error:', error);
+      return [];
+    }
+    return data || [];
+  },
+
   // Send a gift
   async sendGift(
     streamId: string,
     senderId: string,
     receiverId: string,
     gift: Gift
-  ): Promise<boolean> {
+  ): Promise<{ success: boolean; error?: string }> {
     try {
       // Check sender balance
       const { data: wallet } = await supabase
@@ -63,8 +83,7 @@ export const giftService = {
         .single();
 
       if (!wallet || wallet.balance < gift.price) {
-        console.error('Insufficient balance');
-        return false;
+        return { success: false, error: 'Insufficient balance' };
       }
 
       // Deduct from sender wallet
@@ -103,10 +122,12 @@ export const giftService = {
         amount: gift.price,
       });
 
-      return !error;
-    } catch (error) {
+      if (error) throw error;
+
+      return { success: true };
+    } catch (error: any) {
       console.error('Send gift error:', error);
-      return false;
+      return { success: false, error: error.message || 'Failed to send gift' };
     }
   },
 
@@ -162,5 +183,30 @@ export const giftService = {
         }
       )
       .subscribe();
+  },
+
+  // Get gift by ID
+  async getGiftById(giftId: string): Promise<Gift | null> {
+    const { data, error } = await supabase
+      .from('gifts')
+      .select('*')
+      .eq('id', giftId)
+      .single();
+
+    if (error) {
+      console.error('Get gift by ID error:', error);
+      return null;
+    }
+    return data;
+  },
+
+  // Check if gift blocks other gifts
+  shouldBlockOtherGifts(gift: Gift): boolean {
+    return gift.blocks_others === true || gift.tier === 'ULTRA' || gift.tier === 'NUCLEAR';
+  },
+
+  // Get gift display duration
+  getGiftDuration(gift: Gift): number {
+    return gift.duration_ms || 3000;
   },
 };
