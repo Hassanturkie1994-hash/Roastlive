@@ -166,7 +166,7 @@ CREATE TABLE IF NOT EXISTS gift_transactions (
   stream_id UUID NOT NULL REFERENCES streams(id) ON DELETE CASCADE,
   sender_id UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
   receiver_id UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
-  gift_id UUID NOT NULL REFERENCES gifts(id),
+  gift_id TEXT NOT NULL REFERENCES gifts(id),
   amount INTEGER NOT NULL,
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
