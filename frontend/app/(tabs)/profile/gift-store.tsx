@@ -16,7 +16,7 @@ const { width } = Dimensions.get('window');
 // Complete gift catalog with all 45 gifts organized by tier
 export const GIFT_CATALOG = {
   LOW: {
-    name: 'low tiers',
+    name: 'Low tiers',
     priceRange: '1-10 SEK',
     color: '#4CAF50',
     gifts: [
