@@ -19,6 +19,15 @@ import * as Linking from 'expo-linking';
 type StreamType = 'solo' | 'battle' | null;
 type TeamSize = '1v1' | '2v2' | '3v3' | '4v4' | '5v5';
 
+const STREAM_LABELS = [
+  { id: 'roast', label: '🔥 Roast Mode', color: '#FF6B35' },
+  { id: 'comedy', label: '😂 Comedy', color: '#4ECDC4' },
+  { id: 'q&a', label: '❓ Q&A', color: '#9B59B6' },
+  { id: 'chill', label: '😎 Chill Vibes', color: '#3498DB' },
+  { id: 'drama', label: '🎭 Drama', color: '#E74C3C' },
+  { id: 'debate', label: '💬 Debate', color: '#F39C12' },
+];
+
 export default function PreLiveSetupScreen() {
   const router = useRouter();
   const { user } = useAuth();
@@ -30,6 +39,12 @@ export default function PreLiveSetupScreen() {
   const [streamType, setStreamType] = useState<StreamType>(null);
   const [streamTitle, setStreamTitle] = useState('');
   const [teamSize, setTeamSize] = useState<TeamSize>('1v1');
+  
+  // New: Stream labels and settings
+  const [selectedLabels, setSelectedLabels] = useState<string[]>(['roast']);
+  const [allowGifts, setAllowGifts] = useState(true);
+  const [allowChat, setAllowChat] = useState(true);
+  const [slowModeSeconds, setSlowModeSeconds] = useState(0);
   
   // Permissions
   const [cameraPermission, setCameraPermission] = useState<boolean | null>(null);
