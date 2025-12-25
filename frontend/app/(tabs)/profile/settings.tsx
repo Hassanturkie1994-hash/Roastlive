@@ -33,6 +33,7 @@ export default function SettingsScreen() {
   const router = useRouter();
   const { user, signOut } = useAuth();
   const { theme: themeMode, toggleTheme } = useTheme();
+  const { role, isAdmin } = useAdminRole();
   const [notifications, setNotifications] = useState(true);
   const [privateAccount, setPrivateAccount] = useState(false);
 
