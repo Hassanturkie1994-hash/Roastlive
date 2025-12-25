@@ -233,7 +233,7 @@ export default function GiftPicker({
 
   const getTierColor = (tier: GiftTier) => {
     switch (tier) {
-      case 'basic': return theme.colors.textSecondary;
+      case 'low': return theme.colors.textSecondary;
       case 'mid': return theme.colors.info;
       case 'high': return theme.colors.success;
       case 'ultra': return theme.colors.primary;
