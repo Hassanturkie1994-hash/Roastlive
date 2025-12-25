@@ -310,15 +310,58 @@ CREATE POLICY "Users can update own notifications"
   USING (auth.uid() = user_id);
 
 -- Create indexes for performance
-CREATE INDEX idx_streams_host_id ON streams(host_id);
-CREATE INDEX idx_streams_is_live ON streams(is_live);
-CREATE INDEX idx_messages_stream_id ON messages(stream_id);
-CREATE INDEX idx_messages_created_at ON messages(created_at DESC);
-CREATE INDEX idx_gift_transactions_stream_id ON gift_transactions(stream_id);
-CREATE INDEX idx_notifications_user_id ON notifications(user_id);
-CREATE INDEX idx_notifications_is_read ON notifications(is_read);
-CREATE INDEX idx_follows_follower_id ON follows(follower_id);
-CREATE INDEX idx_follows_following_id ON follows(following_id);
+CREATE INDEX IF NOT EXISTS idx_streams_host_id ON streams(host_id);
+CREATE INDEX IF NOT EXISTS idx_streams_is_live ON streams(is_live);
+CREATE INDEX IF NOT EXISTS idx_messages_stream_id ON messages(stream_id);
+CREATE INDEX IF NOT EXISTS idx_messages_created_at ON messages(created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_gift_transactions_stream_id ON gift_transactions(stream_id);
+CREATE INDEX IF NOT EXISTS idx_notifications_user_id ON notifications(user_id);
+CREATE INDEX IF NOT EXISTS idx_notifications_is_read ON notifications(is_read);
+CREATE INDEX IF NOT EXISTS idx_follows_follower_id ON follows(follower_id);
+CREATE INDEX IF NOT EXISTS idx_follows_following_id ON follows(following_id);
+
+-- RPC Functions for counter operations
+CREATE OR REPLACE FUNCTION increment_viewer_count(stream_id UUID)
+RETURNS void AS $$
+BEGIN
+  UPDATE streams SET viewer_count = viewer_count + 1 WHERE id = stream_id;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+CREATE OR REPLACE FUNCTION decrement_viewer_count(stream_id UUID)
+RETURNS void AS $$
+BEGIN
+  UPDATE streams SET viewer_count = GREATEST(0, viewer_count - 1) WHERE id = stream_id;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+CREATE OR REPLACE FUNCTION increment_followers_count(user_id UUID)
+RETURNS void AS $$
+BEGIN
+  UPDATE profiles SET followers_count = followers_count + 1 WHERE id = user_id;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+CREATE OR REPLACE FUNCTION decrement_followers_count(user_id UUID)
+RETURNS void AS $$
+BEGIN
+  UPDATE profiles SET followers_count = GREATEST(0, followers_count - 1) WHERE id = user_id;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+CREATE OR REPLACE FUNCTION increment_following_count(user_id UUID)
+RETURNS void AS $$
+BEGIN
+  UPDATE profiles SET following_count = following_count + 1 WHERE id = user_id;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+CREATE OR REPLACE FUNCTION decrement_following_count(user_id UUID)
+RETURNS void AS $$
+BEGIN
+  UPDATE profiles SET following_count = GREATEST(0, following_count - 1) WHERE id = user_id;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
 
 -- Function to update updated_at timestamp
 CREATE OR REPLACE FUNCTION update_updated_at_column()
