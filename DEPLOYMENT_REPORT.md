@@ -151,9 +151,9 @@ source={{ uri: 'https://customer-assets.emergentagent.com/job_.../LOGO%20DARK%20
 ### Frontend (.env)
 ```bash
 EXPO_TUNNEL_SUBDOMAIN=roastui-design
-EXPO_PACKAGER_HOSTNAME=https://battleroyale-32.preview.emergentagent.com
+EXPO_PACKAGER_HOSTNAME=https://roast-battles.preview.emergentagent.com
 EXPO_PACKAGER_PROXY_URL=https://roastui-design.ngrok.io
-EXPO_PUBLIC_BACKEND_URL=https://battleroyale-32.preview.emergentagent.com
+EXPO_PUBLIC_BACKEND_URL=https://roast-battles.preview.emergentagent.com
 EXPO_PUBLIC_AGORA_APP_ID=e7431aa6fd444b9a8a076d22f36950d6
 EXPO_PUBLIC_SUPABASE_URL=https://nmvusudypqydnpqyffdp.supabase.co
 EXPO_PUBLIC_SUPABASE_ANON_KEY=eyJhbGci...
@@ -174,9 +174,9 @@ SUPABASE_SERVICE_ROLE_KEY=eyJhbGci...
 
 ## 🌐 Service Endpoints
 
-- **Frontend**: https://battleroyale-32.preview.emergentagent.com
-- **Backend API**: https://battleroyale-32.preview.emergentagent.com/api
-- **Health Check**: https://battleroyale-32.preview.emergentagent.com/api/health
+- **Frontend**: https://roast-battles.preview.emergentagent.com
+- **Backend API**: https://roast-battles.preview.emergentagent.com/api
+- **Health Check**: https://roast-battles.preview.emergentagent.com/api/health
 
 ---
 
