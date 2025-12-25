@@ -122,23 +122,31 @@ export function useAdminRole() {
     setLoading(true);
 
     try {
-      // Preferred: VIEW that uses auth.uid()
+      // Query admin_roles table directly
       const { data, error } = await supabase
-        .from('current_user_admin_role')
-        .select('role')
-        .single();
+        .from('admin_roles')
+        .select('role, is_active')
+        .eq('user_id', user.id)
+        .eq('is_active', true)
+        .maybeSingle();  // Use maybeSingle to avoid error if no role
 
-      if (error || !data) {
-        // User is NOT an admin
+      if (error) {
+        console.log('Error fetching role:', error.message);
+        setRole(null);
+        setPermissions(EMPTY_PERMISSIONS);
+      } else if (!data) {
+        // No admin role found
+        console.log('No admin role for user');
         setRole(null);
         setPermissions(EMPTY_PERMISSIONS);
       } else {
         const adminRole = data.role as AdminRole;
+        console.log('✅ Admin role loaded:', adminRole);
         setRole(adminRole);
         setPermissions(ROLE_PERMISSIONS[adminRole]);
       }
     } catch (err) {
-      console.error('Failed to fetch admin role:', err);
+      console.error('Exception loading admin role:', err);
       setRole(null);
       setPermissions(EMPTY_PERMISSIONS);
     } finally {
