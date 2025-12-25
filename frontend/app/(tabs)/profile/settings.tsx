@@ -85,11 +85,11 @@ export default function SettingsScreen() {
         },
         {
           id: 'dark-mode',
-          icon: 'moon-outline',
+          icon: themeMode === 'dark' ? 'moon' : 'sunny',
           label: 'Dark Mode',
           hasToggle: true,
-          toggleValue: darkMode,
-          onToggle: setDarkMode,
+          toggleValue: themeMode === 'dark',
+          onToggle: () => toggleTheme(),
         },
         {
           id: 'private-account',
