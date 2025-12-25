@@ -308,7 +308,7 @@ export default function GiftPicker({
 
           {/* Tier Tabs */}
           <View style={styles.tierTabs}>
-            {(['basic', 'mid', 'high', 'ultra', 'nuclear'] as GiftTier[]).map((tier) => (
+            {(['low', 'mid', 'high', 'ultra', 'nuclear'] as GiftTier[]).map((tier) => (
               <TouchableOpacity
                 key={tier}
                 style={[
@@ -326,7 +326,7 @@ export default function GiftPicker({
                     selectedTier === tier && { color: getTierColor(tier) },
                   ]}
                 >
-                  {tier.charAt(0).toUpperCase() + tier.slice(1)}
+                  {tier === 'low' ? 'Low' : tier === 'nuclear' ? 'Nuclear' : tier.charAt(0).toUpperCase() + tier.slice(1)}
                 </Text>
               </TouchableOpacity>
             ))}
