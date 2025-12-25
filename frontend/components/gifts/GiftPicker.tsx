@@ -115,7 +115,7 @@ export default function GiftPicker({
   onGiftSent,
 }: GiftPickerProps) {
   const { user } = useAuth();
-  const [selectedTier, setSelectedTier] = useState<GiftTier>('basic');
+  const [selectedTier, setSelectedTier] = useState<GiftTier>('low');
   const [balance, setBalance] = useState(0);
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
