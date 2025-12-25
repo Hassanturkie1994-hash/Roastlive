@@ -193,6 +193,10 @@ export default function GiftPanel({
                         !canAfford && styles.giftCardDisabled,
                       ]}
                       onPress={() => canAfford && handleSendGift(gift)}
+                      onLongPress={() => {
+                        setSelectedGift(gift);
+                        setDetailModalVisible(true);
+                      }}
                       disabled={!canAfford || sending}
                     >
                       <Text style={styles.giftIcon}>{gift.icon}</Text>
