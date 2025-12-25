@@ -71,7 +71,7 @@ export const GIFT_CATALOG = {
     ],
   },
   ULTRA: {
-    name: 'ultra tiers',
+    name: 'Ultra tiers',
     priceRange: '700-1500 SEK',
     color: '#FF5722',
     gifts: [
