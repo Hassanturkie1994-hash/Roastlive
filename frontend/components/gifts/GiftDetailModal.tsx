@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import {
   View,
   Text,
@@ -11,6 +11,8 @@ import { Ionicons } from '@expo/vector-icons';
 import { theme } from '../../constants/theme';
 import { Gift } from '../../services/giftService';
 import { Audio } from 'expo-av';
+import { Video, ResizeMode } from 'expo-av';
+import LottieView from 'lottie-react-native';
 
 interface GiftDetailModalProps {
   visible: boolean;
