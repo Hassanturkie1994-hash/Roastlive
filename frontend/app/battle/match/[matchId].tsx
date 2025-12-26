@@ -28,11 +28,6 @@ interface PlayerProfile {
   avatar_url?: string;
 }
 
-interface VoteCount {
-  team_a: number;
-  team_b: number;
-}
-
 type BattlePhase = 'waiting' | 'countdown' | 'battle' | 'voting' | 'results';
 
 export default function BattleMatchScreen() {
