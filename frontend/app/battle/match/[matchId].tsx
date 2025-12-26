@@ -53,6 +53,10 @@ export default function BattleMatchScreen() {
   const [userVote, setUserVote] = useState<'team_a' | 'team_b' | null>(null);
   const [winner, setWinner] = useState<'team_a' | 'team_b' | 'tie' | null>(null);
   const [showRematchModal, setShowRematchModal] = useState(false);
+  const [showChat, setShowChat] = useState(true);
+  const [showGiftPicker, setShowGiftPicker] = useState(false);
+  const [giftQueue, setGiftQueue] = useState<any[]>([]);
+  const [streamId, setStreamId] = useState<string | null>(null);
 
   // Animations
   const pulseAnim = useRef(new Animated.Value(1)).current;
