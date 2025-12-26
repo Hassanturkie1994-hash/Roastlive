@@ -185,6 +185,7 @@ export default function BroadcastScreen() {
           title: streamTitle,
           channel_name: channelName,
           is_live: true,
+          is_paused: false,
           started_at: new Date().toISOString(),
         })
         .select()
@@ -194,6 +195,21 @@ export default function BroadcastScreen() {
 
       setStreamId(stream.id);
       setIsLive(true);
+
+      // Initialize pause/resume monitoring
+      streamMonitorCleanup.current = initializeStreamMonitoring(
+        stream.id,
+        () => {
+          // Auto-end callback
+          Alert.alert(
+            'Stream Ended',
+            'Your stream was automatically ended after 10 minutes of being paused.',
+            [{ text: 'OK', onPress: () => router.back() }]
+          );
+          setIsLive(false);
+          setStreamId(null);
+        }
+      );
 
       // Subscribe to viewer count updates
       const channel = supabase
@@ -205,6 +221,7 @@ export default function BroadcastScreen() {
           filter: `id=eq.${stream.id}`,
         }, (payload) => {
           setViewerCount(payload.new.viewer_count || 0);
+          setIsPaused(payload.new.is_paused || false);
         })
         .subscribe();
 
