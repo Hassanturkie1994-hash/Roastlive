@@ -476,6 +476,44 @@ export default function BroadcastScreen() {
           onClose={() => setShowModeratorModal(false)}
         />
       )}
+
+      {/* Viewer List Modal */}
+      {showViewerList && streamId && (
+        <ViewerListModal
+          visible={showViewerList}
+          streamId={streamId}
+          hostId={user?.id || ''}
+          onClose={() => setShowViewerList(false)}
+          onInviteGuest={(viewerId) => {
+            console.log('Invite guest:', viewerId);
+            // TODO: Implement guest invitation logic
+          }}
+          onMakeModerator={async (viewerId) => {
+            if (streamId) {
+              await supabase.from('stream_moderators').insert({
+                stream_id: streamId,
+                user_id: viewerId,
+                assigned_by: user?.id,
+              });
+            }
+          }}
+        />
+      )}
+
+      {/* Gift Picker Modal */}
+      {showGiftPicker && streamId && (
+        <GiftPickerModal
+          visible={showGiftPicker}
+          streamId={streamId}
+          recipientId={user?.id || ''}
+          recipientName={profile?.username || 'Host'}
+          onClose={() => setShowGiftPicker(false)}
+          onGiftSent={(gift) => {
+            console.log('Gift sent:', gift);
+            setShowGiftPicker(false);
+          }}
+        />
+      )}
     </View>
   );
 }
