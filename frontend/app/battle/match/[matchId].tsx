@@ -45,7 +45,7 @@ export default function BattleMatchScreen() {
   const [countdownValue, setCountdownValue] = useState(3);
   const [isReady, setIsReady] = useState(false);
   const [loading, setLoading] = useState(true);
-  const [votes, setVotes] = useState<VoteCount>({ team_a: 0, team_b: 0 });
+  const [votes, setVotes] = useState<VoteCount>({ team_a: 0, team_b: 0, total: 0, percentage: { team_a: 50, team_b: 50 } });
   const [userVote, setUserVote] = useState<'team_a' | 'team_b' | null>(null);
   const [winner, setWinner] = useState<'team_a' | 'team_b' | 'tie' | null>(null);
   const [showRematchModal, setShowRematchModal] = useState(false);
