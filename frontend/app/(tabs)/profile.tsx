@@ -90,6 +90,16 @@ export default function Profile() {
     }
   };
 
+  const loadXPInfo = async () => {
+    if (!user?.id) return;
+    try {
+      const xp = await getUserXPInfo(user.id);
+      setXPInfo(xp);
+    } catch (error) {
+      console.error('Error loading XP:', error);
+    }
+  };
+
   const handleSignOut = async () => {
     await signOut();
     router.replace('/auth/welcome');
