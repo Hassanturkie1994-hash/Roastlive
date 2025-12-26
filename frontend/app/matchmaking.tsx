@@ -141,6 +141,21 @@ export default function MatchmakingScreen() {
     return unsubscribe;
   }, [user?.id]);
 
+  // Subscribe to queue position updates
+  useEffect(() => {
+    if (!user?.id || state !== 'searching') return;
+
+    const unsubscribe = subscribeToQueuePosition(
+      user.id,
+      teamSize,
+      (position) => {
+        setQueuePosition(position);
+      }
+    );
+
+    return unsubscribe;
+  }, [user?.id, teamSize, state]);
+
   // Get queue stats
   useEffect(() => {
     const getQueueStats = async () => {
