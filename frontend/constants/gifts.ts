@@ -70,7 +70,7 @@ export const GIFTS: Gift[] = [
   { id: 'funeral', name: 'Funeral', emoji: '⚰️', cost: 2000, tier: 'nuclear', format: 'mp4', cinematic: true },
   { id: 'riot', name: 'Riot', emoji: '🚨', cost: 2500, tier: 'nuclear', format: 'mp4', cinematic: true },
   { id: 'execution', name: 'Execution', emoji: '👀', cost: 3000, tier: 'nuclear', format: 'mp4', cinematic: true },
-  { id: 'you_are_done', name: \"You're Done\", emoji: '👋', cost: 3500, tier: 'nuclear', format: 'mp4', cinematic: true },
+  { id: 'you_are_done', name: "You're Done", emoji: '👋', cost: 3500, tier: 'nuclear', format: 'mp4', cinematic: true },
   { id: 'apocalypse', name: 'Apocalypse', emoji: '🌋', cost: 4000, tier: 'nuclear', format: 'mp4', cinematic: true },
   { id: 'dragon', name: 'Dragon', emoji: '🐉', cost: 4500, tier: 'nuclear', format: 'mp4', cinematic: true },
 ];
