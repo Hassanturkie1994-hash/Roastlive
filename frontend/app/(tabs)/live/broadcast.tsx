@@ -190,6 +190,37 @@ export default function BroadcastScreen() {
     const performEnd = async () => {
       try {
         if (streamId) {
+          // Calculate stream duration
+          const { data: stream } = await supabase
+            .from('streams')
+            .select('started_at')
+            .eq('id', streamId)
+            .single();
+
+          if (stream?.started_at) {
+            const durationMinutes = Math.floor(
+              (Date.now() - new Date(stream.started_at).getTime()) / 60000
+            );
+
+            // Award XP for stream completion
+            if (durationMinutes > 0) {
+              const { awardStreamXP, updateBadges } = await import('../../../services/xpService');
+              const xpResult = await awardStreamXP(user?.id || '', durationMinutes, streamId);
+              
+              if (xpResult.leveledUp) {
+                Alert.alert(
+                  'Level Up! \ud83c\udf89',
+                  `You reached level ${xpResult.newLevel}!\n${xpResult.rankTitle}`,
+                  [{ text: 'Awesome!', style: 'default' }]
+                );
+              }
+
+              // Update badges
+              await updateBadges(user?.id || '');
+            }
+          }
+
+          // End stream in database
           await supabase
             .from('streams')
             .update({
@@ -203,6 +234,7 @@ export default function BroadcastScreen() {
         router.back();
       } catch (error) {
         console.error('End stream error:', error);
+        router.back(); // Navigate back even if there's an error
       }
     };
 
