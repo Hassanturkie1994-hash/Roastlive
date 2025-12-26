@@ -443,9 +443,6 @@ async def get_transactions(user_id: str):
         logging.error(f"Get transactions error: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
 
-# Include router
-app.include_router(api_router)
-
 # VIP Club endpoints
 @api_router.post("/vip/create-club")
 async def create_vip_club(creator_id: str, badge_text: str = "VIP"):
