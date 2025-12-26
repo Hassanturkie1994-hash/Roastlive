@@ -260,22 +260,20 @@ export default function BattleMatchScreen() {
   const handleVote = async (team: 'team_a' | 'team_b') => {
     if (!user?.id || userVote || phase !== 'battle') return;
 
-    try {
-      const { error } = await supabase.from('battle_votes').insert({
-        match_id: matchId,
-        voter_id: user.id,
-        team,
-      });
-
-      if (error) throw error;
-
+    const result = await battleService.castVote(matchId, user.id, team);
+    
+    if (result.success) {
       setUserVote(team);
       
       if (Platform.OS !== 'web') {
         Vibration.vibrate(50);
       }
-    } catch (error) {
-      console.error('Error voting:', error);
+      
+      // Refresh vote counts
+      const voteCounts = await battleService.getVoteCounts(matchId);
+      setVotes(voteCounts);
+    } else {
+      Alert.alert('Error', result.error || 'Failed to cast vote');
     }
   };
 
