@@ -48,13 +48,17 @@ export const matchmakingService = {
     teamSize: TeamSize
   ): Promise<{ success: boolean; queueId?: string; error?: string }> {
     try {
-      // Check if user is already in queue
-      const { data: existing } = await supabase
+      // Check if user is already in queue - use maybeSingle to avoid error if not in queue
+      const { data: existing, error: checkError } = await supabase
         .from('matchmaking_queue')
         .select('*')
         .eq('user_id', userId)
         .eq('status', 'waiting')
-        .single();
+        .maybeSingle();
+
+      if (checkError) {
+        throw checkError;
+      }
 
       if (existing) {
         return { success: true, queueId: existing.id };
@@ -69,7 +73,7 @@ export const matchmakingService = {
           status: 'waiting',
         })
         .select()
-        .single();
+        .single();  // Keep .single() - we just inserted, must return 1 row
 
       if (error) throw error;
 
