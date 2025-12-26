@@ -25,4 +25,17 @@ config.resolver.blockList = [
 // Reduce the number of workers to decrease resource usage
 config.maxWorkers = 2;
 
+// Fix for broken @expo/metro-runtime package
+// The package.json points to TypeScript source, but we need the JS file
+config.resolver.resolveRequest = (context, moduleName, platform) => {
+  if (moduleName === '@expo/metro-runtime') {
+    return {
+      filePath: path.join(__dirname, 'node_modules/@expo/metro-runtime/async-require.js'),
+      type: 'sourceFile',
+    };
+  }
+  // Default resolver
+  return context.resolveRequest(context, moduleName, platform);
+};
+
 module.exports = config;
