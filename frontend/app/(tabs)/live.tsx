@@ -64,7 +64,8 @@ export default function Live() {
       router.push('/auth/signin');
       return;
     }
-    router.push('/(tabs)/live/broadcast');
+    // FIXED: Navigate to pre-live-setup instead of going live directly
+    router.push('/pre-live-setup');
   };
 
   return (
@@ -100,71 +101,50 @@ export default function Live() {
       </View>
 
       {/* Content */}
-      <ScrollView
-        style={styles.content}
-        contentContainerStyle={styles.contentContainer}
-        refreshControl={
-          <RefreshControl
-            refreshing={refreshing}
-            onRefresh={onRefresh}
-            tintColor={theme.colors.primary}
-          />
-        }
-      >
-        {loading ? (
-          <View style={styles.loadingContainer}>
-            <ActivityIndicator size="large" color={theme.colors.primary} />
-          </View>
-        ) : streams.length > 0 ? (
-          <View style={styles.streamGrid}>
-            {streams.map((stream) => (
-              <StreamCard key={stream.id} stream={stream} />
-            ))}
-          </View>
-        ) : (
-          <View style={styles.emptyState}>
-            <View style={styles.liveIcon}>
-              <Ionicons name="radio" size={64} color={theme.colors.primary} />
-              <View style={styles.liveDot} />
-            </View>
-            <Text style={styles.emptyTitle}>No Live Streams</Text>
-            <Text style={styles.emptyText}>
-              Be the first to go live and start a roast battle!
-            </Text>
-            <TouchableOpacity style={styles.startButton} onPress={handleGoLive}>
-              <Ionicons name="videocam" size={24} color="#fff" />
-              <Text style={styles.startButtonText}>Start Streaming</Text>
-            </TouchableOpacity>
-          </View>
-        )}
-
-        {/* Categories */}
-        <View style={styles.categoriesSection}>
-          <Text style={styles.sectionTitle}>Browse by Category</Text>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-            {[
-              { name: '🎭 Comedy', count: 0 },
-              { name: '🎤 Rap Battles', count: 0 },
-              { name: '🎮 Gaming', count: 0 },
-              { name: '💬 Talk Shows', count: 0 },
-              { name: '🔥 Hot Takes', count: 0 },
-            ].map((cat, index) => (
-              <TouchableOpacity key={index} style={styles.categoryCard}>
-                <Text style={styles.categoryName}>{cat.name}</Text>
-                <Text style={styles.categoryCount}>{cat.count} live</Text>
-              </TouchableOpacity>
-            ))}
-          </ScrollView>
+      {loading ? (
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color={theme.colors.primary} />
         </View>
+      ) : (
+        <ScrollView
+          style={styles.content}
+          refreshControl={
+            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+          }
+        >
+          {activeTab === 'discover' && (
+            <View style={styles.streamsGrid}>
+              {streams.length > 0 ? (
+                streams.map((stream) => (
+                  <StreamCard
+                    key={stream.id}
+                    stream={stream}
+                    onPress={() => router.push(`/(tabs)/live/viewer/${stream.id}`)}
+                  />
+                ))
+              ) : (
+                <View style={styles.emptyState}>
+                  <Ionicons name="videocam-off-outline" size={64} color={theme.colors.textSecondary} />
+                  <Text style={styles.emptyText}>No live streams right now</Text>
+                  <Text style={styles.emptySubtext}>Check back later or go live yourself!</Text>
+                </View>
+              )}
+            </View>
+          )}
 
-        <View style={{ height: 150 }} />
-      </ScrollView>
+          {activeTab === 'following' && (
+            <View style={styles.emptyState}>
+              <Ionicons name="people-outline" size={64} color={theme.colors.textSecondary} />
+              <Text style={styles.emptyText}>No one you follow is live</Text>
+              <Text style={styles.emptySubtext}>Start following creators to see their streams here</Text>
+            </View>
+          )}
+        </ScrollView>
+      )}
 
       {/* Go Live Button */}
       <TouchableOpacity style={styles.goLiveButton} onPress={handleGoLive}>
-        <View style={styles.goLiveIconContainer}>
-          <Ionicons name="videocam" size={28} color="#fff" />
-        </View>
+        <Ionicons name="videocam" size={28} color="#fff" />
         <Text style={styles.goLiveText}>Go Live</Text>
       </TouchableOpacity>
     </View>
@@ -172,171 +152,99 @@ export default function Live() {
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: theme.colors.background,
-  },
+  container: { flex: 1, backgroundColor: theme.colors.background },
   header: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
+    justifyContent: 'space-between',
     paddingHorizontal: theme.spacing.md,
     paddingTop: theme.spacing.xxl + 10,
     paddingBottom: theme.spacing.md,
-    backgroundColor: theme.colors.background,
+    backgroundColor: theme.colors.surface,
+    borderBottomWidth: 1,
+    borderBottomColor: theme.colors.border,
   },
   headerTitle: {
     fontSize: theme.typography.sizes.xxl,
     fontWeight: theme.typography.weights.bold,
     color: theme.colors.text,
   },
-  headerActions: {
-    flexDirection: 'row',
-  },
+  headerActions: { flexDirection: 'row', gap: theme.spacing.sm },
   searchButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: theme.colors.surface,
+    width: 44,
+    height: 44,
     alignItems: 'center',
     justifyContent: 'center',
   },
   tabBar: {
     flexDirection: 'row',
-    paddingHorizontal: theme.spacing.md,
-    marginBottom: theme.spacing.md,
+    backgroundColor: theme.colors.surface,
+    borderBottomWidth: 1,
+    borderBottomColor: theme.colors.border,
   },
   tab: {
-    paddingVertical: theme.spacing.sm,
-    paddingHorizontal: theme.spacing.lg,
-    borderRadius: theme.borderRadius.full,
-    marginRight: theme.spacing.sm,
-    backgroundColor: theme.colors.surface,
+    flex: 1,
+    paddingVertical: theme.spacing.md,
+    alignItems: 'center',
+    borderBottomWidth: 2,
+    borderBottomColor: 'transparent',
   },
-  activeTab: {
-    backgroundColor: theme.colors.primary,
-  },
+  activeTab: { borderBottomColor: theme.colors.primary },
   tabText: {
     fontSize: theme.typography.sizes.base,
-    color: theme.colors.textSecondary,
-    fontWeight: theme.typography.weights.medium,
-  },
-  activeTabText: {
-    color: '#fff',
     fontWeight: theme.typography.weights.semibold,
+    color: theme.colors.textSecondary,
   },
-  content: {
-    flex: 1,
-  },
-  contentContainer: {
-    paddingHorizontal: theme.spacing.md,
-  },
+  activeTabText: { color: theme.colors.primary },
   loadingContainer: {
-    padding: theme.spacing.xxl,
+    flex: 1,
     alignItems: 'center',
+    justifyContent: 'center',
   },
-  streamGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    justifyContent: 'space-between',
+  content: { flex: 1 },
+  streamsGrid: {
+    padding: theme.spacing.sm,
   },
   emptyState: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    padding: theme.spacing.xxl,
-    paddingTop: theme.spacing.xxl * 2,
-  },
-  liveIcon: {
-    position: 'relative',
-    marginBottom: theme.spacing.lg,
-  },
-  liveDot: {
-    position: 'absolute',
-    top: 8,
-    right: 8,
-    width: 16,
-    height: 16,
-    borderRadius: 8,
-    backgroundColor: theme.colors.live,
-    borderWidth: 3,
-    borderColor: theme.colors.background,
-  },
-  emptyTitle: {
-    fontSize: theme.typography.sizes.xl,
-    fontWeight: theme.typography.weights.bold,
-    color: theme.colors.text,
-    marginBottom: theme.spacing.sm,
+    paddingVertical: theme.spacing.xxxl * 2,
+    paddingHorizontal: theme.spacing.xl,
   },
   emptyText: {
-    fontSize: theme.typography.sizes.base,
-    color: theme.colors.textSecondary,
-    textAlign: 'center',
-    lineHeight: 24,
-    marginBottom: theme.spacing.lg,
-  },
-  startButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: theme.colors.primary,
-    paddingVertical: theme.spacing.md,
-    paddingHorizontal: theme.spacing.xl,
-    borderRadius: theme.borderRadius.full,
-  },
-  startButtonText: {
     fontSize: theme.typography.sizes.lg,
-    fontWeight: theme.typography.weights.bold,
-    color: '#fff',
-    marginLeft: theme.spacing.sm,
-  },
-  categoriesSection: {
-    marginTop: theme.spacing.xl,
-  },
-  sectionTitle: {
-    fontSize: theme.typography.sizes.lg,
-    fontWeight: theme.typography.weights.bold,
-    color: theme.colors.text,
-    marginBottom: theme.spacing.md,
-  },
-  categoryCard: {
-    backgroundColor: theme.colors.surface,
-    padding: theme.spacing.lg,
-    borderRadius: theme.borderRadius.lg,
-    marginRight: theme.spacing.md,
-    minWidth: 120,
-  },
-  categoryName: {
-    fontSize: theme.typography.sizes.base,
     fontWeight: theme.typography.weights.semibold,
     color: theme.colors.text,
-    marginBottom: theme.spacing.xs,
+    marginTop: theme.spacing.md,
+    textAlign: 'center',
   },
-  categoryCount: {
+  emptySubtext: {
     fontSize: theme.typography.sizes.sm,
     color: theme.colors.textSecondary,
+    marginTop: theme.spacing.xs,
+    textAlign: 'center',
   },
   goLiveButton: {
     position: 'absolute',
-    bottom: 100,
-    right: theme.spacing.md,
+    bottom: theme.spacing.xl,
+    right: theme.spacing.lg,
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: theme.colors.primary,
     paddingVertical: theme.spacing.md,
     paddingHorizontal: theme.spacing.lg,
-    borderRadius: theme.borderRadius.full,
-    shadowColor: theme.colors.primary,
+    borderRadius: 30,
+    shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.4,
-    shadowRadius: 10,
-    elevation: 10,
-  },
-  goLiveIconContainer: {
-    marginRight: theme.spacing.sm,
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 8,
   },
   goLiveText: {
     fontSize: theme.typography.sizes.lg,
     fontWeight: theme.typography.weights.bold,
     color: '#fff',
+    marginLeft: theme.spacing.sm,
   },
 });
