@@ -316,6 +316,67 @@ test_plan:
   test_all: false
   test_priority: "high_first"
 
+  - task: "XP System Backend - Award XP"
+    implemented: true
+    working: "NA"
+    file: "/app/frontend/services/xpService.ts"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+        -working: "NA"
+        -agent: "main"
+        -comment: "Comprehensive XP system with 50 levels, 11 rank titles, 10 badges. Awards XP for: battle wins (100), losses (50), ties (75), stream completion (30), 30min stream (50), 60min stream (100), gifts received (5), followers gained (10). Database function for atomic XP awards created in DATABASE_PHASE3_4_XP_STORAGE.sql. Needs backend testing to verify XP calculations, level progression, and badge awards work correctly."
+
+  - task: "Pause/Resume Stream on App Minimize"
+    implemented: true
+    working: "NA"
+    file: "/app/frontend/utils/streamStateManager.ts"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+        -working: "NA"
+        -agent: "main"
+        -comment: "Stream automatically pauses when app goes to background (phone call, minimize). 10-minute timeout before auto-ending. Database fields added in DATABASE_PAUSE_RESUME.sql. Integrated in broadcast.tsx with AppState listener. Needs testing: backgrounding detection, pause state persistence, timeout countdown, auto-resume on foreground."
+
+  - task: "Leaderboard API & Display"
+    implemented: true
+    working: "NA"
+    file: "/app/frontend/app/leaderboard.tsx"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+        -working: "NA"
+        -agent: "main"
+        -comment: "Leaderboard screen showing top 100 users by XP. Displays: rank medals (🥇🥈🥉), user badges (up to 3 + count), XP progress bars, win streaks. User's own rank highlighted. Database query sorts by total_xp DESC. Needs testing: data fetching, rank calculation, user highlighting, refresh functionality."
+
+  - task: "Supabase Storage Integration"
+    implemented: true
+    working: "NA"
+    file: "/app/frontend/utils/storageUtils.ts"
+    stuck_count: 0
+    priority: "medium"
+    needs_retesting: true
+    status_history:
+        -working: "NA"
+        -agent: "main"
+        -comment: "Utility functions for uploading to Supabase Storage: avatars, stream thumbnails, posts, stories, gifts. Handles base64 encoding, unique file paths, public URL generation. Requires PUBLIC buckets to be created in Supabase Dashboard. Needs testing: upload functions, file path generation, URL retrieval."
+
+backend:
+  - task: "Content Moderation API"
+    implemented: true
+    working: "NA"
+    file: "/app/backend/services/moderation_service.py"
+    stuck_count: 0
+    priority: "medium"
+    needs_retesting: true
+    status_history:
+        -working: "NA"
+        -agent: "main"
+        -comment: "OpenAI GPT-based content moderation for stream titles, chat messages, usernames. Returns toxicity score 0-1 and flagged categories. Integrated with Emergent LLM Key. Needs testing: API endpoint response, toxicity detection accuracy, error handling."
+
 agent_communication:
     -agent: "main"
-    -message: "PHASE 1 & 2 COMPLETE: Fixed all critical blockers and implemented UI controls. Created DATABASE_FIXES_PHASE1.sql (USER MUST RUN IN SUPABASE). Fixed: 1) Avatar_url missing column error (9496.png), 2) UUID format errors in battle matching (9498.png, 9499.png), 3) Stream loading 404/520 errors (9501.png, 9502.png). Implemented: 1) Flashlight toggle for back camera, 2) Swipe-back confirmation dialog, 3) All UI buttons functional. Expo restarted successfully. Ready for user testing. See PHASE_1_2_FIXES_README.md for complete details and testing instructions."
+    -message: "PHASES 1-7 COMPLETE: Environment fixed (ENOSPC resolved), services running successfully. Implemented: XP & Ranking (50 levels, badges, leaderboard), Battle Mode MultiGuestGrid, Pause/Resume with 10min timeout, Supabase Storage utils, Queue improvements. DATABASE UPDATES REQUIRED: User must run DATABASE_FIXES_PHASE1.sql, DATABASE_PHASE3_4_XP_STORAGE.sql, DATABASE_PAUSE_RESUME.sql in Supabase. READY FOR COMPREHENSIVE TESTING. Focus areas: XP calculations, pause/resume flow, leaderboard display, storage uploads. See COMPLETE_IMPLEMENTATION_SUMMARY.md for full details."
