@@ -675,6 +675,63 @@ export default function BattleMatchScreen() {
           <Text style={styles.finalSecondsText}>{timeRemaining}</Text>
         </View>
       )}
+      
+      {/* Live Chat Overlay */}
+      {showChat && streamId && phase !== 'results' && (
+        <View style={styles.chatContainer}>
+          <LiveChat
+            streamId={streamId}
+            hostId={participants[0]?.user_id || ''}
+            isHost={false}
+            chatEnabled={true}
+            slowModeSeconds={0}
+            onGiftTap={() => setShowGiftPicker(true)}
+          />
+        </View>
+      )}
+      
+      {/* Gift Picker Modal */}
+      <Modal
+        visible={showGiftPicker}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setShowGiftPicker(false)}
+      >
+        <GiftPicker
+          onSelectGift={(gift) => {
+            // Add gift to queue for animation
+            setGiftQueue(prev => [...prev, { gift, timestamp: Date.now() }]);
+            setShowGiftPicker(false);
+          }}
+          onClose={() => setShowGiftPicker(false)}
+        />
+      </Modal>
+      
+      {/* Gift Overlay Animations */}
+      {giftQueue.map((item, index) => (
+        <GiftOverlay
+          key={`${item.timestamp}-${index}`}
+          gift={item.gift}
+          senderName={user?.user_metadata?.username || 'Anonymous'}
+          onComplete={() => {
+            setGiftQueue(prev => prev.filter((g, i) => i !== index));
+          }}
+        />
+      ))}
+      
+      {/* Chat Toggle Button */}
+      {phase !== 'results' && (
+        <TouchableOpacity
+          style={styles.chatToggleButton}
+          onPress={() => setShowChat(!showChat)}
+        >
+          <Ionicons 
+            name={showChat ? 'chatbubbles' : 'chatbubbles-outline'} 
+            size={24} 
+            color="#fff" 
+          />
+        </TouchableOpacity>
+      )}
     </View>
   );
 }
