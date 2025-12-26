@@ -17,6 +17,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { theme } from '../../../constants/theme';
 import { useAuth } from '../../../contexts/AuthContext';
 import { matchmakingService, BattleMatch, MatchParticipant } from '../../../services/matchmakingService';
+import { battleService, VoteCount } from '../../../services/battleService';
 import { supabase } from '../../../lib/supabase';
 
 const { width, height } = Dimensions.get('window');
