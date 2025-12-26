@@ -86,8 +86,14 @@ const styles = StyleSheet.create({
   sceneContainer: {
     backgroundColor: theme.colors.background,
   },
-  headerLogo: {
-    width: 140,
-    height: 40,
+  headerLogoContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  headerLogoText: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: theme.colors.primary,
+    letterSpacing: 1,
   },
 });
