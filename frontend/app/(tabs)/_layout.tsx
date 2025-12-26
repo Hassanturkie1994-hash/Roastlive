@@ -1,6 +1,6 @@
 import React from 'react';
 import { Tabs } from 'expo-router';
-import { View, StyleSheet, Image, Text } from 'react-native';
+import { View, StyleSheet, Text } from 'react-native';
 import { usePathname } from 'expo-router';
 import CustomTabBar from '../../components/navigation/CustomTabBar';
 import { theme } from '../../constants/theme';
