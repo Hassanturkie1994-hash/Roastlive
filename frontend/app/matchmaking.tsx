@@ -15,6 +15,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { theme } from '../constants/theme';
 import { useAuth } from '../contexts/AuthContext';
 import { matchmakingService, TeamSize, QueueEntry } from '../services/matchmakingService';
+import { getQueuePosition, getQueueStats, subscribeToQueuePosition } from '../utils/queueUtils';
 import { supabase } from '../lib/supabase';
 
 type MatchmakingState = 'searching' | 'match_found' | 'waiting_accept' | 'starting' | 'cancelled';
