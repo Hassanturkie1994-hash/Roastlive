@@ -307,20 +307,15 @@ metadata:
 
 test_plan:
   current_focus:
-    - "Expo Go Loading on Android"
-    - "Gift Store - Tier Formats"
-    - "Settings Navigation"
-    - "Multi-Guest UI Components"
-    - "VIP Club System"
-    - "Posts & Social Features"
-    - "Admin Dashboards"
-    - "Discovery & Trending"
+    - "Database Schema Fixes"
+    - "UUID Format Fixes for Battle Matching"
+    - "Stream Loading from Supabase"
+    - "Swipe-Back Protection for Live Streams"
+    - "Flashlight Toggle for Streams"
   stuck_tasks: []
-  test_all: true
+  test_all: false
   test_priority: "high_first"
 
 agent_communication:
     -agent: "main"
-    -message: "Completed Phases 0-7 implementation. Fixed Expo Go crash (removed Agora, installed worklets, fixed router structure). Implemented 45-gift system with correct formats, VIP clubs, posts, admin dashboards, AI moderation service, and discovery feeds. All database tables created in supabase_schema.sql. Ready for comprehensive mobile testing on Android via Expo Go."
-    -agent: "testing"
-    -message: "CRITICAL BUGS FIXED & TESTING COMPLETE: Fixed Metro bundler crash caused by incorrect import paths in 6 files (admin/head-admin.tsx, admin/reports.tsx, posts/create.tsx, posts/index.tsx, discover/index.tsx) and JSX syntax errors (ListEmptyComponent= to ListEmptyComponent={). App now loads successfully. TESTED on mobile viewport 390x844: ✅ App loads without crashes ✅ Gift Store: All 5 tier names correct (lowercase plural), LOW tier = all Lottie, ULTRA tier = all MP4 ✅ Settings navigation works ✅ VIP Club Dashboard loads ✅ Posts screen loads ✅ Discover screen loads ✅ Admin Dashboard loads. Multi-guest components not tested (require video/audio hardware). App is ready for Expo Go testing on actual Android device."
+    -message: "PHASE 1 & 2 COMPLETE: Fixed all critical blockers and implemented UI controls. Created DATABASE_FIXES_PHASE1.sql (USER MUST RUN IN SUPABASE). Fixed: 1) Avatar_url missing column error (9496.png), 2) UUID format errors in battle matching (9498.png, 9499.png), 3) Stream loading 404/520 errors (9501.png, 9502.png). Implemented: 1) Flashlight toggle for back camera, 2) Swipe-back confirmation dialog, 3) All UI buttons functional. Expo restarted successfully. Ready for user testing. See PHASE_1_2_FIXES_README.md for complete details and testing instructions."
