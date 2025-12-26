@@ -80,32 +80,25 @@ export default function BattleMatchScreen() {
     return unsubscribe;
   }, [matchId, phase]);
 
-  // Subscribe to votes
+  // Subscribe to votes with battleService
   useEffect(() => {
     if (!matchId) return;
 
-    const channel = supabase
-      .channel(`battle-votes-${matchId}`)
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'battle_votes',
-          filter: `match_id=eq.${matchId}`,
-        },
-        () => {
-          loadVotes();
-        }
-      )
-      .subscribe();
+    // Subscribe to real-time vote updates
+    const unsubscribe = battleService.subscribeToVotes(matchId, (voteCounts) => {
+      setVotes(voteCounts);
+    });
 
-    loadVotes();
+    // Initial load
+    battleService.getVoteCounts(matchId).then(setVotes);
+    
+    // Check if user has voted
+    if (user?.id) {
+      battleService.getUserVote(matchId, user.id).then(setUserVote);
+    }
 
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [matchId]);
+    return unsubscribe;
+  }, [matchId, user?.id]);
 
   // Battle timer
   useEffect(() => {
