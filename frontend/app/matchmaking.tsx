@@ -360,6 +360,16 @@ export default function MatchmakingScreen() {
 
           {/* Queue Stats */}
           <View style={styles.statsContainer}>
+            {queuePosition && (
+              <>
+                <View style={styles.statItem}>
+                  <Ionicons name="podium" size={20} color={theme.colors.gold} />
+                  <Text style={styles.statValue}>#{queuePosition}</Text>
+                  <Text style={styles.statLabel}>Your Position</Text>
+                </View>
+                <View style={styles.statDivider} />
+              </>
+            )}
             <View style={styles.statItem}>
               <Ionicons name="people" size={20} color={theme.colors.primary} />
               <Text style={styles.statValue}>{playersInQueue}</Text>
