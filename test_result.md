@@ -307,11 +307,11 @@ metadata:
 
 test_plan:
   current_focus:
-    - "Database Schema Fixes"
-    - "UUID Format Fixes for Battle Matching"
-    - "Stream Loading from Supabase"
-    - "Swipe-Back Protection for Live Streams"
-    - "Flashlight Toggle for Streams"
+    - "XP System Backend - Award XP"
+    - "Pause/Resume Stream on App Minimize"
+    - "Leaderboard API & Display"
+    - "Supabase Storage Integration"
+    - "Content Moderation API"
   stuck_tasks: []
   test_all: false
   test_priority: "high_first"
