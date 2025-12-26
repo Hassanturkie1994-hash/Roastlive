@@ -9,12 +9,14 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import { CameraView, CameraType, useCameraPermissions } from 'expo-camera';
-import { useRouter } from 'expo-router';
+import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { theme } from '../../../constants/theme';
 import { useAuth } from '../../../contexts/AuthContext';
 import { supabase } from '../../../lib/supabase';
 import axios from 'axios';
+import LiveChat from '../../../components/stream/LiveChat';
+import StreamModeratorModal from '../../../components/stream/StreamModeratorModal';
 
 const API_URL = process.env.EXPO_PUBLIC_BACKEND_URL;
 
