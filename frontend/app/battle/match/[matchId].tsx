@@ -563,35 +563,24 @@ export default function BattleMatchScreen() {
         <View style={{ width: 44 }} />
       </View>
 
-      {/* Split Screen View */}
+      {/* Split Screen View with Multi-Guest Grid */}
       <View style={styles.battleArea}>
         {/* Team A Side */}
         <View style={[styles.teamSide, styles.teamASide]}>
-          <View style={styles.teamVideoArea}>
-            {/* Demo placeholder for video */}
-            <View style={styles.videoPlaceholder}>
-              <View style={[styles.playerAvatarLarge, { backgroundColor: theme.colors.primary }]}>
-                <Text style={styles.playerAvatarLargeText}>
-                  {profiles[teamAParticipants[0]?.user_id]?.username?.charAt(0).toUpperCase() || 'A'}
-                </Text>
-              </View>
-              {phase === 'battle' && (
-                <View style={styles.speakingIndicator}>
-                  <Ionicons name="mic" size={16} color="#fff" />
-                </View>
-              )}
-            </View>
-          </View>
+          <MultiGuestGrid
+            guests={teamAParticipants.map(p => ({
+              id: p.user_id,
+              username: profiles[p.user_id]?.username || 'Player',
+              avatar_url: profiles[p.user_id]?.avatar_url,
+              isLocal: p.user_id === user?.id,
+              isSpeaking: phase === 'battle', // Demo: all speaking during battle
+            }))}
+            teamColor={theme.colors.primary}
+            maxGuests={parseInt(match?.team_size?.[0] || '1')}
+            localCameraFacing={cameraFacing}
+          />
           <View style={styles.teamInfo}>
             <Text style={styles.teamLabel}>TEAM A</Text>
-            <Text style={styles.playerName}>
-              {profiles[teamAParticipants[0]?.user_id]?.username || 'Player 1'}
-            </Text>
-            {teamAParticipants[0]?.user_id === user?.id && (
-              <View style={styles.youIndicator}>
-                <Text style={styles.youIndicatorText}>YOU</Text>
-              </View>
-            )}
           </View>
         </View>
 
@@ -604,30 +593,20 @@ export default function BattleMatchScreen() {
 
         {/* Team B Side */}
         <View style={[styles.teamSide, styles.teamBSide]}>
-          <View style={styles.teamVideoArea}>
-            <View style={styles.videoPlaceholder}>
-              <View style={[styles.playerAvatarLarge, { backgroundColor: theme.colors.error }]}>
-                <Text style={styles.playerAvatarLargeText}>
-                  {profiles[teamBParticipants[0]?.user_id]?.username?.charAt(0).toUpperCase() || 'B'}
-                </Text>
-              </View>
-              {phase === 'battle' && (
-                <View style={styles.speakingIndicator}>
-                  <Ionicons name="mic" size={16} color="#fff" />
-                </View>
-              )}
-            </View>
-          </View>
+          <MultiGuestGrid
+            guests={teamBParticipants.map(p => ({
+              id: p.user_id,
+              username: profiles[p.user_id]?.username || 'Player',
+              avatar_url: profiles[p.user_id]?.avatar_url,
+              isLocal: p.user_id === user?.id,
+              isSpeaking: phase === 'battle',
+            }))}
+            teamColor={theme.colors.error}
+            maxGuests={parseInt(match?.team_size?.[0] || '1')}
+            localCameraFacing={cameraFacing}
+          />
           <View style={styles.teamInfo}>
             <Text style={styles.teamLabel}>TEAM B</Text>
-            <Text style={styles.playerName}>
-              {profiles[teamBParticipants[0]?.user_id]?.username || 'Player 2'}
-            </Text>
-            {teamBParticipants[0]?.user_id === user?.id && (
-              <View style={styles.youIndicator}>
-                <Text style={styles.youIndicatorText}>YOU</Text>
-              </View>
-            )}
           </View>
         </View>
       </View>
