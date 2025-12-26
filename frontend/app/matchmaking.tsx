@@ -43,6 +43,7 @@ export default function MatchmakingScreen() {
   const [waitTime, setWaitTime] = useState(0);
   const [estimatedWait, setEstimatedWait] = useState(0);
   const [playersInQueue, setPlayersInQueue] = useState(0);
+  const [queuePosition, setQueuePosition] = useState<number | null>(null);
   const [matchData, setMatchData] = useState<MatchFoundData | null>(null);
   const [acceptCountdown, setAcceptCountdown] = useState(15);
 
