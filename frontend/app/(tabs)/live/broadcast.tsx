@@ -483,6 +483,9 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     marginLeft: theme.spacing.sm,
   },
+  iconButtonActive: {
+    backgroundColor: theme.colors.primary,
+  },
   setupOverlay: {
     flex: 1,
     justifyContent: 'center',
