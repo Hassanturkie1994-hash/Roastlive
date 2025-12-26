@@ -477,6 +477,14 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'space-between',
   },
+  chatContainer: {
+    position: 'absolute',
+    bottom: 100,
+    left: 0,
+    right: 0,
+    height: '40%',
+    backgroundColor: 'transparent',
+  },
   sideControls: {
     position: 'absolute',
     right: theme.spacing.md,
