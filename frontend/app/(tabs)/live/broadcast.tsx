@@ -45,6 +45,7 @@ export default function BroadcastScreen() {
   const [guests, setGuests] = useState<any[]>([]);
   const [showModeratorModal, setShowModeratorModal] = useState(false);
   const [showViewerList, setShowViewerList] = useState(false);
+  const [showGiftPicker, setShowGiftPicker] = useState(false);
   const [allowGifts, setAllowGifts] = useState(params.allowGifts !== 'false');
   const [slowModeSeconds, setSlowModeSeconds] = useState(parseInt(params.slowMode as string || '0'));
   const cameraRef = useRef<any>(null);
