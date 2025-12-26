@@ -48,7 +48,7 @@ export default function GiftPickerModal({
         .from('wallets')
         .select('balance')
         .eq('user_id', user?.id)
-        .single();
+        .maybeSingle();
 
       setUserBalance(data?.balance || 0);
     } catch (error) {

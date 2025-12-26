@@ -100,7 +100,7 @@ export default function LiveChat({ streamId, isHost = false, isModerator = false
               .from('chat_messages')
               .select('*')
               .eq('id', payload.new.message_id)
-              .single();
+              .maybeSingle();
             setPinnedMessage(data);
           } else if (payload.eventType === 'DELETE') {
             setPinnedMessage(null);

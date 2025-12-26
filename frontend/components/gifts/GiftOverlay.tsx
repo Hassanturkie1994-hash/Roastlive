@@ -54,7 +54,7 @@ export default function GiftOverlay({ streamId }: GiftOverlayProps) {
             .from('profiles')
             .select('username')
             .eq('id', transaction.sender_id)
-            .single();
+            .maybeSingle();
 
           const gift = GIFT_CATALOG.find((g) => g.id === transaction.gift_id);
           if (!gift) return;

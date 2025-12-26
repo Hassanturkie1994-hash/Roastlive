@@ -145,7 +145,7 @@ export default function GiftPicker({
         .from('wallets')
         .select('balance')
         .eq('user_id', user?.id)
-        .single();
+        .maybeSingle();
 
       if (error && error.code !== 'PGRST116') throw error;
       setBalance(data?.balance || 0);
@@ -195,7 +195,7 @@ export default function GiftPicker({
         .from('profiles')
         .select('username')
         .eq('id', user.id)
-        .single();
+        .maybeSingle();
 
       await supabase.from('stream_messages').insert({
         stream_id: streamId,

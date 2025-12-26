@@ -174,7 +174,7 @@ export default function LiveChat({
         .from('profiles')
         .select('username, avatar_url')
         .eq('id', user.id)
-        .single();
+        .maybeSingle();
 
       const { error } = await supabase.from('stream_messages').insert({
         stream_id: streamId,

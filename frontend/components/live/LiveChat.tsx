@@ -86,7 +86,7 @@ export default function LiveChat({ streamId }: LiveChatProps) {
             .from('profiles')
             .select('username')
             .eq('id', payload.new.user_id)
-            .single();
+            .maybeSingle();
 
           const newMessage: Message = {
             id: payload.new.id,
