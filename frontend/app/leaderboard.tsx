@@ -5,139 +5,168 @@ import {
   StyleSheet,
   ScrollView,
   TouchableOpacity,
-  Image,
-  ActivityIndicator,
   RefreshControl,
+  ActivityIndicator,
+  Image,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { theme } from '../constants/theme';
-import { supabase } from '../lib/supabase';
-
-type LeaderboardType = 'roasters' | 'gifters' | 'earners' | 'battles';
-type TimePeriod = 'daily' | 'weekly' | 'monthly' | 'alltime';
+import { useAuth } from '../contexts/AuthContext';
+import { getLeaderboard, getUserRank, getUserXPInfo } from '../services/xpService';
+import { BADGES } from '../utils/xpSystem';
 
 interface LeaderboardEntry {
-  rank: number;
-  userId: string;
+  id: string;
   username: string;
   avatar_url?: string;
-  value: number;
-  change?: number;
+  total_xp: number;
+  level: number;
+  rank_title: string;
+  badges: string[];
+  battles_won: number;
+  battles_lost: number;
+  total_battles: number;
+  rank: number;
 }
 
 export default function LeaderboardScreen() {
   const router = useRouter();
-  const [activeTab, setActiveTab] = useState<LeaderboardType>('roasters');
-  const [period, setPeriod] = useState<TimePeriod>('weekly');
-  const [entries, setEntries] = useState<LeaderboardEntry[]>([]);
+  const { user } = useAuth();
+  const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);
+  const [userRank, setUserRank] = useState<number | null>(null);
+  const [userXPInfo, setUserXPInfo] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
   useEffect(() => {
     loadLeaderboard();
-  }, [activeTab, period]);
+  }, []);
 
   const loadLeaderboard = async () => {
-    setLoading(true);
     try {
-      // Mock data for demo
-      const mockData: LeaderboardEntry[] = Array.from({ length: 20 }, (_, i) => ({
-        rank: i + 1,
-        userId: `user-${i}`,
-        username: `${getRandomName()}${Math.floor(Math.random() * 1000)}`,
-        value: Math.floor(Math.random() * 10000) * (21 - i),
-        change: Math.floor(Math.random() * 10) - 5,
-      }));
+      const data = await getLeaderboard(100);
+      setLeaderboard(data);
 
-      setEntries(mockData.sort((a, b) => b.value - a.value).map((e, i) => ({ ...e, rank: i + 1 })));
+      if (user?.id) {
+        const rank = await getUserRank(user.id);
+        setUserRank(rank);
+
+        const xpInfo = await getUserXPInfo(user.id);
+        setUserXPInfo(xpInfo);
+      }
     } catch (error) {
-      console.error('Error loading leaderboard:', error);
+      console.error('Load leaderboard error:', error);
     } finally {
       setLoading(false);
       setRefreshing(false);
     }
   };
 
-  const getRandomName = () => {
-    const names = ['RoastKing', 'FlameQueen', 'BurnMaster', 'SavageOne', 'ComedyGod', 'WittyWarrior', 'JokeStar', 'RoastLord'];
-    return names[Math.floor(Math.random() * names.length)];
+  const onRefresh = () => {
+    setRefreshing(true);
+    loadLeaderboard();
   };
 
-  const getTabConfig = () => {
-    switch (activeTab) {
-      case 'roasters': return { icon: 'flame', label: 'Top Roasters', unit: 'wins' };
-      case 'gifters': return { icon: 'gift', label: 'Top Gifters', unit: 'SEK sent' };
-      case 'earners': return { icon: 'cash', label: 'Top Earners', unit: 'SEK earned' };
-      case 'battles': return { icon: 'trophy', label: 'Battle Champions', unit: 'victories' };
-    }
-  };
-
-  const formatValue = (value: number) => {
-    if (value >= 1000000) return `${(value / 1000000).toFixed(1)}M`;
-    if (value >= 1000) return `${(value / 1000).toFixed(1)}K`;
-    return value.toLocaleString();
-  };
-
-  const getRankStyle = (rank: number) => {
-    if (rank === 1) return { backgroundColor: '#FFD700', borderColor: '#FFD700' };
-    if (rank === 2) return { backgroundColor: '#C0C0C0', borderColor: '#C0C0C0' };
-    if (rank === 3) return { backgroundColor: '#CD7F32', borderColor: '#CD7F32' };
-    return { backgroundColor: theme.colors.surfaceLight, borderColor: theme.colors.border };
-  };
-
-  const config = getTabConfig();
-
-  const renderTopThree = () => {
-    const top3 = entries.slice(0, 3);
-    if (top3.length < 3) return null;
+  const renderBadge = (badgeId: string) => {
+    const badge = Object.values(BADGES).find(b => b.id === badgeId);
+    if (!badge) return null;
 
     return (
-      <View style={styles.podium}>
-        {/* 2nd Place */}
-        <View style={styles.podiumItem}>
-          <View style={[styles.podiumAvatar, styles.podiumAvatarSecond]}>
-            <Text style={styles.podiumAvatarText}>{top3[1].username.charAt(0)}</Text>
-            <View style={[styles.podiumRank, { backgroundColor: '#C0C0C0' }]}>
-              <Text style={styles.podiumRankText}>2</Text>
-            </View>
-          </View>
-          <Text style={styles.podiumName} numberOfLines={1}>{top3[1].username}</Text>
-          <Text style={styles.podiumValue}>{formatValue(top3[1].value)}</Text>
-          <View style={[styles.podiumBar, { height: 60, backgroundColor: '#C0C0C0' }]} />
+      <View key={badgeId} style={styles.badge}>
+        <Text style={styles.badgeEmoji}>{badge.emoji}</Text>
+      </View>
+    );
+  };
+
+  const renderRankMedal = (rank: number) => {
+    if (rank === 1) return <Text style={styles.medal}>🥇</Text>;
+    if (rank === 2) return <Text style={styles.medal}>🥈</Text>;
+    if (rank === 3) return <Text style={styles.medal}>🥉</Text>;
+    return null;
+  };
+
+  const renderLeaderboardEntry = (entry: LeaderboardEntry, index: number) => {
+    const isCurrentUser = entry.id === user?.id;
+
+    return (
+      <View
+        key={entry.id}
+        style={[
+          styles.entryCard,
+          isCurrentUser && styles.currentUserCard,
+          index < 3 && styles.topThreeCard,
+        ]}
+      >
+        {/* Rank */}
+        <View style={styles.rankContainer}>
+          {renderRankMedal(entry.rank)}
+          {!renderRankMedal(entry.rank) && (
+            <Text style={[styles.rankNumber, isCurrentUser && styles.currentUserText]}>
+              #{entry.rank}
+            </Text>
+          )}
         </View>
 
-        {/* 1st Place */}
-        <View style={styles.podiumItem}>
-          <View style={styles.crownContainer}>
-            <Text style={styles.crownEmoji}>👑</Text>
-          </View>
-          <View style={[styles.podiumAvatar, styles.podiumAvatarFirst]}>
-            <Text style={styles.podiumAvatarText}>{top3[0].username.charAt(0)}</Text>
-            <View style={[styles.podiumRank, { backgroundColor: '#FFD700' }]}>
-              <Text style={styles.podiumRankText}>1</Text>
+        {/* Avatar */}
+        <View style={styles.avatarContainer}>
+          {entry.avatar_url ? (
+            <Image source={{ uri: entry.avatar_url }} style={styles.avatar} />
+          ) : (
+            <View style={[styles.avatarPlaceholder, { backgroundColor: theme.colors.primary }]}>
+              <Text style={styles.avatarText}>
+                {entry.username.charAt(0).toUpperCase()}
+              </Text>
             </View>
-          </View>
-          <Text style={styles.podiumName} numberOfLines={1}>{top3[0].username}</Text>
-          <Text style={styles.podiumValue}>{formatValue(top3[0].value)}</Text>
-          <View style={[styles.podiumBar, { height: 80, backgroundColor: '#FFD700' }]} />
+          )}
+          {isCurrentUser && (
+            <View style={styles.youBadge}>
+              <Text style={styles.youBadgeText}>YOU</Text>
+            </View>
+          )}
         </View>
 
-        {/* 3rd Place */}
-        <View style={styles.podiumItem}>
-          <View style={[styles.podiumAvatar, styles.podiumAvatarThird]}>
-            <Text style={styles.podiumAvatarText}>{top3[2].username.charAt(0)}</Text>
-            <View style={[styles.podiumRank, { backgroundColor: '#CD7F32' }]}>
-              <Text style={styles.podiumRankText}>3</Text>
-            </View>
+        {/* Info */}
+        <View style={styles.entryInfo}>
+          <Text style={[styles.username, isCurrentUser && styles.currentUserText]} numberOfLines={1}>
+            {entry.username}
+          </Text>
+          <Text style={styles.rankTitle} numberOfLines={1}>{entry.rank_title}</Text>
+          <View style={styles.badgesRow}>
+            {entry.badges.slice(0, 3).map(renderBadge)}
+            {entry.badges.length > 3 && (
+              <Text style={styles.badgeMore}>+{entry.badges.length - 3}</Text>
+            )}
           </View>
-          <Text style={styles.podiumName} numberOfLines={1}>{top3[2].username}</Text>
-          <Text style={styles.podiumValue}>{formatValue(top3[2].value)}</Text>
-          <View style={[styles.podiumBar, { height: 40, backgroundColor: '#CD7F32' }]} />
+        </View>
+
+        {/* Stats */}
+        <View style={styles.entryStats}>
+          <View style={styles.statItem}>
+            <Text style={[styles.statValue, isCurrentUser && styles.currentUserText]}>
+              {entry.level}
+            </Text>
+            <Text style={styles.statLabel}>Level</Text>
+          </View>
+          <View style={styles.statDivider} />
+          <View style={styles.statItem}>
+            <Text style={[styles.statValue, isCurrentUser && styles.currentUserText]}>
+              {(entry.total_xp / 1000).toFixed(1)}K
+            </Text>
+            <Text style={styles.statLabel}>XP</Text>
+          </View>
         </View>
       </View>
     );
   };
+
+  if (loading) {
+    return (
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color={theme.colors.primary} />
+      </View>
+    );
+  }
 
   return (
     <View style={styles.container}>
@@ -146,153 +175,293 @@ export default function LeaderboardScreen() {
         <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
           <Ionicons name="arrow-back" size={24} color={theme.colors.text} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Leaderboard</Text>
-        <View style={{ width: 40 }} />
+        <Text style={styles.headerTitle}>Leaderboard 🏆</Text>
+        <View style={{ width: 44 }} />
       </View>
 
-      {/* Tabs */}
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.tabsScroll}>
-        {(['roasters', 'gifters', 'earners', 'battles'] as LeaderboardType[]).map((tab) => (
-          <TouchableOpacity
-            key={tab}
-            style={[styles.tab, activeTab === tab && styles.tabActive]}
-            onPress={() => setActiveTab(tab)}
-          >
-            <Ionicons
-              name={tab === 'roasters' ? 'flame' : tab === 'gifters' ? 'gift' : tab === 'earners' ? 'cash' : 'trophy'}
-              size={18}
-              color={activeTab === tab ? '#fff' : theme.colors.textSecondary}
-            />
-            <Text style={[styles.tabText, activeTab === tab && styles.tabTextActive]}>
-              {tab.charAt(0).toUpperCase() + tab.slice(1)}
-            </Text>
-          </TouchableOpacity>
-        ))}
-      </ScrollView>
-
-      {/* Period Selector */}
-      <View style={styles.periodSelector}>
-        {(['daily', 'weekly', 'monthly', 'alltime'] as TimePeriod[]).map((p) => (
-          <TouchableOpacity
-            key={p}
-            style={[styles.periodButton, period === p && styles.periodButtonActive]}
-            onPress={() => setPeriod(p)}
-          >
-            <Text style={[styles.periodText, period === p && styles.periodTextActive]}>
-              {p === 'alltime' ? 'All Time' : p.charAt(0).toUpperCase() + p.slice(1)}
-            </Text>
-          </TouchableOpacity>
-        ))}
-      </View>
-
-      {loading ? (
-        <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color={theme.colors.primary} />
-        </View>
-      ) : (
-        <ScrollView
-          style={styles.content}
-          refreshControl={
-            <RefreshControl refreshing={refreshing} onRefresh={() => {
-              setRefreshing(true);
-              loadLeaderboard();
-            }} />
-          }
-        >
-          {/* Podium */}
-          {renderTopThree()}
-
-          {/* Rest of list */}
-          <View style={styles.listContainer}>
-            {entries.slice(3).map((entry) => (
-              <TouchableOpacity
-                key={entry.userId}
-                style={styles.listItem}
-                onPress={() => router.push(`/user/${entry.userId}`)}
-              >
-                <Text style={styles.listRank}>#{entry.rank}</Text>
-                <View style={styles.listAvatar}>
-                  <Text style={styles.listAvatarText}>{entry.username.charAt(0)}</Text>
-                </View>
-                <View style={styles.listInfo}>
-                  <Text style={styles.listName}>{entry.username}</Text>
-                  {entry.change !== undefined && entry.change !== 0 && (
-                    <View style={styles.changeContainer}>
-                      <Ionicons
-                        name={entry.change > 0 ? 'arrow-up' : 'arrow-down'}
-                        size={12}
-                        color={entry.change > 0 ? theme.colors.success : theme.colors.error}
-                      />
-                      <Text style={[
-                        styles.changeText,
-                        { color: entry.change > 0 ? theme.colors.success : theme.colors.error }
-                      ]}>
-                        {Math.abs(entry.change)}
-                      </Text>
-                    </View>
-                  )}
-                </View>
-                <Text style={styles.listValue}>{formatValue(entry.value)}</Text>
-              </TouchableOpacity>
-            ))}
+      {/* User Rank Card */}
+      {userRank && userXPInfo && (
+        <View style={styles.userRankCard}>
+          <View style={styles.userRankHeader}>
+            <Text style={styles.userRankTitle}>Your Rank</Text>
+            <Text style={styles.userRankNumber}>#{userRank}</Text>
           </View>
-
-          <View style={{ height: 50 }} />
-        </ScrollView>
+          <View style={styles.userRankStats}>
+            <View style={styles.userStatItem}>
+              <Ionicons name="trophy" size={20} color={theme.colors.gold} />
+              <Text style={styles.userStatValue}>Level {userXPInfo.level}</Text>
+              <Text style={styles.userStatLabel}>{userXPInfo.rankTitle}</Text>
+            </View>
+            <View style={styles.userStatItem}>
+              <Ionicons name="flame" size={20} color={theme.colors.primary} />
+              <Text style={styles.userStatValue}>{userXPInfo.totalXP.toLocaleString()} XP</Text>
+              <Text style={styles.userStatLabel}>
+                {userXPInfo.currentLevelXP}/{userXPInfo.nextLevelXP} to next
+              </Text>
+            </View>
+            <View style={styles.userStatItem}>
+              <Ionicons name="ribbon" size={20} color={theme.colors.success} />
+              <Text style={styles.userStatValue}>{userXPInfo.badges?.length || 0} Badges</Text>
+              <Text style={styles.userStatLabel}>
+                {userXPInfo.currentWinStreak > 0 ? `${userXPInfo.currentWinStreak} 🔥 streak` : 'No streak'}
+              </Text>
+            </View>
+          </View>
+        </View>
       )}
+
+      {/* Leaderboard List */}
+      <ScrollView
+        style={styles.list}
+        contentContainerStyle={styles.listContent}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+        }
+      >
+        {leaderboard.length > 0 ? (
+          leaderboard.map((entry, index) => renderLeaderboardEntry(entry, index))
+        ) : (
+          <View style={styles.emptyState}>
+            <Ionicons name="trophy-outline" size={80} color={theme.colors.textSecondary} />
+            <Text style={styles.emptyTitle}>No Rankings Yet</Text>
+            <Text style={styles.emptyText}>Complete battles and streams to appear on the leaderboard!</Text>
+          </View>
+        )}
+      </ScrollView>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: theme.colors.background },
+  container: {
+    flex: 1,
+    backgroundColor: theme.colors.background,
+  },
+  loadingContainer: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   header: {
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-    paddingHorizontal: theme.spacing.md, paddingTop: theme.spacing.xxl + 10, paddingBottom: theme.spacing.md,
-    backgroundColor: theme.colors.surface, borderBottomWidth: 1, borderBottomColor: theme.colors.border,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: theme.spacing.md,
+    paddingTop: theme.spacing.xxl + 10,
+    paddingBottom: theme.spacing.md,
+    backgroundColor: theme.colors.surface,
+    borderBottomWidth: 1,
+    borderBottomColor: theme.colors.border,
   },
-  backButton: { width: 40, height: 40, alignItems: 'center', justifyContent: 'center' },
-  headerTitle: { fontSize: theme.typography.sizes.xl, fontWeight: theme.typography.weights.bold, color: theme.colors.text },
-  tabsScroll: { backgroundColor: theme.colors.surface, paddingVertical: theme.spacing.sm },
-  tab: {
-    flexDirection: 'row', alignItems: 'center', paddingHorizontal: theme.spacing.md, paddingVertical: theme.spacing.sm,
-    borderRadius: theme.borderRadius.full, marginLeft: theme.spacing.sm, backgroundColor: theme.colors.surfaceLight,
+  backButton: {
+    width: 44,
+    height: 44,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  tabActive: { backgroundColor: theme.colors.primary },
-  tabText: { marginLeft: 6, fontSize: theme.typography.sizes.sm, color: theme.colors.textSecondary },
-  tabTextActive: { color: '#fff', fontWeight: theme.typography.weights.semibold },
-  periodSelector: { flexDirection: 'row', padding: theme.spacing.md, backgroundColor: theme.colors.surface },
-  periodButton: { flex: 1, paddingVertical: theme.spacing.sm, alignItems: 'center', borderRadius: theme.borderRadius.md, marginHorizontal: 2 },
-  periodButtonActive: { backgroundColor: theme.colors.surfaceLight },
-  periodText: { fontSize: theme.typography.sizes.sm, color: theme.colors.textSecondary },
-  periodTextActive: { color: theme.colors.text, fontWeight: theme.typography.weights.semibold },
-  loadingContainer: { flex: 1, alignItems: 'center', justifyContent: 'center' },
-  content: { flex: 1 },
-  podium: { flexDirection: 'row', justifyContent: 'center', alignItems: 'flex-end', paddingVertical: theme.spacing.xl, paddingHorizontal: theme.spacing.md },
-  podiumItem: { alignItems: 'center', width: 100 },
-  crownContainer: { marginBottom: -10 },
-  crownEmoji: { fontSize: 32 },
-  podiumAvatar: { width: 60, height: 60, borderRadius: 30, alignItems: 'center', justifyContent: 'center', borderWidth: 3 },
-  podiumAvatarFirst: { width: 80, height: 80, borderRadius: 40, backgroundColor: theme.colors.primary, borderColor: '#FFD700' },
-  podiumAvatarSecond: { backgroundColor: theme.colors.info, borderColor: '#C0C0C0' },
-  podiumAvatarThird: { backgroundColor: theme.colors.warning, borderColor: '#CD7F32' },
-  podiumAvatarText: { fontSize: 24, fontWeight: theme.typography.weights.bold, color: '#fff' },
-  podiumRank: { position: 'absolute', bottom: -8, width: 24, height: 24, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
-  podiumRankText: { fontSize: 12, fontWeight: theme.typography.weights.bold, color: '#000' },
-  podiumName: { fontSize: theme.typography.sizes.sm, fontWeight: theme.typography.weights.semibold, color: theme.colors.text, marginTop: theme.spacing.md },
-  podiumValue: { fontSize: theme.typography.sizes.sm, color: theme.colors.textSecondary },
-  podiumBar: { width: 60, borderTopLeftRadius: 8, borderTopRightRadius: 8, marginTop: theme.spacing.sm },
-  listContainer: { padding: theme.spacing.md },
-  listItem: {
-    flexDirection: 'row', alignItems: 'center', backgroundColor: theme.colors.surface,
-    padding: theme.spacing.md, borderRadius: theme.borderRadius.lg, marginBottom: theme.spacing.sm,
+  headerTitle: {
+    fontSize: theme.typography.sizes.xl,
+    fontWeight: theme.typography.weights.bold,
+    color: theme.colors.text,
   },
-  listRank: { width: 36, fontSize: theme.typography.sizes.base, fontWeight: theme.typography.weights.bold, color: theme.colors.textSecondary },
-  listAvatar: { width: 40, height: 40, borderRadius: 20, backgroundColor: theme.colors.surfaceLight, alignItems: 'center', justifyContent: 'center' },
-  listAvatarText: { fontSize: theme.typography.sizes.lg, fontWeight: theme.typography.weights.bold, color: theme.colors.text },
-  listInfo: { flex: 1, marginLeft: theme.spacing.md },
-  listName: { fontSize: theme.typography.sizes.base, fontWeight: theme.typography.weights.semibold, color: theme.colors.text },
-  changeContainer: { flexDirection: 'row', alignItems: 'center', marginTop: 2 },
-  changeText: { fontSize: 11, marginLeft: 2 },
-  listValue: { fontSize: theme.typography.sizes.base, fontWeight: theme.typography.weights.bold, color: theme.colors.gold },
+  // User Rank Card
+  userRankCard: {
+    backgroundColor: `${theme.colors.primary}20`,
+    margin: theme.spacing.md,
+    borderRadius: theme.borderRadius.lg,
+    padding: theme.spacing.lg,
+    borderWidth: 2,
+    borderColor: theme.colors.primary,
+  },
+  userRankHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: theme.spacing.md,
+  },
+  userRankTitle: {
+    fontSize: theme.typography.sizes.lg,
+    fontWeight: theme.typography.weights.bold,
+    color: theme.colors.text,
+  },
+  userRankNumber: {
+    fontSize: theme.typography.sizes.xxl,
+    fontWeight: theme.typography.weights.bold,
+    color: theme.colors.primary,
+  },
+  userRankStats: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+  },
+  userStatItem: {
+    flex: 1,
+    alignItems: 'center',
+  },
+  userStatValue: {
+    fontSize: theme.typography.sizes.base,
+    fontWeight: theme.typography.weights.semibold,
+    color: theme.colors.text,
+    marginTop: theme.spacing.xs,
+  },
+  userStatLabel: {
+    fontSize: theme.typography.sizes.xs,
+    color: theme.colors.textSecondary,
+    marginTop: 2,
+    textAlign: 'center',
+  },
+  // List
+  list: {
+    flex: 1,
+  },
+  listContent: {
+    paddingHorizontal: theme.spacing.md,
+    paddingBottom: theme.spacing.xl,
+  },
+  // Entry Card
+  entryCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: theme.colors.surface,
+    borderRadius: theme.borderRadius.lg,
+    padding: theme.spacing.md,
+    marginBottom: theme.spacing.sm,
+    borderWidth: 1,
+    borderColor: theme.colors.border,
+  },
+  topThreeCard: {
+    borderColor: theme.colors.gold,
+    borderWidth: 2,
+  },
+  currentUserCard: {
+    backgroundColor: `${theme.colors.primary}15`,
+    borderColor: theme.colors.primary,
+    borderWidth: 2,
+  },
+  currentUserText: {
+    color: theme.colors.primary,
+  },
+  // Rank
+  rankContainer: {
+    width: 50,
+    alignItems: 'center',
+  },
+  rankNumber: {
+    fontSize: theme.typography.sizes.lg,
+    fontWeight: theme.typography.weights.bold,
+    color: theme.colors.text,
+  },
+  medal: {
+    fontSize: 30,
+  },
+  // Avatar
+  avatarContainer: {
+    position: 'relative',
+    marginRight: theme.spacing.md,
+  },
+  avatar: {
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+  },
+  avatarPlaceholder: {
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  avatarText: {
+    fontSize: theme.typography.sizes.lg,
+    fontWeight: theme.typography.weights.bold,
+    color: '#fff',
+  },
+  youBadge: {
+    position: 'absolute',
+    bottom: -5,
+    right: -5,
+    backgroundColor: theme.colors.primary,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: theme.borderRadius.sm,
+  },
+  youBadgeText: {
+    fontSize: 9,
+    fontWeight: theme.typography.weights.bold,
+    color: '#fff',
+  },
+  // Info
+  entryInfo: {
+    flex: 1,
+    marginRight: theme.spacing.sm,
+  },
+  username: {
+    fontSize: theme.typography.sizes.base,
+    fontWeight: theme.typography.weights.semibold,
+    color: theme.colors.text,
+    marginBottom: 2,
+  },
+  rankTitle: {
+    fontSize: theme.typography.sizes.xs,
+    color: theme.colors.textSecondary,
+    marginBottom: theme.spacing.xs,
+  },
+  badgesRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  badge: {
+    marginRight: 4,
+  },
+  badgeEmoji: {
+    fontSize: 16,
+  },
+  badgeMore: {
+    fontSize: theme.typography.sizes.xs,
+    color: theme.colors.textSecondary,
+    marginLeft: 4,
+  },
+  // Stats
+  entryStats: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  statItem: {
+    alignItems: 'center',
+    minWidth: 50,
+  },
+  statValue: {
+    fontSize: theme.typography.sizes.base,
+    fontWeight: theme.typography.weights.bold,
+    color: theme.colors.text,
+  },
+  statLabel: {
+    fontSize: theme.typography.sizes.xs,
+    color: theme.colors.textSecondary,
+    marginTop: 2,
+  },
+  statDivider: {
+    width: 1,
+    height: 30,
+    backgroundColor: theme.colors.border,
+    marginHorizontal: theme.spacing.sm,
+  },
+  // Empty State
+  emptyState: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: theme.spacing.xxxl,
+  },
+  emptyTitle: {
+    fontSize: theme.typography.sizes.xl,
+    fontWeight: theme.typography.weights.bold,
+    color: theme.colors.text,
+    marginTop: theme.spacing.lg,
+    marginBottom: theme.spacing.sm,
+  },
+  emptyText: {
+    fontSize: theme.typography.sizes.base,
+    color: theme.colors.textSecondary,
+    textAlign: 'center',
+    paddingHorizontal: theme.spacing.xl,
+  },
 });
