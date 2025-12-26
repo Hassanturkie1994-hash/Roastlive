@@ -1,5 +1,5 @@
 import { supabase } from '../lib/supabase';
-import { XP_REWARDS, calculateLevel, getRankTitle, checkBadges } from './xpSystem';
+import { XP_REWARDS, calculateLevel, getRankTitle, checkBadges } from '../utils/xpSystem';
 
 export interface XPResult {
   success: boolean;
