@@ -431,7 +431,7 @@ export default function BroadcastScreen() {
         )}
         
         {/* Live Chat Overlay */}
-        {isLive && showChat && streamId && (
+        {isLive && showChat && streamId && !isPaused && (
           <View style={styles.chatContainer}>
             <LiveChat
               streamId={streamId}
@@ -441,6 +441,25 @@ export default function BroadcastScreen() {
               slowModeSeconds={slowModeSeconds}
               onGiftTap={() => console.log('Gift tapped')}
             />
+          </View>
+        )}
+
+        {/* Pause Overlay */}
+        {isLive && isPaused && (
+          <View style={styles.pauseOverlay}>
+            <View style={styles.pauseCard}>
+              <Ionicons name="pause-circle" size={80} color={theme.colors.warning} />
+              <Text style={styles.pauseTitle}>Stream Paused</Text>
+              <Text style={styles.pauseText}>
+                Your stream is paused because the app is in the background.
+              </Text>
+              <Text style={styles.pauseTimer}>
+                Auto-ending in {pauseMinutesRemaining} {pauseMinutesRemaining === 1 ? 'minute' : 'minutes'}
+              </Text>
+              <Text style={styles.pauseHint}>
+                Return to the app to resume streaming
+              </Text>
+            </View>
           </View>
         )}
       </CameraView>
