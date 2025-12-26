@@ -60,6 +60,8 @@
     "eslint": "^9.25.0",
     "eslint-config-expo": "~9.2.0",
     "expo-modules-core": "^3.0.29",
+    "patch-package": "^8.0.1",
+    "postinstall-postinstall": "^2.1.0",
     "typescript": "^5.9.3"
   },
   "private": true,
