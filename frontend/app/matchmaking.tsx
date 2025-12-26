@@ -173,35 +173,50 @@ export default function MatchmakingScreen() {
     }
   };
 
-  // Demo simulation
-  const simulateMatchmaking = () => {
+  // Demo simulation - creates a real match in database
+  const simulateMatchmaking = async () => {
     const delay = 5000 + Math.random() * 5000;
     
-    setTimeout(() => {
-      if (state === 'searching') {
-        const mockMatchData: MatchFoundData = {
-          matchId: 'demo-match-' + Date.now(),
-          opponent: {
-            id: 'opponent-123',
-            username: 'RoastMaster_' + Math.floor(Math.random() * 1000),
-            wins: Math.floor(Math.random() * 50),
-          },
-          teamSize,
-        };
-        
-        setMatchData(mockMatchData);
-        setState('match_found');
-        
-        if (Platform.OS !== 'web') {
-          Vibration.vibrate([0, 200, 100, 200]);
+    setTimeout(async () => {
+      if (state === 'searching' && user?.id) {
+        try {
+          // Create a real match with opponent
+          const opponentId = 'demo-opponent-' + Math.floor(Math.random() * 100000);
+          
+          const result = await matchmakingService.createMatch(
+            teamSize,
+            [user.id, opponentId]
+          );
+          
+          if (result.success && result.matchId) {
+            const mockMatchData: MatchFoundData = {
+              matchId: result.matchId,
+              opponent: {
+                id: opponentId,
+                username: 'RoastMaster_' + Math.floor(Math.random() * 1000),
+                wins: Math.floor(Math.random() * 50),
+              },
+              teamSize,
+            };
+            
+            setMatchData(mockMatchData);
+            setState('match_found');
+            
+            if (Platform.OS !== 'web') {
+              Vibration.vibrate([0, 200, 100, 200]);
+            }
+            
+            Animated.spring(slideAnim, {
+              toValue: 1,
+              useNativeDriver: true,
+              tension: 50,
+              friction: 7,
+            }).start();
+          }
+        } catch (error) {
+          console.error('Demo match creation error:', error);
+          Alert.alert('Error', 'Failed to create demo match');
         }
-        
-        Animated.spring(slideAnim, {
-          toValue: 1,
-          useNativeDriver: true,
-          tension: 50,
-          friction: 7,
-        }).start();
       }
     }, delay);
   };
