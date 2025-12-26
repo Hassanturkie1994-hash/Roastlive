@@ -272,13 +272,13 @@ def test_moderation_invalid_input():
 def test_emergent_chat_moderation():
     print_test("Emergent LLM Chat Moderation")
     try:
-        payload = {
+        params = {
             "message": "Hello everyone! Great stream!",
             "user_id": TEST_USER_ID,
             "stream_id": "test-stream-123"
         }
         
-        response = requests.post(f"{BACKEND_URL}/moderation/chat-message", json=payload, timeout=15)
+        response = requests.post(f"{BACKEND_URL}/moderation/chat-message", params=params, timeout=15)
         print_info(f"Status Code: {response.status_code}")
         print_info(f"Response: {json.dumps(response.json(), indent=2)}")
         
