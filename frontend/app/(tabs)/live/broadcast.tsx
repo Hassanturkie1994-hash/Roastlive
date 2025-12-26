@@ -19,6 +19,8 @@ import { supabase } from '../../../lib/supabase';
 import axios from 'axios';
 import LiveChat from '../../../components/stream/LiveChat';
 import StreamModeratorModal from '../../../components/stream/StreamModeratorModal';
+import ViewerListModal from '../../../components/stream/ViewerListModal';
+import GiftPickerModal from '../../../components/stream/GiftPickerModal';
 import { initializeStreamMonitoring, getPauseStatus } from '../../../utils/streamStateManager';
 
 const API_URL = process.env.EXPO_PUBLIC_BACKEND_URL;
