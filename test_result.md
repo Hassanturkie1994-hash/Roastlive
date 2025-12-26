@@ -105,6 +105,66 @@
 user_problem_statement: "Phase 1 & 2 Implementation: Fix critical blockers (database schema, UUID errors, stream loading, chat) and implement UI controls (flashlight toggle, swipe-back protection, button functionality). Goal: Get solo streaming and battle matching fully functional."
 
 frontend:
+  - task: "Database Schema Fixes"
+    implemented: true
+    working: "NA"
+    file: "/app/DATABASE_FIXES_PHASE1.sql"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+        -working: "NA"
+        -agent: "main"
+        -comment: "Created comprehensive SQL fix file to add missing columns (avatar_url, is_moderator, is_host) to stream_messages table, ensure streams table exists, add indexes, RLS policies, and enable realtime. USER MUST RUN THIS SQL IN SUPABASE. This fixes error 9496.png where avatar_url column was not found."
+
+  - task: "UUID Format Fixes for Battle Matching"
+    implemented: true
+    working: "NA"
+    file: "/app/frontend/app/matchmaking.tsx"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+        -working: "NA"
+        -agent: "main"
+        -comment: "Fixed demo match creation to use proper UUIDs instead of string IDs like 'demo-match-1766755745491'. Now calls matchmakingService.createMatch() which generates proper UUIDs in database. This fixes errors 9498.png and 9499.png."
+
+  - task: "Stream Loading from Supabase"
+    implemented: true
+    working: "NA"
+    file: "/app/frontend/app/(tabs)/live.tsx"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+        -working: "NA"
+        -agent: "main"
+        -comment: "Changed stream loading from FastAPI backend (which caused 404/520 errors) to direct Supabase queries. Removed axios dependency. Streams now load from 'streams' table with proper joins to profiles table for host info. This fixes errors 9501.png and 9502.png."
+
+  - task: "Swipe-Back Protection for Live Streams"
+    implemented: true
+    working: "NA"
+    file: "/app/frontend/app/(tabs)/live/broadcast.tsx"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+        -working: "NA"
+        -agent: "main"
+        -comment: "Added BackHandler to prevent accidental stream ending on swipe-back or back button. Shows confirmation dialog 'End Stream? Going back will end your livestream. Are you sure?' with Cancel/End Stream options. Updated endStream() to support skipConfirmation parameter."
+
+  - task: "Flashlight Toggle for Streams"
+    implemented: true
+    working: "NA"
+    file: "/app/frontend/app/(tabs)/live/broadcast.tsx"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+        -working: "NA"
+        -agent: "main"
+        -comment: "Added flashlight control for back camera streaming. New toggleFlashlight() function, FlashMode state, and conditional UI button (only visible with back camera). Icon changes appearance when active (flash vs flash-outline). Shows alert if user tries to use flashlight with front camera. Added iconButtonActive style for visual feedback."
+
   - task: "Expo Go Loading on Android"
     implemented: true
     working: true
