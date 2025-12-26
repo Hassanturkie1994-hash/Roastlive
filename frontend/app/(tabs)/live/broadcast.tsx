@@ -111,6 +111,14 @@ export default function BroadcastScreen() {
     setFacing(current => (current === 'back' ? 'front' : 'back'));
   };
 
+  const toggleFlashlight = () => {
+    if (facing === 'back') {
+      setFlashMode(current => current === 'off' ? 'torch' : 'off');
+    } else {
+      Alert.alert('Flashlight', 'Flashlight is only available with the back camera');
+    }
+  };
+
   const startStream = async () => {
     if (!streamTitle.trim()) {
       Alert.alert('Error', 'Please enter a stream title');
@@ -178,36 +186,42 @@ export default function BroadcastScreen() {
     }
   };
 
-  const endStream = async () => {
-    Alert.alert(
-      'End Stream',
-      'Are you sure you want to end your livestream?',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'End Stream',
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              if (streamId) {
-                await supabase
-                  .from('streams')
-                  .update({
-                    is_live: false,
-                    ended_at: new Date().toISOString(),
-                  })
-                  .eq('id', streamId);
-              }
-              setIsLive(false);
-              setStreamId(null);
-              router.back();
-            } catch (error) {
-              console.error('End stream error:', error);
-            }
+  const endStream = async (skipConfirmation = false) => {
+    const performEnd = async () => {
+      try {
+        if (streamId) {
+          await supabase
+            .from('streams')
+            .update({
+              is_live: false,
+              ended_at: new Date().toISOString(),
+            })
+            .eq('id', streamId);
+        }
+        setIsLive(false);
+        setStreamId(null);
+        router.back();
+      } catch (error) {
+        console.error('End stream error:', error);
+      }
+    };
+
+    if (skipConfirmation) {
+      await performEnd();
+    } else {
+      Alert.alert(
+        'End Stream',
+        'Are you sure you want to end your livestream?',
+        [
+          { text: 'Cancel', style: 'cancel' },
+          {
+            text: 'End Stream',
+            style: 'destructive',
+            onPress: performEnd,
           },
-        },
-      ]
-    );
+        ]
+      );
+    }
   };
 
   return (
