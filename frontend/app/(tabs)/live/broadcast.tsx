@@ -7,8 +7,9 @@ import {
   TextInput,
   Alert,
   ActivityIndicator,
+  BackHandler,
 } from 'react-native';
-import { CameraView, CameraType, useCameraPermissions } from 'expo-camera';
+import { CameraView, CameraType, useCameraPermissions, FlashMode } from 'expo-camera';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { theme } from '../../../constants/theme';
@@ -26,6 +27,7 @@ export default function BroadcastScreen() {
   const params = useLocalSearchParams();
   const [permission, requestPermission] = useCameraPermissions();
   const [facing, setFacing] = useState<CameraType>('front');
+  const [flashMode, setFlashMode] = useState<FlashMode>('off');
   const [isLive, setIsLive] = useState(false);
   const [streamTitle, setStreamTitle] = useState(params.title as string || '');
   const [viewerCount, setViewerCount] = useState(0);
@@ -41,6 +43,31 @@ export default function BroadcastScreen() {
   const [slowModeSeconds, setSlowModeSeconds] = useState(parseInt(params.slowMode as string || '0'));
   const cameraRef = useRef<any>(null);
   const autoStarted = useRef(false);
+
+  // Prevent accidental back navigation during live stream
+  useEffect(() => {
+    const backAction = () => {
+      if (isLive) {
+        Alert.alert(
+          'End Stream?',
+          'Going back will end your livestream. Are you sure?',
+          [
+            { text: 'Cancel', style: 'cancel' },
+            { 
+              text: 'End Stream', 
+              style: 'destructive',
+              onPress: () => endStream(true)
+            }
+          ]
+        );
+        return true; // Prevent default back action
+      }
+      return false; // Allow back navigation if not live
+    };
+
+    const backHandler = BackHandler.addEventListener('hardwareBackPress', backAction);
+    return () => backHandler.remove();
+  }, [isLive]);
 
   // Auto-start stream if coming from pre-live setup
   useEffect(() => {
