@@ -1,281 +1,221 @@
 <analysis>
 
-**original_problem_statement**: The user wants to build a comprehensive livestreaming mobile application called Roast Live focused on roast battles. The project's full scope is detailed in a master prompt provided by the user (in Chat Message 5), which outlines a 12-phase plan covering everything from pre-live setup and battle matchmaking to a complex gift economy, social features, and robust moderation.
+**original_problem_statement**: The user wants to build a Roast Live livestreaming mobile application.
 
-The agent's current task is to implement this specification. The development has been proceeding in large, rapid phases, with the agent scaffolding out entire feature sets based on user requests. The most recent task involved implementing role-based dashboards, followed by a massive feature-building push covering matchmaking, battle UI, live chat, gifting, VIP clubs, social features, and more.
+The user provided a very detailed list of bugs to fix and features to implement, including:
+- **Core Flow Fixes**: Removing an unnecessary Go Live screen, fixing failing chat messages, and making several UI buttons (Gift, Shield, Guest Invite, Lock) functional.
+- **UI/UX Polish**: Fixing a bug where toggling chat makes the camera disappear, adding a flashlight toggle, and adding a confirmation dialog to prevent accidental stream termination on back-swipe.
+- **Streaming Logic**: Ensuring new streams appear in the feed immediately, implementing a pause/resume feature for interruptions (e.g., phone calls) with a 10-minute timeout, and an auto-end feature for streams inactive for over 20 minutes.
+- **Battle Mode Overhaul**: Implementing a real matchmaking queue, a premade team/lobby system, fair matchmaking rules (longest wait first), a comprehensive XP/ranking system with a leaderboard, and fixing critical errors that prevent users from starting a battle.
+- **Technical Implementation**: Using Supabase Storage for all media (images, streams) as a temporary solution.
+- **Code Quality**: Migrating all Supabase  calls to  to prevent the app from crashing when a query returns no results.
+
+The user also reported persistent, critical issues with the application crashing on startup due to Metro bundler errors and being unable to connect via Expo Go on their Android device.
 
 **User's preferred language**: English
 
 **what currently exists?**
-The agent has implemented a vast number of features, mostly as UI scaffolding. Key completed work includes:
-- **Role-Based Dashboards**: A fully functional system in the profile settings screen that conditionally displays dashboard links for , , , and  roles, while showing nothing to normal users. The old generic Admin Panel has been removed.
-- **Enhanced Pre-Live Setup**: The pre-live screen now includes UI for adding stream labels/tags and interaction settings.
-- **Enhanced Battle Room**: The battle screen () has been completely overhauled with a new UI featuring a split-screen view for battlers, audience voting buttons, a live timer, and a winner announcement flow.
-- **Gift Economy**: A full UI for the gift system has been created, including a  component with the user's exact specified tiers and prices, a  for animations, and an enhanced  screen.
-- **Massive Scaffolding**: Placeholder screens and components have been created for a huge number of features: VIP Clubs, Social Layer (DMs, notifications, followers), Replays & Archives, Analytics, Payouts, Multi-Guest Streaming layouts, Stream Health monitoring, a Community Rules screen, and User Profile pages.
-- **Database Schemas**: Several markdown files () have been created containing the SQL for all the new features.
+The project is a large Expo/React Native application with a FastAPI backend and Supabase database.
+
+During this session, the agent implemented a massive number of features and fixes based on the user's requests:
+- **Core Streaming Features**: A pause/resume mechanism () was created and integrated into the  screen to handle app interruptions. Logic to award XP upon stream completion was also added.
+- **Battle Mode**: An XP & Ranking system was scaffolded (, ) and integrated. A  component was created and added to the battle screen to replace static avatars, and the  function was updated to award XP.
+- **UI Components**: Modals for the  and  were created and integrated into the  screen. A  screen was created to display rankings. The user profile screen () was updated to display user XP and level.
+- **Database**: Multiple SQL scripts were created to add new tables and functions for XP, app state, wallet functionality, and pause/resume logic.
+- **Code Refactoring**: A significant refactoring effort was completed to replace over 60 instances of  with  across 32 files to improve app stability and prevent crashes from empty query results.
+
+However, the application is currently in a **non-functional, broken state**. The Metro bundler is failing to build the application due to a critical environment issue.
 
 **Last working item**:
--   Last item agent was working: The agent was in the middle of implementing a batch of 8 new features requested by the user. It had just finished using  to create the initial placeholder files for the first four: Multi-Guest Layouts, Stream Health Monitoring, Community Rules Screen, and User Profile Page. It was about to start on the remaining four.
--   Status: IN PROGRESS
--   Agent Testing Done: N
--   Which testing method agent to use? Manual testing by user. After the current batch of features is scaffolded, the user needs to perform comprehensive testing. The sheer volume of new, unconnected UI makes automated testing impractical at this stage.
--   User Testing Done: N
+-   **Last item agent was working**: The agent was trying to resolve a critical Expo/Metro bundler crash loop. After fixing several issues (ngrok tunnel conflicts, incorrect import paths, syntax errors), the agent identified the root cause: the system was hitting its file watcher limit (), which caused the Metro bundler to crash repeatedly.
+-   **Status**: BLOCKED
+-   **Agent Testing Done**: N
+-   **Which testing method agent to use?**: NA. The environment must be fixed before any testing is possible. The immediate next step is to resolve the  error.
+-   **User Testing Done**: N
 
 **All Pending/In progress Issue list**:
--   Issue 1: Full User Acceptance Testing (UAT) Required (P0)
--   Issue 2: Fragmented and Unapplied Database Schema (P0)
--   Issue 3: Lottie Animations are Disabled in Gift Modal (P1)
--   Issue 4:  Screen is Disabled (P1)
--   Issue 5: Expo Environment Instability (P2)
--   Issue 6: Real Streaming with Agora SDK is Not Implemented (P2)
+-   Issue 1: Critical Environment Failure:  - File Watcher Limit Reached (P0)
+-   Issue 2: Comprehensive Testing of All New Features (P1)
+-   Issue 3: Incomplete Battle Mode Features (P2)
+-   Issue 4: Disabled Lottie Animations (P3)
+-   Issue 5: Disabled Story Creation Screen (P3)
+-   Issue 6: Fragmented and Unapplied Database Schema (P3)
 
-Issues Detail:
--   **Issue 1: Full User Acceptance Testing (UAT) Required (P0)**
-    -   Attempted fixes: N/A. The agent has been adding features rapidly without a testing phase.
-    -   Next debug checklist: The user must perform thorough testing of the entire application. The agent has added dozens of new screens. Navigation, integration, and basic functionality are all unverified. The user needs to report what works and what is broken.
-    -   Why fix this issue and what will be achieved with the fix?: This is the most critical issue. Without user validation, the true state of the project is unknown, and continuing to add features risks building on a broken foundation.
-    -   Status: NOT STARTED
-    -   Is recurring issue?: N/A
-    -   Should Test frontend/backend/both after fix?: Both.
-    -   Blocked on other issue: This is the main blocker for meaningful progress.
+**Issues Detail**:
+-   **Issue 1: Critical Environment Failure:  - File Watcher Limit Reached (P0)**
+    -   **Attempted fixes**: The agent correctly diagnosed that the Expo service was in a crash loop. It found the  error in the logs. Attempts to fix it included:
+        1.  Increasing the limit via fs.inotify.max_user_watches = 12288 (failed due to permissions).
+        2.  Adding a  to  to reduce the number of watched files (did not solve the issue).
+    -   **Next debug checklist**:
+        1.  Re-investigate . Ensure the  is correctly configured to exclude large, unnecessary directories. A common mistake is not excluding  or build artifacts correctly.
+        2.  Explore alternative ways to increase the watcher limit within the container environment if possible.
+        3.  Call the  immediately if the issue persists, as this is a fundamental environment blocker.
+    -   **Why fix this issue and what will be achieved with the fix?**: This is the highest priority. The application cannot be bundled, run, or tested until this is resolved. Fixing it will unblock all further development and testing.
+    -   **Status**: BLOCKED
+    -   **Is recurring issue?**: Y (This is a new manifestation of the general environment instability).
+    -   **Should Test frontend/backend/both after fix?**: Both.
+    -   **Blocked on other issue**: This issue blocks everything.
 
--   **Issue 2: Fragmented and Unapplied Database Schema (P0)**
-    -   Attempted fixes: The agent has created multiple new markdown files with SQL (, , ).
-    -   Next debug checklist: The user needs to be instructed to apply the SQL from ALL these new files, in addition to the critical  from the previous session. Propose a task to consolidate all SQL into a single, idempotent  file.
-    -   Why fix this issue and what will be achieved with the fix?: The new features will not work without the corresponding database tables. Consolidating the files will prevent confusion and simplify future database setups.
-    -   Status: NOT STARTED
-    -   Is recurring issue?: Y
-    -   Should Test frontend/backend/both after fix?: Backend/DB.
-    -   Blocked on other issue: UAT (Issue 1).
+-   **Issue 2: Comprehensive Testing of All New Features (P1)**
+    -   **Attempted fixes**: None. The agent implemented a vast number of features (XP, pause/resume, leaderboard, new modals,  migration) but was blocked from testing by the environment failure.
+    -   **Next debug checklist**: After fixing Issue 1, the next agent must conduct a full User Acceptance Test (UAT) of all the features implemented in this session. This includes solo streaming, battle mode, viewing profiles, checking the leaderboard, etc.
+    -   **Why fix this issue and what will be achieved with the fix?**: Ensures the large volume of newly added code is functional and bug-free.
+    -   **Status**: NOT STARTED
+    -   **Is recurring issue?**: N
+    -   **Should Test frontend/backend/both after fix?**: Both.
+    -   **Blocked on other issue**: Issue 1.
 
--   **Issue 3: Lottie Animations are Disabled in Gift Modal (P1)**
-    -   Attempted fixes: None in this session. The agent previously commented out the  in  to fix a build error.
-    -   Next debug checklist: Uncomment the code and investigate the original build error, likely a web-compatibility issue with . Find a cross-platform solution.
-    -   Why fix this issue and what will be achieved with the fix?: To restore a core part of the user experience for the gift system.
-    -   Status: NOT STARTED
-    -   Is recurring issue?: Y
-    -   Should Test frontend/backend/both after fix?: Frontend.
-    -   Blocked on other issue: None.
+-   **Issue 3: Incomplete Battle Mode Features (P2)**
+    -   **Attempted fixes**: The agent laid the groundwork for many features (XP system, multi-guest grid) but did not complete the full implementation from the user's request.
+    -   **Next debug checklist**: Implement the remaining battle mode features: a true matchmaking queue (not demo), a premade lobby system, and the ability for a solo streamer to enter/exit a battle.
+    -   **Why fix this issue and what will be achieved with the fix?**: Completes the core battle experience, a primary feature of the app.
+    -   **Status**: NOT STARTED
+    -   **Is recurring issue?**: N
+    -   **Should Test frontend/backend/both after fix?**: Both.
+    -   **Blocked on other issue**: Issue 1.
 
--   **Issue 4:  Screen is Disabled (P1)**
-    -   Attempted fixes: None in this session. The agent previously commented out the content of  to fix a crash.
-    -   Next debug checklist: Restore the file's content and fix the original module resolution error for .
-    -   Why fix this issue and what will be achieved with the fix?: Re-enables a key social feature.
-    -   Status: NOT STARTED
-    -   Is recurring issue?: Y
-    -   Should Test frontend/backend/both after fix?: Frontend.
-    -   Blocked on other issue: None.
+-   **Issue 4 & 5: Disabled Lottie Animations & Story Creation Screen (P3)**
+    -   **Attempted fixes**: None. These are carried over from previous forks.
+    -   **Next debug checklist**: Uncomment the code in  and  and debug the original build errors.
+    -   **Why fix this issue and what will be achieved with the fix?**: Restores disabled app features and reduces technical debt.
+    -   **Status**: NOT STARTED
+    -   **Is recurring issue?**: Y
+    -   **Should Test frontend/backend/both after fix?**: Frontend.
+    -   **Blocked on other issue**: Issue 1.
 
--   **Issue 5: Expo Environment Instability (P2)**
-    -   Attempted fixes: The agent successfully recovered the Expo development server after it failed to start (Chat Messages 20-45) by reinstalling dependencies and killing stuck processes.
-    -   Next debug checklist: Be aware that the development environment is fragile. If the server fails to start again, the same troubleshooting steps (checking logs, reinstalling dependencies) may be needed.
-    -   Why fix this issue and what will be achieved with the fix?: A stable development environment is necessary for any work to be done.
-    -   Status: RESOLVED (for now)
-    -   Is recurring issue?: Y
-    -   Should Test frontend/backend/both after fix?: N/A.
-    -   Blocked on other issue: None.
-
--   **Issue 6: Real Streaming with Agora SDK is Not Implemented (P2)**
-    -   Attempted fixes: N/A. The demo mode workaround is still in place.
-    -   Next debug checklist: This remains a future task. It will require guiding the user to set up a custom development client for Expo.
-    -   Why fix this issue and what will be achieved with the fix?: To implement the app's core functionality.
-    -   Status: NOT STARTED
-    -   Is recurring issue?: Y
-    -   Should Test frontend/backend/both after fix?: Both.
-    -   Blocked on other issue: UAT (Issue 1), User Decision.
+-   **Issue 6: Fragmented and Unapplied Database Schema (P3)**
+    -   **Attempted fixes**: The agent created multiple new SQL files (, , etc.) but did not consolidate them.
+    -   **Next debug checklist**: Create a single, idempotent  file that incorporates all changes from all  and  files to simplify setup.
+    -   **Why fix this issue and what will be achieved with the fix?**: Simplifies environment setup and prevents bugs from an out-of-sync schema.
+    -   **Status**: NOT STARTED
+    -   **Is recurring issue?**: Y
+    -   **Should Test frontend/backend/both after fix?**: Backend/DB.
+    -   **Blocked on other issue**: None.
 
 **In progress Task List**:
--   Task 1: Complete Scaffolding for 8-Feature Batch (P0)
-    -   Where to resume: The agent had just created files for the first 4 features. It needs to create the placeholder files for the remaining 4: Discover/Explore Page, Leaderboards, Report System, and Blocked Users functionality.
-    -   What will be achieved with this?: Fulfills the user's request from Chat Message 184 and completes the current scaffolding phase.
-    -   Status: IN PROGRESS
-    -   Should Test frontend/backend/both after fix?: Frontend (manual user testing).
-    -   Blocked on something: No.
+-   There are no specific tasks in progress, as the entire project is blocked by the environment failure. The first task is to resolve the  error.
 
 **Upcoming and Future Tasks**
-The entire application is effectively an upcoming task. While UI files exist for most features, they are shallow and need full implementation.
--   **P0: Integration & Logic Implementation**: After scaffolding is complete and UAT is done, the highest priority is to go back and add logic to all the created screens. This involves:
-    -   Connecting UI components to services ().
-    -   Implementing the service logic to interact with Supabase (database, auth, realtime).
-    -   Wiring up Supabase Realtime for chat, battles, presence, etc.
--   **P1: Consolidate Database Schema**: Combine all  and  database files into a single, idempotent .
--   **P2: Implement Real Streaming**: Replace the demo mode with the actual Agora SDK, which will require a custom Expo development client.
--   **P2: Fix Disabled Features**: Properly fix and re-enable the Lottie animations and the Story Creation screen.
+-   **(P0) Full UAT**: Once the environment is fixed, test all features implemented in this session.
+-   **(P1) Battle Mode - Real Matchmaking**: Implement the server-side queue for matching real users.
+-   **(P1) Battle Mode - Premade Lobby**: Implement UI and logic for inviting friends to a team before matchmaking.
+-   **(P2) Auto-End Stream on Inactivity**: Implement the 20-minute inactivity detector.
+-   **(P3) Fix Disabled Features**: Address the root causes for the disabled Lottie animations and Story Creation screen.
 
 **Completed work in this session**
--   **Role-Based Dashboards**: Correctly implemented role-specific dashboard links in .
--   **Environment/Bug Fixes**: Recovered the crashed Expo dev server and fixed a self-induced JSX syntax error in .
--   **Feature Implementation (UI & Scaffolding)**:
-    -   Enhanced Pre-Live Setup UI ().
-    -   Revamped Battle Room UI ().
-    -   Implemented Gift Economy UI (, , ) with user-specified gift catalog.
-    -   Created placeholder files for VIP Clubs, Social Layer, Replays, Analytics, Payouts, Multi-Guest Streaming, Stream Health, and more.
--   **Database Schema Creation**: Authored new  files with SQL for matchmaking, chat, gifts, and social features.
+- **Critical Stability Fix**: Replaced ~60 instances of  with  across 32 files to prevent crashes on empty Supabase query results.
+- **XP & Ranking System**: Created backend schema, services (), and frontend UI updates on the profile page to display XP, level, and rank.
+- **Stream Pause/Resume**: Implemented logic to detect app backgrounding and display a paused state on the stream, with a 10-minute auto-end timer.
+- **New UI Components**:
+  - Created a  screen.
+  - Created and integrated .
+  - Created and integrated .
+  - Created  for battle mode.
+- **Feature Enhancements**:
+  - Added a flashlight toggle to the broadcast screen.
+  - Added a swipe-back confirmation dialog to prevent accidental stream ending.
+  - Migrated the active stream list () from a broken backend endpoint to fetch directly from Supabase.
+- **Bug Fixes**:
+  - Fixed an issue where demo match IDs were not valid UUIDs.
+  - Corrected numerous Metro bundler issues (incorrect import paths, syntax errors in constants) before being blocked by the  error.
 
 **Earlier issues found/mentioned but not fixed**
--   **Issue 1: Lottie Animations Disabled**: The  in  remains commented out from a previous session to fix a build error.
--   **Issue 2: Story Creation Screen Disabled**: The content of  remains commented out from a previous session to fix a module resolution error.
+-   **Issue 1: Lottie Animations Disabled**: The  in  remains commented out.
+-   **Issue 2: Story Creation Screen Disabled**: The content of  remains commented out.
 
 **Known issue recurrence from previous fork**
 -   **Issue recurrence in previous fork**: Expo Go / Metro bundler instability.
--   **Recurrence count**: High. This issue recurred in the current session (Chat Messages 20-45), requiring significant troubleshooting to resolve.
--   **Status**: IN PROGRESS (The environment is stable now, but it is fragile).
+-   **Recurrence count**: EXTREMELY HIGH. The majority of this session was spent fighting a cascade of environment and bundler issues, culminating in the  blocker.
+-   **Status**: BLOCKED. The environment is currently broken.
 
 **Code Architecture**
 
 
 **Key Technical Concepts**
--   **Frontend**: React Native, Expo, TypeScript, Expo Router
--   **Backend**: Supabase (Auth, PostgreSQL, Realtime)
--   **Development Strategy**: The project is in a rapid scaffolding phase. The agent creates placeholder UI and components for large feature sets based on user prompts. The logic and integration are deferred.
+- **Frontend**: React Native, Expo, Expo Router, TypeScript
+- **Backend**: FastAPI, Python
+- **Database/Auth**: Supabase (PostgreSQL, Realtime)
+- **Core Problem**: The development environment is unstable, suffering from severe Metro bundler caching issues and a critical  (file watcher limit) error that prevents the app from being bundled.
+- **State Management**: New utilities  for managing stream state (paused/active) and / for user progression.
 
 **key DB schema**
-The database schema is highly fragmented. The user must run SQL from multiple files to get the full schema:
--    (From previous fork, contains critical auth fixes)
--    (New in this session)
--    (New in this session)
--    (New in this session)
+The schema is now even more fragmented. In addition to the previous files, the agent added:
+- 
+- 
+- 
+- 
+A consolidation of all these SQL files is highly recommended.
 
 **changes in tech stack**
--   No new changes.  remains disabled in one component, and the app still uses a demo mode for streaming.
+- No fundamental changes.
 
 **All files of reference**
--   **/app/frontend/app/(tabs)/profile/settings.tsx**: Contains the newly implemented and verified role-based dashboard logic.
--   **/app/frontend/app/battle/match/[matchId].tsx**: The completely overhauled Battle Room UI.
--   **/app/frontend/components/gifts/GiftPicker.tsx**: The new gift selection component, updated with the user's specific gift list.
--   **/app/frontend/app/pre-live-setup.tsx**: Enhanced with new UI for stream configuration.
--   **All new  files**: These contain the necessary SQL schema for all the new features and must be applied by the user.
+-   **/app/frontend/metro.config.js**: This file is now critical for debugging the  error. It was modified to add a .
+-   **/app/frontend/app/(tabs)/live/broadcast.tsx**: Heavily modified with many new features.
+-   **/app/frontend/app/battle/match/[matchId].tsx**: Heavily modified with new battle UI and logic.
+-   All new service/util files (, , etc.).
+-   All new component files (, , etc.).
+-   All new  documentation files.
 
 **Critical Info for New Agent**
--   **ACTION REQUIRED**: The immediate task is to finish scaffolding the last 4 features from the user's request (Discover, Leaderboards, Reporting, Blocking).
--   **COMMUNICATE TO USER**: After completing the scaffolding, you **must** inform the user that they need to run the SQL from all the new  files for the features to work. You should also strongly recommend a Testing and Integration Phase to validate the massive amount of work done before adding any more new features.
--   **Development Context**: You are in a scaffolding mode. The files you are creating are mostly UI shells. Do not assume they have working logic. The next major effort will be to add logic and connect them.
--   **Known Risks**: The development environment is fragile and may break (
-  Usage: expo [command] [options]
-
-  Options:
-  
-    -V, --version                     output the version number
-    --non-interactive                 Fail, if an interactive prompt would be required to continue.
-    -h, --help                        output usage information
-  
-  Commands:
-
-    init [name]                       Create a new Expo project
-    start [path]                      Start a local dev server for the app
-    start:web [path]                  Start a Webpack dev server for the web app
-    export [path]                     Export the static files of the app for hosting it on a web server
-    install [packages...]             Install a module or other package to a project
-    run:android [path]                Run the Android app binary locally
-    run:ios [path]                    Run the iOS app binary locally
-    send [path]                       Share the project's URL to an email address
-
-    login                             Login to an Expo account
-    logout                            Logout of an Expo account
-    register                          Sign up for a new Expo account
-    whoami                            Return the currently authenticated account
-
-    client:install:ios                Install Expo Go for iOS on the simulator
-    client:install:android            Install Expo Go for Android on a connected device or emulator
-
-    config [path]                     Show the project config
-    doctor [path]                     Diagnose issues with the project
-    upgrade [sdk-version]             Upgrade the project packages and config for the given SDK version
-
-    customize:web [path]              Eject the default web files for customization
-    prebuild [path]                   Create native iOS and Android project files before building natively.
-                                      Learn more: https://docs.expo.dev/workflow/customizing/
-
-    build:web [path]                  Build the web app for production
-
-    credentials:manager [path]        Superseded by eas credentials in eas-cli
-
-    url [path]                        Log a URL for opening the project in Expo Go
-    url:ipa [path]                    Log the download URL for the standalone iOS binary
-    url:apk [path]                    Log the download URL for the standalone Android binary
-
-    webhooks [path]                   List all webhooks for a project
-    webhooks:add [path]               Add a webhook to a project
-    webhooks:remove [path]            Delete a webhook
-    webhooks:update [path]            Update an existing webhook
-
-    build:ios [path]                  Superseded by eas build in eas-cli
-    build:android [path]              Superseded by eas build in eas-cli
-    build:status [path]               Superseded by eas build:list in eas-cli
-    eject [path]                      Superseded by expo prebuild
-    fetch:ios:certs [path]            Superseded by eas credentials in eas-cli
-    fetch:android:keystore [path]     Superseded by eas credentials in eas-cli
-    fetch:android:hashes [path]       Superseded by eas credentials in eas-cli
-    fetch:android:upload-cert [path]  Superseded by eas credentials in eas-cli
-    publish [path]                    Superseded by eas update in eas-cli
-    publish:set [path]                Superseded by eas update:republish in eas-cli
-    publish:rollback [path]           Superseded by eas update:republish in eas-cli
-    publish:history [path]            Superseded by eas update:list in eas-cli
-    publish:details [path]            Superseded by eas update:view in eas-cli
-    push:android:upload [path]        Superseded by eas credentials in eas-cli
-    push:android:show [path]          Superseded by eas credentials in eas-cli
-    push:android:clear [path]         Superseded by eas credentials in eas-cli
-    upload:android [path]             Superseded by eas submit in eas-cli
-    upload:ios [path]                 Superseded by eas submit in eas-cli
-    client:ios [path]                 Superseded by Expo Dev Clients
-
-[23:53:45]   Run a command with --help for more info 💡
-[23:53:45]     $ expo start --help
-[23:53:45] server fails to start). The database schema is fragmented and needs to be manually applied by the user. Several features from a previous fork are still disabled (, ).
+-   **THE APP IS BROKEN AND WILL NOT BUNDLE.** Your absolute first priority is to fix the  error. Do not attempt to add features or test anything until Metro can successfully build the project.
+-   **Debugging **: The previous agent tried adding a  to , which didn't work. You should review that configuration or explore other ways to solve the file watcher limit in this specific container environment. Calling  early is strongly advised.
+-   **Metro Caching Hell**: Be aware that this environment has aggressive and persistent Metro caching. The previous agent had to manually delete cache directories ( and ) to get changes to apply. If you fix a file and the old error persists, assume it's a cache issue.
+-   **Untested Code**: A massive amount of code for new features (XP, pause/resume, etc.) was written but never tested. Once the environment is stable, a full regression and feature test is required.
+-   **Database Schema**: The DB schema is scattered across numerous files. The user must be instructed to run all the new  files, or you should propose a task to consolidate them.
 
 **documents created in this job**
--   /app/frontend/components/stream/StreamModeratorModal.tsx
--   /app/SUPABASE_SETUP_MATCHMAKING.md
--   /app/frontend/components/stream/LiveChat.tsx
--   /app/frontend/components/gifts/GiftPicker.tsx
--   /app/frontend/components/gifts/GiftOverlay.tsx
--   /app/SUPABASE_SETUP_CHAT_GIFTS.md
--   /app/frontend/app/vip/club/[clubId].tsx
--   /app/frontend/app/vip/index.tsx
--   /app/frontend/app/messages/[conversationId].tsx
--   /app/frontend/app/messages/index.tsx
--   /app/frontend/app/notifications/index.tsx
--   /app/frontend/app/replays/index.tsx
--   /app/frontend/app/analytics/index.tsx
--   /app/frontend/app/payouts/index.tsx
--   /app/SUPABASE_SETUP_SOCIAL_FEATURES.md
--   /app/frontend/components/stream/MultiGuestLayout.tsx
--   /app/frontend/components/stream/StreamHealth.tsx
--   /app/frontend/app/community-rules.tsx
--   /app/frontend/app/profile/[userId].tsx
+- /app/DATABASE_FIXES_PHASE1.sql
+- /app/PHASE_1_2_FIXES_README.md
+- /app/DATABASE_PHASE3_4_XP_STORAGE.sql
+- /app/PHASE_3_4_5_IMPLEMENTATION.md
+- /app/DATABASE_PAUSE_RESUME.sql
+- /app/COMPLETE_IMPLEMENTATION_SUMMARY.md
+- /app/DATABASE_WALLET_FUNCTION.sql
+- /app/MAYBLESINGLE_UPDATES.md
+- /app/frontend/constants/gifts.ts
+- Numerous new components, services, and utils.
 
-**Last 10 User Messages and any pending user messages**
--   **Msg 171-180**: Agent built scaffolding for 5 features (VIP Clubs, Social, Replays, Analytics, Payouts) based on user's Go for it! command. **(Status: COMPLETED)**
--   **Msg 181**: User instructed to kEEP working on the phases. **(Status: ACKNOWLEDGED)**
--   **Msg 183**: Agent asked for the next features. **(Status: COMPLETED)**
--   **Msg 184**: User listed 8 more features to build (Multi-Guest, Stream Health, Community Rules, User Profile, Discover, Leaderboards, Report, Blocked). **(Status: IN PROGRESS)**
--   **Msg 185-187**: Agent began scaffolding the 8 new features, completing the file creation for the first 4 before the session ended. **(Status: IN PROGRESS)**
+**Last 10 User Messages and any pending HUMAN messages**
+- **Msg 409**: I cant open app in expo go... fix expo go errors - User reports the app is broken again. **(Status: IN PROGRESS / BLOCKED)**
+- **Msg 386**: User requests to update all  to . **(Status: COMPLETED)**
+- **Msg 305**: User reports a  in . **(Status: Agent attempted fix, but was blocked by cache issues)**
+- **Msg 252**: User reports an  for . **(Status: Agent attempted fix, but was blocked by cache issues)**
+- **Msg 216**: Packager is not running - User reports initial connection failure after a large batch of features were added. **(Status: Agent attempted fix, which led to more errors)**
+- **Msg 171**: Keep going to next phases! - User confirms to continue development. **(Status: DONE)**
+- **Msg 100**: Move to next in the process! - User confirms to continue development. **(Status: DONE)**
+- **Msg 75**: Move to the next phases and work hard on everything we spoke about - User confirms to continue development. **(Status: DONE)**
+- **Msg 14**: Begin with Phase 1 and 2 together - User confirms the initial plan. **(Status: DONE)**
+- **Msg 5**: The user provides a huge, detailed list of required fixes and new features. This is the primary work specification for the current job. **(Status: IN PROGRESS)**
 
 **Project Health Check:**
 -   **Broken**:
-    -   **/app/frontend/components/gifts/GiftDetailModal.tsx**: Lottie animations are commented out.
-    -   **/app/frontend/app/stories/create.tsx**: The screen's content is commented out.
+    -   **Metro Bundler**: Critically broken due to  error. The app cannot be started or tested.
+    -   **/app/frontend/components/gifts/GiftDetailModal.tsx**: Lottie animations are still commented out.
+    -   **/app/frontend/app/stories/create.tsx**: Screen content is still commented out.
 -   **Mocked**:
     -   **Live Streaming**: The entire feature is in a demo mode.
-    -   **Vast Majority of Features**: Nearly all new features created in this session (VIP Clubs, DMs, Replays, Analytics, Multi-Guest, etc.) are UI-only placeholders without backend logic or integration.
+    -   **Matchmaking**: Still uses a demo/placeholder logic, not a real queue.
 
 **3rd Party Integrations**
--   **Supabase** (Auth, PostgreSQL, Real-time, Storage) — requires User API Key.
--   **Agora** (Live Streaming) — requires User API Key. **(Currently bypassed by a demo mode)**
--   **OpenAI GPT** (AI Content Moderation) — uses Emergent LLM Key.
+-   **Supabase**: Used for Auth, PostgreSQL DB, and Realtime communication. Requires a User API Key.
+-   **Agora**: Intended for live streaming but is currently **bypassed** by demo mode.
+-   **OpenAI GPT**: For AI Content Moderation. Uses Emergent LLM Key.
 
 **Testing status**
--   Testing agent used after significant changes: NO
--   Troubleshoot agent used after agent stuck in loop: NO (Agent resolved environment issue itself).
--   Test files created: []
--   Known regressions: Lottie animations and the story creation screen remain disabled from a previous fork.
+-   **Testing agent used after significant changes**: NO (Agent was blocked).
+-   **Troubleshoot agent used after agent stuck in loop**: YES. The  correctly identified a hidden Metro cache directory, though this did not solve the final  issue.
+-   **Test files created**: []
+-   **Known regressions**: The entire application is non-functional due to the bundler issue.
 
 **Credentials to test flow:**
-The user  is intended to be a 'head_admin'. SQL scripts exist to facilitate this, but the user must run them.
+N/A. The app cannot be tested.
 
 **What agent forgot to execute**
-- The agent did not consolidate the fragmented database schema files.
-- The agent did not go back to properly fix the root causes of the issues that led to disabling Lottie animations and the story creation screen. It has prioritized new feature creation per the user's direction.
+The agent did not forget tasks but was completely blocked by the critical  environment error. It was unable to:
+-   Complete the full implementation of the user's extensive feature list (real matchmaking, premade lobbies, etc.).
+-   Test any of the dozens of new features and fixes it implemented.
+-   Consolidate the fragmented database schema files.
+-   Fix the long-standing disabled Lottie and Story features.
 
 </analysis>
