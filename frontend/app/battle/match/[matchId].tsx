@@ -11,6 +11,7 @@ import {
   Image,
   Vibration,
   Platform,
+  Modal,
 } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -19,6 +20,9 @@ import { useAuth } from '../../../contexts/AuthContext';
 import { matchmakingService, BattleMatch, MatchParticipant } from '../../../services/matchmakingService';
 import { battleService, VoteCount } from '../../../services/battleService';
 import { supabase } from '../../../lib/supabase';
+import LiveChat from '../../../components/stream/LiveChat';
+import GiftPicker from '../../../components/gifts/GiftPicker';
+import GiftOverlay from '../../../components/gifts/GiftOverlay';
 
 const { width, height } = Dimensions.get('window');
 
