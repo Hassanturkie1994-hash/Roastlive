@@ -52,7 +52,7 @@ export default function ConversationScreen() {
           user2:user2_id (id, username, avatar_url)
         `)
         .eq('id', conversationId)
-        .single();
+        .maybeSingle();
 
       if (conv) {
         const other = conv.user1_id === user?.id ? conv.user2 : conv.user1;

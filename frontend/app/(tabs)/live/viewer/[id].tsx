@@ -49,7 +49,7 @@ export default function ViewerScreen() {
         .from('streams')
         .select('*')
         .eq('id', id)
-        .single();
+        .maybeSingle();
 
       if (error) throw error;
       setStream(data);

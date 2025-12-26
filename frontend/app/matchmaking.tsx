@@ -242,7 +242,7 @@ export default function MatchmakingScreen() {
         .from('profiles')
         .select('username, avatar_url')
         .eq('id', opponent.user_id)
-        .single();
+        .maybeSingle();
 
       setMatchData({
         matchId,

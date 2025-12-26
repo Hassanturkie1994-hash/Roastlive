@@ -62,7 +62,7 @@ export default function VIPClubScreen() {
         .from('vip_clubs')
         .select('*')
         .eq('id', clubId)
-        .single();
+        .maybeSingle();
 
       if (clubError) throw clubError;
       setClub(clubData);
@@ -72,7 +72,7 @@ export default function VIPClubScreen() {
         .from('profiles')
         .select('*')
         .eq('id', clubData.creator_id)
-        .single();
+        .maybeSingle();
       setCreator(creatorData);
 
       // Check if user is member
@@ -83,7 +83,7 @@ export default function VIPClubScreen() {
           .eq('club_id', clubId)
           .eq('user_id', user.id)
           .eq('is_active', true)
-          .single();
+          .maybeSingle();
 
         if (membership) {
           setIsMember(true);

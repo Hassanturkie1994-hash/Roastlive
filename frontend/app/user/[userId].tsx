@@ -57,7 +57,7 @@ export default function UserProfileScreen() {
         .from('profiles')
         .select('*')
         .eq('id', userId)
-        .single();
+        .maybeSingle();
 
       if (error) throw error;
 
@@ -79,7 +79,7 @@ export default function UserProfileScreen() {
           .select('id')
           .eq('follower_id', user.id)
           .eq('following_id', userId)
-          .single();
+          .maybeSingle();
         setIsFollowing(!!followData);
 
         // Check if blocked
@@ -88,7 +88,7 @@ export default function UserProfileScreen() {
           .select('id')
           .eq('blocker_id', user.id)
           .eq('blocked_id', userId)
-          .single();
+          .maybeSingle();
         setIsBlocked(!!blockData);
       }
 

@@ -193,7 +193,7 @@ export default function BroadcastScreen() {
           started_at: new Date().toISOString(),
         })
         .select()
-        .single();
+        .maybeSingle();
 
       if (error) throw error;
 
@@ -202,7 +202,7 @@ export default function BroadcastScreen() {
         .from('profiles')
         .select('username, avatar_url')
         .eq('id', user?.id)
-        .single();
+        .maybeSingle();
       
       setProfile(profileData);
       setStreamId(stream.id);
@@ -254,7 +254,7 @@ export default function BroadcastScreen() {
             .from('streams')
             .select('started_at')
             .eq('id', streamId)
-            .single();
+            .maybeSingle();
 
           if (stream?.started_at) {
             const durationMinutes = Math.floor(

@@ -61,7 +61,7 @@ export default function PayoutScreen() {
         .from('wallets')
         .select('balance, total_earned')
         .eq('user_id', user.id)
-        .single();
+        .maybeSingle();
 
       setBalance(wallet?.balance || 0);
 

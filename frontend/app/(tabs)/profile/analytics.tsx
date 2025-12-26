@@ -52,7 +52,7 @@ export default function AnalyticsDashboard() {
         .from('wallets')
         .select('total_earned')
         .eq('user_id', user.id)
-        .single();
+        .maybeSingle();
 
       // Get follower count
       const { count: followers } = await supabase

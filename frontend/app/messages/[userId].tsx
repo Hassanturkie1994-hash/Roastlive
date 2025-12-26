@@ -48,7 +48,7 @@ export default function DMScreen() {
       .from('profiles')
       .select('username, avatar_url')
       .eq('id', otherUserId)
-      .single();
+      .maybeSingle();
     setOtherUser(data);
   };
 

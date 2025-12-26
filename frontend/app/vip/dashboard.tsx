@@ -56,7 +56,7 @@ export default function VIPDashboardScreen() {
         .from('vip_clubs')
         .select('*')
         .eq('creator_id', user.id)
-        .single();
+        .maybeSingle();
 
       if (clubData) {
         setClub(clubData);

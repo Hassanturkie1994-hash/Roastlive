@@ -208,7 +208,7 @@ export default function BattleMatchScreen() {
         .from('streams')
         .select('id')
         .eq('channel_name', `battle_${matchId}`)
-        .single();
+        .maybeSingle();
         
       if (existingStream) {
         setStreamId(existingStream.id);
@@ -224,7 +224,7 @@ export default function BattleMatchScreen() {
             started_at: new Date().toISOString(),
           })
           .select('id')
-          .single();
+          .maybeSingle();
           
         if (newStream) {
           setStreamId(newStream.id);
