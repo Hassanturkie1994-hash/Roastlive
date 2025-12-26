@@ -59,6 +59,7 @@ export default function BattleMatchScreen() {
   const [showGiftPicker, setShowGiftPicker] = useState(false);
   const [giftQueue, setGiftQueue] = useState<any[]>([]);
   const [streamId, setStreamId] = useState<string | null>(null);
+  const [cameraFacing, setCameraFacing] = useState<CameraType>('front');
 
   // Animations
   const pulseAnim = useRef(new Animated.Value(1)).current;
