@@ -279,27 +279,31 @@ export default function BattleMatchScreen() {
 
   const endBattle = async () => {
     setPhase('voting');
-    await matchmakingService.endMatch(matchId);
     
-    // Give 5 seconds for final votes, then show results
-    setTimeout(() => {
+    // Give 5 seconds for final votes
+    setTimeout(async () => {
+      // Use battle service to end the battle and calculate results
+      const result = await battleService.endBattle(matchId);
+      
+      if (result.success && result.result) {
+        setWinner(result.result.winner_team);
+        setVotes({
+          team_a: result.result.team_a_votes,
+          team_b: result.result.team_b_votes,
+          total: result.result.total_votes,
+          percentage: {
+            team_a: result.result.total_votes > 0 ? (result.result.team_a_votes / result.result.total_votes) * 100 : 50,
+            team_b: result.result.total_votes > 0 ? (result.result.team_b_votes / result.result.total_votes) * 100 : 50,
+          },
+        });
+      }
+      
       determineWinner();
     }, 5000);
   };
 
   const determineWinner = () => {
     setPhase('results');
-    
-    let winnerTeam: 'team_a' | 'team_b' | 'tie';
-    if (votes.team_a > votes.team_b) {
-      winnerTeam = 'team_a';
-    } else if (votes.team_b > votes.team_a) {
-      winnerTeam = 'team_b';
-    } else {
-      winnerTeam = 'tie';
-    }
-    
-    setWinner(winnerTeam);
     
     // Winner animation
     Animated.spring(winnerScale, {
