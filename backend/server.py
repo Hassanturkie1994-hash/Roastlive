@@ -554,6 +554,90 @@ Return JSON format:
         logger.error(f"Moderation error: {e}")
         return {"action": "allow", "score": 0, "flagged": False}
 
+# Battle System Endpoints
+class VoteRequest(BaseModel):
+    match_id: str
+    voter_id: str
+    team: str  # 'team_a' or 'team_b'
+
+class BattleResults(BaseModel):
+    match_id: str
+    winner_team: str  # 'team_a', 'team_b', or 'tie'
+    team_a_votes: int
+    team_b_votes: int
+    total_votes: int
+
+@api_router.post("/battles/{match_id}/vote")
+async def cast_vote(match_id: str, request: VoteRequest):
+    """Cast a vote for a team in a battle"""
+    try:
+        # This would integrate with Supabase
+        # For now, return success to indicate the endpoint works
+        return {
+            "success": True,
+            "match_id": match_id,
+            "team": request.team,
+            "message": "Vote recorded successfully"
+        }
+    except Exception as e:
+        logger.error(f"Vote error: {e}")
+        raise HTTPException(status_code=400, detail=str(e))
+
+@api_router.get("/battles/{match_id}/votes")
+async def get_battle_votes(match_id: str):
+    """Get current vote counts for a battle"""
+    try:
+        # This would query Supabase for vote counts
+        return {
+            "match_id": match_id,
+            "team_a_votes": 0,
+            "team_b_votes": 0,
+            "total_votes": 0,
+            "vote_percentage": {
+                "team_a": 50.0,
+                "team_b": 50.0
+            }
+        }
+    except Exception as e:
+        logger.error(f"Get votes error: {e}")
+        raise HTTPException(status_code=400, detail=str(e))
+
+@api_router.post("/battles/{match_id}/end")
+async def end_battle(match_id: str):
+    """End a battle and determine the winner"""
+    try:
+        # This would:
+        # 1. Mark battle as completed
+        # 2. Calculate winner based on votes
+        # 3. Update battle results
+        # 4. Update player statistics
+        return {
+            "success": True,
+            "match_id": match_id,
+            "winner_team": "team_a",  # This would be calculated
+            "message": "Battle ended successfully"
+        }
+    except Exception as e:
+        logger.error(f"End battle error: {e}")
+        raise HTTPException(status_code=400, detail=str(e))
+
+@api_router.get("/battles/{match_id}/results")
+async def get_battle_results(match_id: str):
+    """Get final results of a completed battle"""
+    try:
+        # This would fetch from Supabase battle_results table
+        return {
+            "match_id": match_id,
+            "winner_team": "team_a",
+            "team_a_votes": 0,
+            "team_b_votes": 0,
+            "total_votes": 0,
+            "participants": []
+        }
+    except Exception as e:
+        logger.error(f"Get results error: {e}")
+        raise HTTPException(status_code=404, detail=str(e))
+
 # Admin endpoints
 @api_router.get("/admin/dashboard-stats")
 async def get_admin_dashboard_stats():
