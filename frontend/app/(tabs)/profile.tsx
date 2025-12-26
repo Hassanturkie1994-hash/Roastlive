@@ -28,6 +28,7 @@ export default function Profile() {
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<'posts' | 'stories'>('posts');
   const [posts, setPosts] = useState<any[]>([]);
+  const [xpInfo, setXPInfo] = useState<any>(null);
   const [stats, setStats] = useState({
     followers: 0,
     following: 0,
@@ -39,6 +40,7 @@ export default function Profile() {
     loadProfile();
     loadStats();
     loadPosts();
+    loadXPInfo();
   }, []);
 
   const loadProfile = async () => {
