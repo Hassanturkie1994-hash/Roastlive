@@ -158,20 +158,14 @@ export default function MatchmakingScreen() {
 
   // Get queue stats
   useEffect(() => {
-    const getQueueStats = async () => {
-      const { count } = await supabase
-        .from('matchmaking_queue')
-        .select('*', { count: 'exact', head: true })
-        .eq('team_size', teamSize)
-        .eq('status', 'waiting');
-      
-      setPlayersInQueue(count || 0);
-      const estimate = await matchmakingService.getEstimatedWaitTime(teamSize);
-      setEstimatedWait(estimate);
+    const updateQueueStats = async () => {
+      const stats = await getQueueStats(teamSize);
+      setPlayersInQueue(stats.playersInQueue);
+      setEstimatedWait(stats.estimatedWaitSeconds);
     };
 
-    getQueueStats();
-    const interval = setInterval(getQueueStats, 5000);
+    updateQueueStats();
+    const interval = setInterval(updateQueueStats, 5000);
     return () => clearInterval(interval);
   }, [teamSize]);
 
