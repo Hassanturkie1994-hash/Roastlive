@@ -551,5 +551,92 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.3,
     shadowRadius: 8,
     elevation: 8,
+  // XP Section
+  xpSection: {
+    marginTop: theme.spacing.md,
+    paddingTop: theme.spacing.md,
+    borderTopWidth: 1,
+    borderTopColor: theme.colors.border,
+  },
+  xpHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: theme.spacing.sm,
+  },
+  levelBadge: {
+    backgroundColor: theme.colors.primary,
+    paddingHorizontal: theme.spacing.sm,
+    paddingVertical: 4,
+    borderRadius: theme.borderRadius.sm,
+    marginRight: theme.spacing.sm,
+  },
+  levelText: {
+    fontSize: theme.typography.sizes.sm,
+    fontWeight: theme.typography.weights.bold,
+    color: '#fff',
+  },
+  rankTitle: {
+    flex: 1,
+    fontSize: theme.typography.sizes.sm,
+    fontWeight: theme.typography.weights.semibold,
+    color: theme.colors.textSecondary,
+  },
+  xpBarContainer: {
+    marginTop: theme.spacing.xs,
+  },
+  xpBar: {
+    height: 8,
+    backgroundColor: theme.colors.surfaceLight,
+    borderRadius: 4,
+    overflow: 'hidden',
+  },
+  xpBarFill: {
+    height: '100%',
+    backgroundColor: theme.colors.primary,
+  },
+  xpText: {
+    fontSize: theme.typography.sizes.xs,
+    color: theme.colors.textSecondary,
+    marginTop: 4,
+  },
+  badgesContainer: {
+    marginTop: theme.spacing.sm,
+  },
+  badgesTitle: {
+    fontSize: theme.typography.sizes.xs,
+    color: theme.colors.textSecondary,
+    marginBottom: theme.spacing.xs,
+  },
+  badgesList: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+  },
+  badgeItem: {
+    marginRight: theme.spacing.xs,
+  },
+  badgeEmoji: {
+    fontSize: 24,
+  },
+  badgeMore: {
+    fontSize: theme.typography.sizes.sm,
+    color: theme.colors.textSecondary,
+  },
+  streakBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: `${theme.colors.error}20`,
+    paddingHorizontal: theme.spacing.sm,
+    paddingVertical: 4,
+    borderRadius: theme.borderRadius.full,
+    alignSelf: 'flex-start',
+    marginTop: theme.spacing.sm,
+  },
+  streakText: {
+    fontSize: theme.typography.sizes.xs,
+    fontWeight: theme.typography.weights.bold,
+    color: theme.colors.error,
+    marginLeft: 4,
+  },
+
   },
 });
