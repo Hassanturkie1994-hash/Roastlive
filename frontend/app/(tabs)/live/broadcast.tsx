@@ -8,6 +8,7 @@ import {
   Alert,
   ActivityIndicator,
   BackHandler,
+  AppState,
 } from 'react-native';
 import { CameraView, CameraType, useCameraPermissions, FlashMode } from 'expo-camera';
 import { useRouter, useLocalSearchParams } from 'expo-router';
@@ -18,6 +19,7 @@ import { supabase } from '../../../lib/supabase';
 import axios from 'axios';
 import LiveChat from '../../../components/stream/LiveChat';
 import StreamModeratorModal from '../../../components/stream/StreamModeratorModal';
+import { initializeStreamMonitoring, getPauseStatus } from '../../../utils/streamStateManager';
 
 const API_URL = process.env.EXPO_PUBLIC_BACKEND_URL;
 
@@ -29,6 +31,8 @@ export default function BroadcastScreen() {
   const [facing, setFacing] = useState<CameraType>('front');
   const [flashMode, setFlashMode] = useState<FlashMode>('off');
   const [isLive, setIsLive] = useState(false);
+  const [isPaused, setIsPaused] = useState(false);
+  const [pauseMinutesRemaining, setPauseMinutesRemaining] = useState(10);
   const [streamTitle, setStreamTitle] = useState(params.title as string || '');
   const [viewerCount, setViewerCount] = useState(0);
   const [streamId, setStreamId] = useState<string | null>(null);
@@ -43,6 +47,23 @@ export default function BroadcastScreen() {
   const [slowModeSeconds, setSlowModeSeconds] = useState(parseInt(params.slowMode as string || '0'));
   const cameraRef = useRef<any>(null);
   const autoStarted = useRef(false);
+  const streamMonitorCleanup = useRef<(() => void) | null>(null);
+
+  // Monitor pause countdown
+  useEffect(() => {
+    if (isPaused) {
+      const interval = setInterval(() => {
+        const pauseInfo = getPauseStatus();
+        if (pauseInfo) {
+          setPauseMinutesRemaining(pauseInfo.remainingMinutes);
+        } else {
+          setIsPaused(false);
+        }
+      }, 1000);
+
+      return () => clearInterval(interval);
+    }
+  }, [isPaused]);
 
   // Prevent accidental back navigation during live stream
   useEffect(() => {
@@ -79,6 +100,15 @@ export default function BroadcastScreen() {
       }, 500);
     }
   }, [params.autoStart, permission]);
+
+  // Cleanup stream monitoring on unmount
+  useEffect(() => {
+    return () => {
+      if (streamMonitorCleanup.current) {
+        streamMonitorCleanup.current();
+      }
+    };
+  }, []);
 
   // Request camera permission
   if (!permission) {
