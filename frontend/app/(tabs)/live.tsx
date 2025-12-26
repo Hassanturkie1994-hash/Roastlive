@@ -13,9 +13,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { theme } from '../../constants/theme';
 import { useAuth } from '../../contexts/AuthContext';
 import StreamCard from '../../components/stream/StreamCard';
-import axios from 'axios';
-
-const API_URL = process.env.EXPO_PUBLIC_BACKEND_URL;
+import { supabase } from '../../lib/supabase';
 
 interface Stream {
   id: string;
@@ -38,10 +36,34 @@ export default function Live() {
 
   const loadStreams = async () => {
     try {
-      const response = await axios.get(`${API_URL}/api/streams/active`);
-      setStreams(response.data.streams || []);
+      // Load active streams from Supabase
+      const { data, error } = await supabase
+        .from('streams')
+        .select(`
+          *,
+          host:profiles!host_id(username, avatar_url)
+        `)
+        .eq('is_live', true)
+        .order('started_at', { ascending: false })
+        .limit(50);
+
+      if (error) throw error;
+
+      const formattedStreams = (data || []).map((stream: any) => ({
+        id: stream.id,
+        host_id: stream.host_id,
+        title: stream.title,
+        channel_name: stream.channel_name,
+        is_live: stream.is_live,
+        viewer_count: stream.viewer_count || 0,
+        started_at: stream.started_at,
+        host_username: stream.host?.[0]?.username || 'Unknown',
+      }));
+
+      setStreams(formattedStreams);
     } catch (error) {
       console.error('Load streams error:', error);
+      setStreams([]);
     } finally {
       setLoading(false);
       setRefreshing(false);
