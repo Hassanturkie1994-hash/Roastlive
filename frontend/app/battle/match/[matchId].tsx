@@ -23,6 +23,8 @@ import { supabase } from '../../../lib/supabase';
 import LiveChat from '../../../components/stream/LiveChat';
 import GiftPicker from '../../../components/gifts/GiftPicker';
 import GiftOverlay from '../../../components/gifts/GiftOverlay';
+import MultiGuestGrid from '../../../components/battle/MultiGuestGrid';
+import { CameraType } from 'expo-camera';
 
 const { width, height } = Dimensions.get('window');
 
