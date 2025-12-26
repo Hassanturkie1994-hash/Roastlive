@@ -442,7 +442,7 @@ export default function BroadcastScreen() {
               isHost={true}
               chatEnabled={allowGifts}
               slowModeSeconds={slowModeSeconds}
-              onGiftTap={() => console.log('Gift tapped')}
+              onGiftTap={() => setShowGiftPicker(true)}
             />
           </View>
         )}
