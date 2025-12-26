@@ -199,6 +199,34 @@ export default function BattleMatchScreen() {
         setPhase('results');
         determineWinner();
       }
+      
+      // Create or get battle stream for chat/gifts
+      const { data: existingStream } = await supabase
+        .from('streams')
+        .select('id')
+        .eq('channel_name', `battle_${matchId}`)
+        .single();
+        
+      if (existingStream) {
+        setStreamId(existingStream.id);
+      } else {
+        // Create battle stream
+        const { data: newStream } = await supabase
+          .from('streams')
+          .insert({
+            host_id: participantsData[0]?.user_id,
+            title: `Battle: ${matchData?.team_size || '1v1'}`,
+            channel_name: `battle_${matchId}`,
+            is_live: true,
+            started_at: new Date().toISOString(),
+          })
+          .select('id')
+          .single();
+          
+        if (newStream) {
+          setStreamId(newStream.id);
+        }
+      }
     } catch (error) {
       console.error('Error loading match:', error);
     } finally {
