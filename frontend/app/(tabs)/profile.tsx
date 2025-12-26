@@ -143,6 +143,64 @@ export default function Profile() {
             <Text style={styles.fullName}>{profile.full_name}</Text>
           )}
           {profile?.bio && <Text style={styles.bio}>{profile.bio}</Text>}
+
+          {/* XP & Level Display */}
+          {xpInfo && (
+            <View style={styles.xpSection}>
+              <View style={styles.xpHeader}>
+                <View style={styles.levelBadge}>
+                  <Text style={styles.levelText}>Lv. {xpInfo.level}</Text>
+                </View>
+                <Text style={styles.rankTitle}>{xpInfo.rankTitle}</Text>
+                <TouchableOpacity onPress={() => router.push('/leaderboard')}>
+                  <Ionicons name="trophy" size={20} color={theme.colors.gold} />
+                </TouchableOpacity>
+              </View>
+              
+              {/* XP Progress Bar */}
+              <View style={styles.xpBarContainer}>
+                <View style={styles.xpBar}>
+                  <View 
+                    style={[
+                      styles.xpBarFill, 
+                      { width: `${xpInfo.progress}%` }
+                    ]} 
+                  />
+                </View>
+                <Text style={styles.xpText}>
+                  {xpInfo.currentLevelXP.toLocaleString()} / {xpInfo.nextLevelXP.toLocaleString()} XP
+                </Text>
+              </View>
+
+              {/* Badges */}
+              {xpInfo.badges && xpInfo.badges.length > 0 && (
+                <View style={styles.badgesContainer}>
+                  <Text style={styles.badgesTitle}>Badges:</Text>
+                  <View style={styles.badgesList}>
+                    {xpInfo.badges.slice(0, 5).map((badgeId: string) => {
+                      const badge = Object.values(BADGES).find(b => b.id === badgeId);
+                      return badge ? (
+                        <View key={badgeId} style={styles.badgeItem}>
+                          <Text style={styles.badgeEmoji}>{badge.emoji}</Text>
+                        </View>
+                      ) : null;
+                    })}
+                    {xpInfo.badges.length > 5 && (
+                      <Text style={styles.badgeMore}>+{xpInfo.badges.length - 5}</Text>
+                    )}
+                  </View>
+                </View>
+              )}
+
+              {/* Win Streak */}
+              {xpInfo.currentWinStreak > 0 && (
+                <View style={styles.streakBadge}>
+                  <Ionicons name="flame" size={16} color={theme.colors.error} />
+                  <Text style={styles.streakText}>{xpInfo.currentWinStreak} Win Streak!</Text>
+                </View>
+              )}
+            </View>
+          )}
         </View>
 
         {/* Stats */}
