@@ -685,6 +685,52 @@ const styles = StyleSheet.create({
   endButtonText: {
     fontSize: theme.typography.sizes.base,
     fontWeight: theme.typography.weights.bold,
+  // Pause Overlay
+  pauseOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0,0,0,0.85)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    zIndex: 1000,
+  },
+  pauseCard: {
+    backgroundColor: theme.colors.surface,
+    borderRadius: theme.borderRadius.xl,
+    padding: theme.spacing.xxl,
+    alignItems: 'center',
+    marginHorizontal: theme.spacing.xl,
+    maxWidth: 320,
+  },
+  pauseTitle: {
+    fontSize: theme.typography.sizes.xxl,
+    fontWeight: theme.typography.weights.bold,
+    color: theme.colors.text,
+    marginTop: theme.spacing.lg,
+    marginBottom: theme.spacing.sm,
+  },
+  pauseText: {
+    fontSize: theme.typography.sizes.base,
+    color: theme.colors.textSecondary,
+    textAlign: 'center',
+    marginBottom: theme.spacing.md,
+  },
+  pauseTimer: {
+    fontSize: theme.typography.sizes.lg,
+    fontWeight: theme.typography.weights.bold,
+    color: theme.colors.warning,
+    marginBottom: theme.spacing.sm,
+  },
+  pauseHint: {
+    fontSize: theme.typography.sizes.sm,
+    color: theme.colors.textSecondary,
+    textAlign: 'center',
+    fontStyle: 'italic',
+  },
+
     color: '#fff',
     marginLeft: theme.spacing.sm,
   },
