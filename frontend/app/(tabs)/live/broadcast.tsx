@@ -300,7 +300,31 @@ export default function BroadcastScreen() {
             </View>
           </View>
         )}
+        
+        {/* Live Chat Overlay */}
+        {isLive && showChat && streamId && (
+          <View style={styles.chatContainer}>
+            <LiveChat
+              streamId={streamId}
+              hostId={user?.id || ''}
+              isHost={true}
+              chatEnabled={allowGifts}
+              slowModeSeconds={slowModeSeconds}
+              onGiftTap={() => console.log('Gift tapped')}
+            />
+          </View>
+        )}
       </CameraView>
+      
+      {/* Moderator Modal */}
+      {showModeratorModal && streamId && (
+        <StreamModeratorModal
+          visible={showModeratorModal}
+          streamId={streamId}
+          hostId={user?.id || ''}
+          onClose={() => setShowModeratorModal(false)}
+        />
+      )}
     </View>
   );
 }
