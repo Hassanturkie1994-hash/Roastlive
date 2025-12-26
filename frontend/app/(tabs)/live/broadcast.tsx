@@ -23,18 +23,35 @@ const API_URL = process.env.EXPO_PUBLIC_BACKEND_URL;
 export default function BroadcastScreen() {
   const router = useRouter();
   const { user } = useAuth();
+  const params = useLocalSearchParams();
   const [permission, requestPermission] = useCameraPermissions();
   const [facing, setFacing] = useState<CameraType>('front');
   const [isLive, setIsLive] = useState(false);
-  const [streamTitle, setStreamTitle] = useState('');
+  const [streamTitle, setStreamTitle] = useState(params.title as string || '');
   const [viewerCount, setViewerCount] = useState(0);
   const [streamId, setStreamId] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [isMuted, setIsMuted] = useState(false);
-  const [showChat, setShowChat] = useState(true);
+  const [showChat, setShowChat] = useState(params.allowChat !== 'false');
   const [guestSeatsLocked, setGuestSeatsLocked] = useState(false);
   const [guests, setGuests] = useState<any[]>([]);
+  const [showModeratorModal, setShowModeratorModal] = useState(false);
+  const [showViewerList, setShowViewerList] = useState(false);
+  const [allowGifts, setAllowGifts] = useState(params.allowGifts !== 'false');
+  const [slowModeSeconds, setSlowModeSeconds] = useState(parseInt(params.slowMode as string || '0'));
   const cameraRef = useRef<any>(null);
+  const autoStarted = useRef(false);
+
+  // Auto-start stream if coming from pre-live setup
+  useEffect(() => {
+    if (params.autoStart === 'true' && !autoStarted.current && permission?.granted) {
+      autoStarted.current = true;
+      // Auto-start after a brief delay to let camera mount
+      setTimeout(() => {
+        startStream();
+      }, 500);
+    }
+  }, [params.autoStart, permission]);
 
   // Request camera permission
   if (!permission) {
