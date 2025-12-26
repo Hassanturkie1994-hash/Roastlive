@@ -127,10 +127,18 @@ export default function PreLiveSetupScreen() {
     if (streamType === 'battle') {
       router.push(`/matchmaking?teamSize=${teamSize}`);
     } else {
-      // Start solo stream
-      Alert.alert('Success', `Starting ${streamTitle}...`, [
-        { text: 'OK', onPress: () => router.back() }
-      ]);
+      // Start solo stream - navigate to broadcast with config
+      const streamConfig = {
+        title: streamTitle.trim(),
+        labels: selectedLabels.join(','),
+        allowGifts: allowGifts.toString(),
+        allowChat: allowChat.toString(),
+        slowMode: slowModeSeconds.toString(),
+        autoStart: 'true',
+      };
+      
+      const queryParams = new URLSearchParams(streamConfig).toString();
+      router.push(`/(tabs)/live/broadcast?${queryParams}`);
     }
   };
 
