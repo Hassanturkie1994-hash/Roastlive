@@ -44,7 +44,7 @@ export const battleService = {
         .select('id')
         .eq('match_id', matchId)
         .eq('voter_id', voterId)
-        .maybeSingle();
+        .single();
 
       if (existingVote) {
         // Update existing vote
@@ -123,7 +123,7 @@ export const battleService = {
         .select('team')
         .eq('match_id', matchId)
         .eq('voter_id', userId)
-        .maybeSingle();
+        .single();
 
       if (error || !data) return null;
       return data.team as 'team_a' | 'team_b';
@@ -162,7 +162,7 @@ export const battleService = {
           total_votes: voteCounts.total,
         })
         .select()
-        .maybeSingle();
+        .single();
 
       if (error) throw error;
 
@@ -194,7 +194,7 @@ export const battleService = {
         .from('battle_results')
         .select('*')
         .eq('match_id', matchId)
-        .maybeSingle();
+        .single();
 
       if (error || !data) return null;
       return data as BattleResult;
@@ -231,7 +231,7 @@ export const battleService = {
           .from('profiles')
           .select('battles_won, battles_lost, battles_tied, total_battles')
           .eq('id', participant.user_id)
-          .maybeSingle();
+          .single();
 
         if (profile) {
           const updates: any = {
@@ -367,7 +367,7 @@ export const battleService = {
         .from('profiles')
         .select('battles_won, battles_lost, battles_tied, total_battles')
         .eq('id', userId)
-        .maybeSingle();
+        .single();
 
       if (error || !data) {
         return {

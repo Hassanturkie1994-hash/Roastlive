@@ -110,7 +110,7 @@ export const matchmakingService = {
         .select('*')
         .eq('user_id', userId)
         .eq('status', 'waiting')
-        .maybeSingle();
+        .single();
 
       if (error || !data) return null;
       return data as QueueEntry;
@@ -154,7 +154,7 @@ export const matchmakingService = {
           duration_seconds: duration,
         })
         .select()
-        .maybeSingle();
+        .single();
 
       if (matchError) throw matchError;
 
@@ -199,7 +199,7 @@ export const matchmakingService = {
         .from('battle_matches')
         .select('*')
         .eq('id', matchId)
-        .maybeSingle();
+        .single();
 
       if (error || !data) return null;
       return data as BattleMatch;
@@ -303,7 +303,7 @@ export const matchmakingService = {
           expires_at: expiresAt.toISOString(),
         })
         .select()
-        .maybeSingle();
+        .single();
 
       if (error) throw error;
 
