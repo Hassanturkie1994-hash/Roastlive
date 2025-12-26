@@ -68,10 +68,25 @@ export default function Live() {
     router.push('/pre-live-setup');
   };
 
+  const handleBack = () => {
+    if (router.canGoBack()) {
+      router.back();
+    } else {
+      router.replace('/(tabs)/home');
+    }
+  };
+
   return (
     <View style={styles.container}>
-      {/* Header */}
+      {/* Header with Back Button */}
       <View style={styles.header}>
+        <TouchableOpacity 
+          style={styles.backButton}
+          onPress={handleBack}
+          hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+        >
+          <Ionicons name="arrow-back" size={24} color={theme.colors.text} />
+        </TouchableOpacity>
         <Text style={styles.headerTitle}>Live</Text>
         <View style={styles.headerActions}>
           <TouchableOpacity style={styles.searchButton}>
@@ -164,10 +179,18 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: theme.colors.border,
   },
+  backButton: {
+    width: 44,
+    height: 44,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   headerTitle: {
+    flex: 1,
     fontSize: theme.typography.sizes.xxl,
     fontWeight: theme.typography.weights.bold,
     color: theme.colors.text,
+    marginLeft: theme.spacing.sm,
   },
   headerActions: { flexDirection: 'row', gap: theme.spacing.sm },
   searchButton: {

@@ -1,14 +1,35 @@
 import React from 'react';
 import { Tabs } from 'expo-router';
-import { View, StyleSheet } from 'react-native';
+import { View, StyleSheet, Image } from 'react-native';
+import { usePathname } from 'expo-router';
 import CustomTabBar from '../../components/navigation/CustomTabBar';
 import { theme } from '../../constants/theme';
 
 export default function TabsLayout() {
+  const pathname = usePathname();
+  
+  // Screens where tab bar should be hidden
+  const hideTabBarRoutes = [
+    '/live',
+    '/profile',
+    '/profile/settings',
+    '/profile/edit',
+    '/profile/wallet',
+    '/profile/vip-clubs',
+    '/profile/stream-dashboard',
+    '/profile/stream-settings',
+    '/profile/moderators',
+    '/profile/gift-store',
+    '/profile/change-password',
+    '/profile/blocked',
+  ];
+  
+  const shouldHideTabBar = hideTabBarRoutes.some(route => pathname?.includes(route));
+
   return (
     <View style={styles.container}>
       <Tabs
-        tabBar={(props) => <CustomTabBar {...props} />}
+        tabBar={(props) => shouldHideTabBar ? null : <CustomTabBar {...props} />}
         screenOptions={{
           headerShown: false,
           tabBarShowLabel: false,
@@ -19,12 +40,26 @@ export default function TabsLayout() {
           name="home"
           options={{
             title: 'Home',
+            // Custom header with logo
+            headerShown: true,
+            headerTitle: () => (
+              <Image
+                source={require('../../assets/images/roast-live-logo.png')}
+                style={styles.headerLogo}
+                resizeMode="contain"
+              />
+            ),
+            headerStyle: {
+              backgroundColor: theme.colors.surface,
+            },
+            headerShadowVisible: false,
           }}
         />
         <Tabs.Screen
           name="live"
           options={{
             title: 'Live',
+            tabBarStyle: { display: 'none' },
           }}
         />
         <Tabs.Screen
@@ -37,6 +72,7 @@ export default function TabsLayout() {
           name="profile"
           options={{
             title: 'Profile',
+            tabBarStyle: { display: 'none' },
           }}
         />
       </Tabs>
@@ -51,5 +87,9 @@ const styles = StyleSheet.create({
   },
   sceneContainer: {
     backgroundColor: theme.colors.background,
+  },
+  headerLogo: {
+    width: 140,
+    height: 40,
   },
 });
