@@ -40,14 +40,12 @@ export default function TabsLayout() {
           name="home"
           options={{
             title: 'Home',
-            // Custom header with logo
+            // Custom header with logo/text
             headerShown: true,
             headerTitle: () => (
-              <Image
-                source={require('../../assets/images/roast-live-logo.png')}
-                style={styles.headerLogo}
-                resizeMode="contain"
-              />
+              <View style={styles.headerLogoContainer}>
+                <Text style={styles.headerLogoText}>🔥 ROAST LIVE</Text>
+              </View>
             ),
             headerStyle: {
               backgroundColor: theme.colors.surface,
