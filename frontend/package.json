@@ -22,7 +22,7 @@
     "axios": "^1.13.2",
     "base64-arraybuffer": "^1.0.2",
     "date-fns": "^4.1.0",
-    "expo": "^54.0.30",
+    "expo": "51",
     "expo-av": "^16.0.8",
     "expo-blur": "~15.0.8",
     "expo-camera": "^17.0.10",
