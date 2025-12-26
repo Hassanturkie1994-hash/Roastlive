@@ -48,6 +48,7 @@ export default function BroadcastScreen() {
   const [showGiftPicker, setShowGiftPicker] = useState(false);
   const [allowGifts, setAllowGifts] = useState(params.allowGifts !== 'false');
   const [slowModeSeconds, setSlowModeSeconds] = useState(parseInt(params.slowMode as string || '0'));
+  const [profile, setProfile] = useState<any>(null);
   const cameraRef = useRef<any>(null);
   const autoStarted = useRef(false);
   const streamMonitorCleanup = useRef<(() => void) | null>(null);
