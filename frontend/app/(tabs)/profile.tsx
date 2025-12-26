@@ -16,6 +16,8 @@ import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { supabase } from '../../lib/supabase';
 import { postsService } from '../../services/postsService';
+import { getUserXPInfo } from '../../services/xpService';
+import { BADGES } from '../../utils/xpSystem';
 
 const { width } = Dimensions.get('window');
 
