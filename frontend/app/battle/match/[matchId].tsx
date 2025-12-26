@@ -200,27 +200,13 @@ export default function BattleMatchScreen() {
 
   const loadVotes = async () => {
     try {
-      const { data, error } = await supabase
-        .from('battle_votes')
-        .select('team')
-        .eq('match_id', matchId);
-
-      if (error) throw error;
-
-      const teamA = data?.filter((v) => v.team === 'team_a').length || 0;
-      const teamB = data?.filter((v) => v.team === 'team_b').length || 0;
-      setVotes({ team_a: teamA, team_b: teamB });
+      const voteCounts = await battleService.getVoteCounts(matchId);
+      setVotes(voteCounts);
 
       // Check if current user has voted
-      const { data: userVoteData } = await supabase
-        .from('battle_votes')
-        .select('team')
-        .eq('match_id', matchId)
-        .eq('voter_id', user?.id)
-        .single();
-
-      if (userVoteData) {
-        setUserVote(userVoteData.team as 'team_a' | 'team_b');
+      if (user?.id) {
+        const userVoteData = await battleService.getUserVote(matchId, user.id);
+        setUserVote(userVoteData);
       }
     } catch (error) {
       console.error('Error loading votes:', error);
