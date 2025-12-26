@@ -273,11 +273,21 @@ export default function BroadcastScreen() {
                 <Ionicons name={guestSeatsLocked ? 'lock-closed' : 'lock-open'} size={24} color="#fff" />
               </TouchableOpacity>
 
-              <TouchableOpacity style={styles.controlButton}>
+              <TouchableOpacity 
+                style={styles.controlButton}
+                onPress={() => setShowViewerList(true)}
+              >
                 <Ionicons name="people" size={24} color="#fff" />
                 <View style={styles.guestBadge}>
                   <Text style={styles.guestBadgeText}>{guests.length}/9</Text>
                 </View>
+              </TouchableOpacity>
+              
+              <TouchableOpacity 
+                style={styles.controlButton}
+                onPress={() => setShowModeratorModal(true)}
+              >
+                <Ionicons name="shield" size={24} color="#fff" />
               </TouchableOpacity>
             </View>
 
