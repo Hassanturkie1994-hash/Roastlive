@@ -121,9 +121,8 @@ async def moderate_text(request: ModerationRequest):
             return ModerationResult(
                 action='allow',
                 flagged=False,
-                severity='low',
                 categories={},
-                message='Content moderation unavailable'
+                categoryScores={}
             )
         
         response = openai.moderations.create(
