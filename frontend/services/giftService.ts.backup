@@ -80,7 +80,7 @@ export const giftService = {
         .from('wallets')
         .select('balance')
         .eq('user_id', senderId)
-        .maybeSingle();
+        .single();
 
       if (!wallet || wallet.balance < gift.price) {
         return { success: false, error: 'Insufficient balance' };
@@ -101,7 +101,7 @@ export const giftService = {
         .from('wallets')
         .select('balance, total_earned')
         .eq('user_id', receiverId)
-        .maybeSingle();
+        .single();
 
       if (receiverWallet) {
         await supabase
@@ -137,7 +137,7 @@ export const giftService = {
       .from('wallets')
       .select('balance')
       .eq('user_id', userId)
-      .maybeSingle();
+      .single();
 
     if (error || !data) {
       // Create wallet if doesn't exist
@@ -191,7 +191,7 @@ export const giftService = {
       .from('gifts')
       .select('*')
       .eq('id', giftId)
-      .maybeSingle();
+      .single();
 
     if (error) {
       console.error('Get gift by ID error:', error);

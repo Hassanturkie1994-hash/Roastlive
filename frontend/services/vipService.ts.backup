@@ -46,7 +46,7 @@ export const vipService = {
       .from('vip_clubs')
       .select('*')
       .eq('creator_id', creatorId)
-      .maybeSingle();
+      .single();
 
     if (error) {
       console.error('Get club error:', error);

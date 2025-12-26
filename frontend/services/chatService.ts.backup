@@ -28,7 +28,7 @@ export const chatService = {
         *,
         user:profiles!user_id(username, avatar_url)
       `)
-      .maybeSingle();
+      .single();
 
     if (error) {
       console.error('Send message error:', error);
@@ -98,7 +98,7 @@ export const chatService = {
             .from('profiles')
             .select('username, avatar_url')
             .eq('id', (payload.new as ChatMessage).user_id)
-            .maybeSingle();
+            .single();
 
           callback({ ...(payload.new as ChatMessage), user });
         }

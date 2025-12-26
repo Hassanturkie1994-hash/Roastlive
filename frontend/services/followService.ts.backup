@@ -56,7 +56,7 @@ export const followService = {
       .select('id')
       .eq('follower_id', followerId)
       .eq('following_id', followingId)
-      .maybeSingle();
+      .single();
 
     return !!data;
   },

@@ -28,7 +28,7 @@ export const storiesService = {
           expires_at: expiresAt.toISOString(),
         })
         .select()
-        .maybeSingle();
+        .single();
 
       if (error) throw error;
 

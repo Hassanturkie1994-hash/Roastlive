@@ -40,7 +40,7 @@ export const postsService = {
         .from('posts')
         .insert(postData)
         .select()
-        .maybeSingle();
+        .single();
 
       if (error) throw error;
 

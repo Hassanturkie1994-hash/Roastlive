@@ -82,7 +82,7 @@ export const streamService = {
           started_at: new Date().toISOString(),
         })
         .select()
-        .maybeSingle();
+        .single();
 
       if (error) {
         console.error('Supabase insert error:', error);
@@ -132,7 +132,7 @@ export const streamService = {
         host:profiles!host_id(username, avatar_url)
       `)
       .eq('id', streamId)
-      .maybeSingle();
+      .single();
 
     if (error) return null;
     return data;
@@ -190,7 +190,7 @@ export const streamService = {
         .eq('id', invitationId)
         .eq('guest_id', guestId)
         .select('stream_id')
-        .maybeSingle();
+        .single();
 
       if (error || !invitation) return null;
 
