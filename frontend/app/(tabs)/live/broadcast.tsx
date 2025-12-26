@@ -197,6 +197,14 @@ export default function BroadcastScreen() {
 
       if (error) throw error;
 
+      // Load host profile for gift modal
+      const { data: profileData } = await supabase
+        .from('profiles')
+        .select('username, avatar_url')
+        .eq('id', user?.id)
+        .single();
+      
+      setProfile(profileData);
       setStreamId(stream.id);
       setIsLive(true);
 
