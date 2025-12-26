@@ -231,12 +231,13 @@ export default function BroadcastScreen() {
         style={styles.camera}
         facing={facing}
         mirror={facing === 'front'}
+        enableTorch={flashMode === 'torch'}
       >
         {/* Top Bar */}
         <View style={styles.topBar}>
           <TouchableOpacity
             style={styles.closeButton}
-            onPress={isLive ? endStream : () => router.back()}
+            onPress={isLive ? () => endStream() : () => router.back()}
           >
             <Ionicons name="close" size={28} color="#fff" />
           </TouchableOpacity>
@@ -256,6 +257,14 @@ export default function BroadcastScreen() {
             <TouchableOpacity style={styles.iconButton} onPress={toggleCamera}>
               <Ionicons name="camera-reverse" size={24} color="#fff" />
             </TouchableOpacity>
+            {facing === 'back' && (
+              <TouchableOpacity 
+                style={[styles.iconButton, flashMode === 'torch' && styles.iconButtonActive]} 
+                onPress={toggleFlashlight}
+              >
+                <Ionicons name={flashMode === 'torch' ? 'flash' : 'flash-outline'} size={24} color="#fff" />
+              </TouchableOpacity>
+            )}
           </View>
         </View>
 
