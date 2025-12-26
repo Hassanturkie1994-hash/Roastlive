@@ -341,7 +341,7 @@ export default function BattleMatchScreen() {
     }, 5000);
   };
 
-  const determineWinner = () => {
+  const determineWinner = async () => {
     setPhase('results');
     
     // Winner animation
@@ -354,6 +354,38 @@ export default function BattleMatchScreen() {
 
     if (Platform.OS !== 'web') {
       Vibration.vibrate([0, 200, 100, 200, 100, 400]);
+    }
+
+    // Award XP to all participants
+    if (user?.id && winner) {
+      try {
+        const { awardBattleXP, updateBadges } = await import('../../../services/xpService');
+        
+        // Determine if current user won
+        const userParticipant = participants.find(p => p.user_id === user.id);
+        const userTeam = userParticipant?.team;
+        const userWon = userTeam === winner;
+        const tie = winner === 'tie';
+
+        // Award XP
+        const xpResult = await awardBattleXP(user.id, userWon, tie, matchId);
+        
+        // Update badges
+        await updateBadges(user.id);
+
+        // Show level up notification if leveled up
+        if (xpResult.leveledUp) {
+          setTimeout(() => {
+            Alert.alert(
+              'Level Up! 🎉',
+              `You reached level ${xpResult.newLevel}!\n${xpResult.rankTitle}`,
+              [{ text: 'Awesome!', style: 'default' }]
+            );
+          }, 3000); // Show after 3 seconds
+        }
+      } catch (error) {
+        console.error('Award XP error:', error);
+      }
     }
   };
 
