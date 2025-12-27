@@ -391,43 +391,43 @@ backend:
     status_history:
         -working: "NA"
         -agent: "main"
-        -comment: "Implemented Emergent Auth integration for Google OAuth. Created /api/auth endpoints: /session (exchange session_id), /me (get current user), /logout, /check. Uses MongoDB for user and session storage. Sessions valid for 7 days with httpOnly cookies. Created AuthContext in frontend with WebBrowser integration for mobile OAuth flow. MOCKED: Using test credentials, no real Google OAuth yet."
+        -comment: "COMPLETED: Implemented Emergent Auth integration. Endpoints: POST /api/auth/session, GET /api/auth/me, POST /api/auth/logout, GET /api/auth/check. MongoDB storage with 7-day sessions. Frontend AuthContext created. MOCKED for testing. NEEDS BACKEND TESTING."
 
-  - task: "Email Notifications Service"
-    implemented: false
+  - task: "Email Notifications Service (SendGrid)"
+    implemented: true
     working: "NA"
-    file: "pending"
+    file: "/app/backend/email_service.py"
     stuck_count: 0
     priority: "high"
-    needs_retesting: false
+    needs_retesting: true
     status_history:
         -working: "NA"
         -agent: "main"
-        -comment: "Not yet started. Will use SendGrid for transactional emails."
+        -comment: "COMPLETED: Email service with HTML templates for: welcome, 2FA codes, payout notifications, stream alerts. Integrated with auth (welcome on signup) and payouts. MOCKED mode (console logging). NEEDS BACKEND TESTING."
 
-  - task: "Two-Factor Authentication (2FA)"
-    implemented: false
+  - task: "Two-Factor Authentication (2FA TOTP)"
+    implemented: true
     working: "NA"
-    file: "pending"
+    file: "/app/backend/twofa.py"
     stuck_count: 0
     priority: "high"
-    needs_retesting: false
+    needs_retesting: true
     status_history:
         -working: "NA"
         -agent: "main"
-        -comment: "Not yet started. Will use TOTP with QR code generation."
+        -comment: "COMPLETED: Full 2FA implementation. Endpoints: POST /api/2fa/generate (QR code + backup codes), POST /api/2fa/verify (TOTP), POST /api/2fa/backup-code/verify, POST /api/2fa/disable, GET /api/2fa/status. QR code generation, 10 backup codes (hashed), time tolerance. MOCKED. NEEDS BACKEND TESTING."
 
   - task: "Payout Processing (Stripe Connect)"
-    implemented: false
+    implemented: true
     working: "NA"
-    file: "pending"
+    file: "/app/backend/payouts.py"
     stuck_count: 0
     priority: "high"
-    needs_retesting: false
+    needs_retesting: true
     status_history:
         -working: "NA"
         -agent: "main"
-        -comment: "Not yet started. Will integrate Stripe Connect for creator payouts."
+        -comment: "COMPLETED: Stripe Connect integration. Endpoints: POST /api/payouts/creators/register, GET /api/payouts/creators/{id}/onboard, POST /api/payouts/payments/create, GET /api/payouts/creators/{id}/earnings, POST /api/payouts/creators/{id}/request-payout, GET /api/payouts/status. 15% platform fee. Email notifications on payout. MOCKED. NEEDS BACKEND TESTING."
 
 agent_communication:
     -agent: "main"
