@@ -1,4 +1,4 @@
-from fastapi import APIRouter, HTTPException, Request, Response, Depends
+from fastapi import APIRouter, HTTPException, Request, Response, Depends, BackgroundTasks
 from fastapi.responses import RedirectResponse
 from pydantic import BaseModel, EmailStr
 from datetime import datetime, timezone, timedelta
@@ -7,6 +7,7 @@ import httpx
 import secrets
 import logging
 import os
+from email_service import send_welcome_email, EmailDeliveryError
 
 logger = logging.getLogger(__name__)
 
