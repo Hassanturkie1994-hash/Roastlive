@@ -380,7 +380,58 @@ backend:
         -agent: "testing"
         -comment: "BACKEND TESTING COMPLETE - ALL 15 TESTS PASSED. Fixed critical bugs: (1) Pydantic validation error in ModerationResult model - missing categoryScores field in fallback response, (2) Router registration issue - endpoints defined after include_router() were not accessible, (3) Logger initialization order - moved logging setup before function definitions. Content Moderation API working correctly at /api/moderate/text and /api/moderation/chat-message. Note: OpenAI API key not configured (using Emergent key which is not valid for OpenAI), so moderation returns permissive 'allow' responses. For production use, configure valid OPENAI_API_KEY. All other backend features tested and working: MongoDB connection, stream creation/management, Agora token generation, gift catalog, wallet system. Backend health check passing."
 
+backend:
+  - task: "Google OAuth Social Login (Emergent Auth)"
+    implemented: true
+    working: "NA"
+    file: "/app/backend/auth.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+        -working: "NA"
+        -agent: "main"
+        -comment: "Implemented Emergent Auth integration for Google OAuth. Created /api/auth endpoints: /session (exchange session_id), /me (get current user), /logout, /check. Uses MongoDB for user and session storage. Sessions valid for 7 days with httpOnly cookies. Created AuthContext in frontend with WebBrowser integration for mobile OAuth flow. MOCKED: Using test credentials, no real Google OAuth yet."
+
+  - task: "Email Notifications Service"
+    implemented: false
+    working: "NA"
+    file: "pending"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+        -working: "NA"
+        -agent: "main"
+        -comment: "Not yet started. Will use SendGrid for transactional emails."
+
+  - task: "Two-Factor Authentication (2FA)"
+    implemented: false
+    working: "NA"
+    file: "pending"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+        -working: "NA"
+        -agent: "main"
+        -comment: "Not yet started. Will use TOTP with QR code generation."
+
+  - task: "Payout Processing (Stripe Connect)"
+    implemented: false
+    working: "NA"
+    file: "pending"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+        -working: "NA"
+        -agent: "main"
+        -comment: "Not yet started. Will integrate Stripe Connect for creator payouts."
+
 agent_communication:
+    -agent: "main"
+    -message: "PHASE 8 IN PROGRESS: Implementing backend integrations per user request: (1) Social Login (Google OAuth via Emergent Auth) - COMPLETED backend + frontend context, (2) Email Notifications - PENDING, (3) 2FA - PENDING, (4) Payout Processing - PENDING. Using test/sandbox credentials as requested. Next: Test OAuth flow, then proceed with remaining integrations."
     -agent: "main"
     -message: "PHASES 1-7 COMPLETE: Environment fixed (ENOSPC resolved), services running successfully. Implemented: XP & Ranking (50 levels, badges, leaderboard), Battle Mode MultiGuestGrid, Pause/Resume with 10min timeout, Supabase Storage utils, Queue improvements. DATABASE UPDATES REQUIRED: User must run DATABASE_FIXES_PHASE1.sql, DATABASE_PHASE3_4_XP_STORAGE.sql, DATABASE_PAUSE_RESUME.sql in Supabase. READY FOR COMPREHENSIVE TESTING. Focus areas: XP calculations, pause/resume flow, leaderboard display, storage uploads. See COMPLETE_IMPLEMENTATION_SUMMARY.md for full details."
     -agent: "testing"
