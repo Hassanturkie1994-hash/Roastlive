@@ -4,7 +4,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { theme } from '../../../../constants/theme';
 import { useAuth } from '../../../../contexts/AuthContext';
-import { supabase } from '../../../../config/supabase';
+import { supabase } from '../../../../lib/supabase';
 
 export default function SecuritySettingsScreen() {
   const { user } = useAuth();
