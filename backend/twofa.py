@@ -41,12 +41,13 @@ def hash_backup_code(code: str) -> str:
 
 def verify_totp_with_tolerance(secret: str, code: str, tolerance: int = 1) -> bool:
     """Verify TOTP with time window tolerance."""
+    import time as time_module
     totp = pyotp.TOTP(secret)
-    current_time = int(pyotp.time.time() / 30)
+    current_time = int(time_module.time() / 30)
     
     for time_offset in range(-tolerance, tolerance + 1):
         check_time = current_time + time_offset
-        if totp.verify(code, time=check_time * 30):
+        if totp.verify(code, for_time=check_time * 30):
             return True
     return False
 
