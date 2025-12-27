@@ -11,7 +11,7 @@ from pymongo import MongoClient
 import secrets
 
 # Backend URL
-BASE_URL = "https://roast-auth-1.preview.emergentagent.com/api"
+BASE_URL = "https://codeclinic-1.preview.emergentagent.com/api"
 
 # MongoDB connection
 MONGO_URL = "mongodb://localhost:27017"

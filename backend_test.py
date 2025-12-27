@@ -9,7 +9,7 @@ import time
 from datetime import datetime
 
 # Backend URL
-BASE_URL = "https://roast-auth-1.preview.emergentagent.com/api"
+BASE_URL = "https://codeclinic-1.preview.emergentagent.com/api"
 
 # Test data
 TEST_USER_EMAIL = "testuser@roastlive.app"
