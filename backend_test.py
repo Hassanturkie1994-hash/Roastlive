@@ -1,6 +1,6 @@
 """
-Backend API Testing for Roast Live
-Tests all backend endpoints focusing on Phases 3-7 features
+Comprehensive Backend API Testing for Roast Live
+Tests Authentication, 2FA, and Payout endpoints (Phase 8)
 """
 
 import requests
@@ -8,507 +8,447 @@ import json
 import time
 from datetime import datetime
 
-# Backend URL from environment
-BACKEND_URL = "https://roast-auth-1.preview.emergentagent.com/api"
+# Backend URL
+BASE_URL = "https://roast-auth-1.preview.emergentagent.com/api"
 
 # Test data
-TEST_USER_ID = "test-user-" + str(int(time.time()))
-TEST_STREAM_ID = None
-TEST_CHANNEL_NAME = "test-channel-" + str(int(time.time()))
+TEST_USER_EMAIL = "testuser@roastlive.app"
+TEST_USER_NAME = "Test User"
+TEST_SESSION_ID = "test_session_123"
 
-# Color codes for output
-GREEN = '\033[92m'
-RED = '\033[91m'
-YELLOW = '\033[93m'
-BLUE = '\033[94m'
-RESET = '\033[0m'
+# Global variables to store session data
+session_token = None
+user_id = None
+totp_secret = None
+backup_codes = []
+creator_stripe_account_id = None
 
-def print_test(name):
-    print(f"\n{BLUE}{'='*60}{RESET}")
-    print(f"{BLUE}Testing: {name}{RESET}")
-    print(f"{BLUE}{'='*60}{RESET}")
+def print_test_header(test_name):
+    """Print formatted test header"""
+    print(f"\n{'='*80}")
+    print(f"TEST: {test_name}")
+    print(f"{'='*80}")
 
-def print_success(message):
-    print(f"{GREEN}✓ {message}{RESET}")
+def print_result(success, message, details=None):
+    """Print test result"""
+    status = "✅ PASS" if success else "❌ FAIL"
+    print(f"{status}: {message}")
+    if details:
+        print(f"Details: {json.dumps(details, indent=2)}")
 
-def print_error(message):
-    print(f"{RED}✗ {message}{RESET}")
-
-def print_warning(message):
-    print(f"{YELLOW}⚠ {message}{RESET}")
-
-def print_info(message):
-    print(f"  {message}")
-
-# Test 1: Backend Health Check
 def test_health_check():
-    print_test("Backend Health Check")
+    """Test basic API health"""
+    print_test_header("Health Check")
     try:
-        response = requests.get(f"{BACKEND_URL}/", timeout=10)
-        print_info(f"Status Code: {response.status_code}")
-        print_info(f"Response: {response.json()}")
-        
+        response = requests.get(f"{BASE_URL}/", timeout=10)
         if response.status_code == 200:
-            data = response.json()
-            if "message" in data:
-                print_success("Backend is responding correctly")
-                return True
-            else:
-                print_error("Response missing 'message' field")
-                return False
-        else:
-            print_error(f"Backend returned status code {response.status_code}")
-            return False
-    except requests.exceptions.RequestException as e:
-        print_error(f"Failed to connect to backend: {str(e)}")
-        return False
-    except Exception as e:
-        print_error(f"Unexpected error: {str(e)}")
-        return False
-
-# Test 2: Content Moderation - Normal Text
-def test_moderation_normal_text():
-    print_test("Content Moderation - Normal Text")
-    try:
-        payload = {
-            "text": "Hello everyone! Welcome to my stream. Let's have fun!",
-            "userId": TEST_USER_ID,
-            "contentType": "message"
-        }
-        
-        response = requests.post(f"{BACKEND_URL}/moderate/text", json=payload, timeout=10)
-        print_info(f"Status Code: {response.status_code}")
-        print_info(f"Response: {json.dumps(response.json(), indent=2)}")
-        
-        if response.status_code == 200:
-            data = response.json()
-            if "action" in data and "flagged" in data:
-                if data["action"] == "allow" and data["flagged"] == False:
-                    print_success("Normal text correctly allowed")
-                    return True
-                else:
-                    print_warning(f"Normal text flagged: action={data['action']}, flagged={data['flagged']}")
-                    return True  # Still working, just overly sensitive
-            else:
-                print_error("Response missing required fields (action, flagged)")
-                return False
-        else:
-            print_error(f"API returned status code {response.status_code}")
-            return False
-    except Exception as e:
-        print_error(f"Test failed: {str(e)}")
-        return False
-
-# Test 3: Content Moderation - Toxic Text
-def test_moderation_toxic_text():
-    print_test("Content Moderation - Toxic Text")
-    try:
-        payload = {
-            "text": "You are stupid and worthless. I hate you!",
-            "userId": TEST_USER_ID,
-            "contentType": "message"
-        }
-        
-        response = requests.post(f"{BACKEND_URL}/moderate/text", json=payload, timeout=10)
-        print_info(f"Status Code: {response.status_code}")
-        print_info(f"Response: {json.dumps(response.json(), indent=2)}")
-        
-        if response.status_code == 200:
-            data = response.json()
-            if "action" in data and "flagged" in data:
-                print_info(f"Action: {data['action']}, Flagged: {data['flagged']}")
-                if "categoryScores" in data:
-                    print_info(f"Category Scores: {json.dumps(data['categoryScores'], indent=2)}")
-                print_success("Toxic text moderation endpoint working")
-                return True
-            else:
-                print_error("Response missing required fields")
-                return False
-        else:
-            print_error(f"API returned status code {response.status_code}")
-            return False
-    except Exception as e:
-        print_error(f"Test failed: {str(e)}")
-        return False
-
-# Test 4: Content Moderation - Profane Text
-def test_moderation_profane_text():
-    print_test("Content Moderation - Profane Text")
-    try:
-        payload = {
-            "text": "This is some explicit sexual content that should be flagged",
-            "userId": TEST_USER_ID,
-            "contentType": "message"
-        }
-        
-        response = requests.post(f"{BACKEND_URL}/moderate/text", json=payload, timeout=10)
-        print_info(f"Status Code: {response.status_code}")
-        print_info(f"Response: {json.dumps(response.json(), indent=2)}")
-        
-        if response.status_code == 200:
-            data = response.json()
-            if "action" in data and "flagged" in data:
-                print_info(f"Action: {data['action']}, Flagged: {data['flagged']}")
-                print_success("Profane text moderation endpoint working")
-                return True
-            else:
-                print_error("Response missing required fields")
-                return False
-        else:
-            print_error(f"API returned status code {response.status_code}")
-            return False
-    except Exception as e:
-        print_error(f"Test failed: {str(e)}")
-        return False
-
-# Test 5: Content Moderation - Stream Title
-def test_moderation_stream_title():
-    print_test("Content Moderation - Stream Title")
-    try:
-        payload = {
-            "text": "Epic Gaming Stream - Come Join!",
-            "userId": TEST_USER_ID,
-            "contentType": "bio"
-        }
-        
-        response = requests.post(f"{BACKEND_URL}/moderate/text", json=payload, timeout=10)
-        print_info(f"Status Code: {response.status_code}")
-        print_info(f"Response: {json.dumps(response.json(), indent=2)}")
-        
-        if response.status_code == 200:
-            data = response.json()
-            if "action" in data:
-                print_success("Stream title moderation working")
-                return True
-            else:
-                print_error("Response missing 'action' field")
-                return False
-        else:
-            print_error(f"API returned status code {response.status_code}")
-            return False
-    except Exception as e:
-        print_error(f"Test failed: {str(e)}")
-        return False
-
-# Test 6: Content Moderation - Username
-def test_moderation_username():
-    print_test("Content Moderation - Username")
-    try:
-        payload = {
-            "text": "CoolGamer2024",
-            "userId": TEST_USER_ID,
-            "contentType": "username"
-        }
-        
-        response = requests.post(f"{BACKEND_URL}/moderate/text", json=payload, timeout=10)
-        print_info(f"Status Code: {response.status_code}")
-        print_info(f"Response: {json.dumps(response.json(), indent=2)}")
-        
-        if response.status_code == 200:
-            data = response.json()
-            if "action" in data:
-                print_success("Username moderation working")
-                return True
-            else:
-                print_error("Response missing 'action' field")
-                return False
-        else:
-            print_error(f"API returned status code {response.status_code}")
-            return False
-    except Exception as e:
-        print_error(f"Test failed: {str(e)}")
-        return False
-
-# Test 7: Content Moderation - Missing Input
-def test_moderation_missing_input():
-    print_test("Content Moderation - Error Handling (Missing Input)")
-    try:
-        payload = {
-            "userId": TEST_USER_ID,
-            "contentType": "message"
-            # Missing 'text' field
-        }
-        
-        response = requests.post(f"{BACKEND_URL}/moderate/text", json=payload, timeout=10)
-        print_info(f"Status Code: {response.status_code}")
-        print_info(f"Response: {response.text}")
-        
-        if response.status_code in [400, 422]:  # Bad request or validation error
-            print_success("Error handling working correctly for missing input")
+            print_result(True, "API is reachable", response.json())
             return True
         else:
-            print_warning(f"Expected 400/422 status code, got {response.status_code}")
-            return True  # Not critical
+            print_result(False, f"API returned status {response.status_code}")
+            return False
     except Exception as e:
-        print_error(f"Test failed: {str(e)}")
+        print_result(False, f"API health check failed: {str(e)}")
         return False
 
-# Test 8: Content Moderation - Invalid Input
-def test_moderation_invalid_input():
-    print_test("Content Moderation - Error Handling (Invalid Input)")
+# ============================================================================
+# AUTHENTICATION TESTS
+# ============================================================================
+
+def test_auth_session_creation():
+    """Test POST /api/auth/session - Create session from session_id"""
+    print_test_header("Auth: Create Session (MOCKED)")
+    global session_token, user_id
+    
     try:
+        # Note: This endpoint calls exchange_session_id which tries to hit external API
+        # In mock mode, it should handle gracefully
         payload = {
-            "text": "",  # Empty text
-            "userId": TEST_USER_ID,
-            "contentType": "message"
+            "session_id": TEST_SESSION_ID
         }
         
-        response = requests.post(f"{BACKEND_URL}/moderate/text", json=payload, timeout=10)
-        print_info(f"Status Code: {response.status_code}")
-        print_info(f"Response: {response.text}")
+        response = requests.post(
+            f"{BASE_URL}/auth/session",
+            json=payload,
+            timeout=10
+        )
         
-        # Should either accept empty text or return error
-        if response.status_code in [200, 400, 422]:
-            print_success("Error handling working for empty text")
+        # This will likely fail because exchange_session_id tries to call external API
+        # But we should see a proper error response
+        if response.status_code == 401:
+            print_result(True, "Session exchange properly returns 401 for invalid session_id (expected in mock mode)", response.json())
+            return True
+        elif response.status_code == 200:
+            data = response.json()
+            session_token = data.get("session_token")
+            user_id = data.get("user_id")
+            print_result(True, "Session created successfully", data)
             return True
         else:
-            print_warning(f"Unexpected status code: {response.status_code}")
-            return True  # Not critical
+            print_result(False, f"Unexpected status code: {response.status_code}", response.text)
+            return False
+            
     except Exception as e:
-        print_error(f"Test failed: {str(e)}")
+        print_result(False, f"Session creation failed: {str(e)}")
         return False
 
-# Test 9: Emergent LLM Chat Moderation
-def test_emergent_chat_moderation():
-    print_test("Emergent LLM Chat Moderation")
+def test_auth_check_unauthenticated():
+    """Test GET /api/auth/check - Check auth status without token"""
+    print_test_header("Auth: Check Status (Unauthenticated)")
+    
     try:
-        params = {
-            "message": "Hello everyone! Great stream!",
-            "user_id": TEST_USER_ID,
-            "stream_id": "test-stream-123"
-        }
-        
-        response = requests.post(f"{BACKEND_URL}/moderation/chat-message", params=params, timeout=15)
-        print_info(f"Status Code: {response.status_code}")
-        print_info(f"Response: {json.dumps(response.json(), indent=2)}")
+        response = requests.get(f"{BASE_URL}/auth/check", timeout=10)
         
         if response.status_code == 200:
             data = response.json()
-            if "action" in data and "score" in data:
-                print_success("Emergent LLM chat moderation working")
+            if data.get("authenticated") == False:
+                print_result(True, "Correctly returns unauthenticated", data)
                 return True
             else:
-                print_error("Response missing required fields")
+                print_result(False, "Should return authenticated=false", data)
                 return False
         else:
-            print_error(f"API returned status code {response.status_code}")
+            print_result(False, f"Unexpected status code: {response.status_code}")
             return False
+            
     except Exception as e:
-        print_error(f"Test failed: {str(e)}")
+        print_result(False, f"Auth check failed: {str(e)}")
         return False
 
-# Test 10: Stream Creation
-def test_stream_creation():
-    print_test("Stream Creation")
-    global TEST_STREAM_ID
+def test_auth_me_unauthenticated():
+    """Test GET /api/auth/me - Get user without authentication"""
+    print_test_header("Auth: Get Me (Unauthenticated)")
+    
+    try:
+        response = requests.get(f"{BASE_URL}/auth/me", timeout=10)
+        
+        if response.status_code == 401:
+            print_result(True, "Correctly returns 401 for unauthenticated request", response.json())
+            return True
+        else:
+            print_result(False, f"Should return 401, got {response.status_code}")
+            return False
+            
+    except Exception as e:
+        print_result(False, f"Auth me test failed: {str(e)}")
+        return False
+
+def test_auth_logout_unauthenticated():
+    """Test POST /api/auth/logout - Logout without authentication"""
+    print_test_header("Auth: Logout (Unauthenticated)")
+    
+    try:
+        response = requests.post(f"{BASE_URL}/auth/logout", timeout=10)
+        
+        if response.status_code == 401:
+            print_result(True, "Correctly returns 401 for unauthenticated logout", response.json())
+            return True
+        else:
+            print_result(False, f"Should return 401, got {response.status_code}")
+            return False
+            
+    except Exception as e:
+        print_result(False, f"Logout test failed: {str(e)}")
+        return False
+
+# ============================================================================
+# 2FA TESTS
+# ============================================================================
+
+def test_2fa_generate_unauthenticated():
+    """Test POST /api/2fa/generate - Generate 2FA without authentication"""
+    print_test_header("2FA: Generate Secret (Unauthenticated)")
+    
+    try:
+        response = requests.post(f"{BASE_URL}/2fa/generate", timeout=10)
+        
+        if response.status_code == 401:
+            print_result(True, "Correctly returns 401 for unauthenticated request", response.json())
+            return True
+        else:
+            print_result(False, f"Should return 401, got {response.status_code}")
+            return False
+            
+    except Exception as e:
+        print_result(False, f"2FA generate test failed: {str(e)}")
+        return False
+
+def test_2fa_status_unauthenticated():
+    """Test GET /api/2fa/status - Check 2FA status without authentication"""
+    print_test_header("2FA: Check Status (Unauthenticated)")
+    
+    try:
+        response = requests.get(f"{BASE_URL}/2fa/status", timeout=10)
+        
+        if response.status_code == 401:
+            print_result(True, "Correctly returns 401 for unauthenticated request", response.json())
+            return True
+        else:
+            print_result(False, f"Should return 401, got {response.status_code}")
+            return False
+            
+    except Exception as e:
+        print_result(False, f"2FA status test failed: {str(e)}")
+        return False
+
+def test_2fa_verify_unauthenticated():
+    """Test POST /api/2fa/verify - Verify TOTP without authentication"""
+    print_test_header("2FA: Verify TOTP (Unauthenticated)")
+    
+    try:
+        payload = {"otp_code": "123456"}
+        response = requests.post(f"{BASE_URL}/2fa/verify", json=payload, timeout=10)
+        
+        if response.status_code == 401:
+            print_result(True, "Correctly returns 401 for unauthenticated request", response.json())
+            return True
+        else:
+            print_result(False, f"Should return 401, got {response.status_code}")
+            return False
+            
+    except Exception as e:
+        print_result(False, f"2FA verify test failed: {str(e)}")
+        return False
+
+def test_2fa_backup_code_verify_unauthenticated():
+    """Test POST /api/2fa/backup-code/verify - Verify backup code without authentication"""
+    print_test_header("2FA: Verify Backup Code (Unauthenticated)")
+    
+    try:
+        payload = {"backup_code": "ABCD1234"}
+        response = requests.post(f"{BASE_URL}/2fa/backup-code/verify", json=payload, timeout=10)
+        
+        if response.status_code == 401:
+            print_result(True, "Correctly returns 401 for unauthenticated request", response.json())
+            return True
+        else:
+            print_result(False, f"Should return 401, got {response.status_code}")
+            return False
+            
+    except Exception as e:
+        print_result(False, f"2FA backup code test failed: {str(e)}")
+        return False
+
+def test_2fa_disable_unauthenticated():
+    """Test POST /api/2fa/disable - Disable 2FA without authentication"""
+    print_test_header("2FA: Disable 2FA (Unauthenticated)")
+    
+    try:
+        response = requests.post(f"{BASE_URL}/2fa/disable", timeout=10)
+        
+        if response.status_code == 401:
+            print_result(True, "Correctly returns 401 for unauthenticated request", response.json())
+            return True
+        else:
+            print_result(False, f"Should return 401, got {response.status_code}")
+            return False
+            
+    except Exception as e:
+        print_result(False, f"2FA disable test failed: {str(e)}")
+        return False
+
+# ============================================================================
+# PAYOUT TESTS
+# ============================================================================
+
+def test_payout_status_unauthenticated():
+    """Test GET /api/payouts/status - Get payout status without authentication"""
+    print_test_header("Payouts: Get Status (Unauthenticated)")
+    
+    try:
+        response = requests.get(f"{BASE_URL}/payouts/status", timeout=10)
+        
+        if response.status_code == 401:
+            print_result(True, "Correctly returns 401 for unauthenticated request", response.json())
+            return True
+        else:
+            print_result(False, f"Should return 401, got {response.status_code}")
+            return False
+            
+    except Exception as e:
+        print_result(False, f"Payout status test failed: {str(e)}")
+        return False
+
+def test_payout_register_creator_unauthenticated():
+    """Test POST /api/payouts/creators/register - Register creator without authentication"""
+    print_test_header("Payouts: Register Creator (Unauthenticated)")
+    
     try:
         payload = {
-            "hostId": TEST_USER_ID,
-            "title": "Test Stream - Automated Testing",
-            "channelName": TEST_CHANNEL_NAME
+            "email": TEST_USER_EMAIL,
+            "country": "US",
+            "business_type": "individual"
         }
+        response = requests.post(f"{BASE_URL}/payouts/creators/register", json=payload, timeout=10)
         
-        response = requests.post(f"{BACKEND_URL}/streams/create", json=payload, timeout=10)
-        print_info(f"Status Code: {response.status_code}")
-        print_info(f"Response: {json.dumps(response.json(), indent=2)}")
-        
-        if response.status_code == 200:
-            data = response.json()
-            if "id" in data and "channelName" in data:
-                TEST_STREAM_ID = data["id"]
-                print_success(f"Stream created successfully with ID: {TEST_STREAM_ID}")
-                return True
-            else:
-                print_error("Response missing required fields")
-                return False
+        if response.status_code == 401:
+            print_result(True, "Correctly returns 401 for unauthenticated request", response.json())
+            return True
         else:
-            print_error(f"API returned status code {response.status_code}")
+            print_result(False, f"Should return 401, got {response.status_code}")
             return False
+            
     except Exception as e:
-        print_error(f"Test failed: {str(e)}")
+        print_result(False, f"Payout register test failed: {str(e)}")
         return False
 
-# Test 11: Get Active Streams
-def test_get_active_streams():
-    print_test("Get Active Streams")
+def test_payout_onboard():
+    """Test GET /api/payouts/creators/{account_id}/onboard - Start onboarding"""
+    print_test_header("Payouts: Start Onboarding (MOCK)")
+    
     try:
-        response = requests.get(f"{BACKEND_URL}/streams/active", timeout=10)
-        print_info(f"Status Code: {response.status_code}")
-        print_info(f"Response: {json.dumps(response.json(), indent=2)}")
+        # In mock mode, this should return a mock response
+        mock_account_id = "acct_MOCK_test123"
+        response = requests.get(f"{BASE_URL}/payouts/creators/{mock_account_id}/onboard", timeout=10)
         
         if response.status_code == 200:
             data = response.json()
-            if "streams" in data:
-                print_success(f"Retrieved {len(data['streams'])} active streams")
+            if data.get("mock_mode") == True:
+                print_result(True, "Onboarding endpoint returns mock response", data)
                 return True
             else:
-                print_error("Response missing 'streams' field")
+                print_result(False, "Expected mock_mode=true in response", data)
                 return False
         else:
-            print_error(f"API returned status code {response.status_code}")
+            print_result(False, f"Unexpected status code: {response.status_code}")
             return False
+            
     except Exception as e:
-        print_error(f"Test failed: {str(e)}")
+        print_result(False, f"Payout onboard test failed: {str(e)}")
         return False
 
-# Test 12: Agora Token Generation
-def test_agora_token_generation():
-    print_test("Agora Token Generation")
+def test_payout_create_payment_unauthenticated():
+    """Test POST /api/payouts/payments/create - Create payment without authentication"""
+    print_test_header("Payouts: Create Payment (Invalid Creator)")
+    
     try:
         payload = {
-            "channelName": TEST_CHANNEL_NAME,
-            "uid": 12345,
-            "role": "host"
+            "creator_id": "test_creator_123",
+            "amount_cents": 1000,
+            "currency": "usd",
+            "customer_email": "customer@test.com",
+            "description": "Test payment"
         }
+        response = requests.post(f"{BASE_URL}/payouts/payments/create", json=payload, timeout=10)
         
-        response = requests.post(f"{BACKEND_URL}/streams/token", json=payload, timeout=10)
-        print_info(f"Status Code: {response.status_code}")
-        
-        if response.status_code == 200:
-            data = response.json()
-            if "token" in data and "appId" in data:
-                print_info(f"Token generated (length: {len(data['token'])})")
-                print_info(f"App ID: {data['appId']}")
-                print_success("Agora token generation working")
-                return True
-            else:
-                print_error("Response missing required fields")
-                return False
+        # This endpoint doesn't require auth but requires valid creator
+        if response.status_code in [400, 404]:
+            print_result(True, "Correctly rejects payment for non-existent creator", response.json())
+            return True
         else:
-            print_error(f"API returned status code {response.status_code}")
+            print_result(False, f"Unexpected status code: {response.status_code}", response.text)
             return False
+            
     except Exception as e:
-        print_error(f"Test failed: {str(e)}")
+        print_result(False, f"Payout create payment test failed: {str(e)}")
         return False
 
-# Test 13: Gift Catalog
-def test_gift_catalog():
-    print_test("Gift Catalog")
+def test_payout_get_earnings_unauthenticated():
+    """Test GET /api/payouts/creators/{creator_id}/earnings - Get earnings without authentication"""
+    print_test_header("Payouts: Get Earnings (Unauthenticated)")
+    
     try:
-        response = requests.get(f"{BACKEND_URL}/gifts/catalog", timeout=10)
-        print_info(f"Status Code: {response.status_code}")
-        print_info(f"Response: {json.dumps(response.json(), indent=2)}")
+        response = requests.get(f"{BASE_URL}/payouts/creators/test_creator_123/earnings", timeout=10)
         
-        if response.status_code == 200:
-            data = response.json()
-            if "gifts" in data and len(data["gifts"]) > 0:
-                print_success(f"Retrieved {len(data['gifts'])} gifts from catalog")
-                return True
-            else:
-                print_error("No gifts in catalog")
-                return False
+        if response.status_code == 401 or response.status_code == 403:
+            print_result(True, "Correctly returns 401/403 for unauthenticated request", response.json())
+            return True
         else:
-            print_error(f"API returned status code {response.status_code}")
+            print_result(False, f"Should return 401/403, got {response.status_code}")
             return False
+            
     except Exception as e:
-        print_error(f"Test failed: {str(e)}")
+        print_result(False, f"Payout earnings test failed: {str(e)}")
         return False
 
-# Test 14: Wallet Balance
-def test_wallet_balance():
-    print_test("Wallet Balance")
+def test_payout_request_payout_unauthenticated():
+    """Test POST /api/payouts/creators/{creator_id}/request-payout - Request payout without authentication"""
+    print_test_header("Payouts: Request Payout (Unauthenticated)")
+    
     try:
-        response = requests.get(f"{BACKEND_URL}/wallet/{TEST_USER_ID}", timeout=10)
-        print_info(f"Status Code: {response.status_code}")
-        print_info(f"Response: {json.dumps(response.json(), indent=2)}")
+        response = requests.post(f"{BASE_URL}/payouts/creators/test_creator_123/request-payout", timeout=10)
         
-        if response.status_code == 200:
-            data = response.json()
-            if "balance" in data:
-                print_success(f"Wallet balance retrieved: {data['balance']} coins")
-                return True
-            else:
-                print_error("Response missing 'balance' field")
-                return False
+        if response.status_code == 401 or response.status_code == 403:
+            print_result(True, "Correctly returns 401/403 for unauthenticated request", response.json())
+            return True
         else:
-            print_error(f"API returned status code {response.status_code}")
+            print_result(False, f"Should return 401/403, got {response.status_code}")
             return False
+            
     except Exception as e:
-        print_error(f"Test failed: {str(e)}")
+        print_result(False, f"Payout request test failed: {str(e)}")
         return False
 
-# Test 15: MongoDB Connection (via status endpoint)
-def test_mongodb_connection():
-    print_test("MongoDB Connection")
-    try:
-        # Test by creating a status check
-        payload = {
-            "client_name": "backend_test"
-        }
-        
-        response = requests.post(f"{BACKEND_URL}/status", json=payload, timeout=10)
-        print_info(f"Status Code: {response.status_code}")
-        print_info(f"Response: {json.dumps(response.json(), indent=2)}")
-        
-        if response.status_code == 200:
-            data = response.json()
-            if "id" in data and "client_name" in data:
-                print_success("MongoDB connection working (data saved successfully)")
-                return True
-            else:
-                print_error("Response missing required fields")
-                return False
-        else:
-            print_error(f"API returned status code {response.status_code}")
-            return False
-    except Exception as e:
-        print_error(f"Test failed: {str(e)}")
-        return False
+# ============================================================================
+# MAIN TEST RUNNER
+# ============================================================================
 
-# Run all tests
 def run_all_tests():
-    print(f"\n{BLUE}{'='*60}{RESET}")
-    print(f"{BLUE}ROAST LIVE BACKEND API TESTING{RESET}")
-    print(f"{BLUE}Backend URL: {BACKEND_URL}{RESET}")
-    print(f"{BLUE}{'='*60}{RESET}")
+    """Run all backend tests"""
+    print("\n" + "="*80)
+    print("ROAST LIVE BACKEND API TESTING - PHASE 8")
+    print("Testing Authentication, 2FA, and Payout Endpoints")
+    print("="*80)
     
-    results = {}
+    results = {
+        "total": 0,
+        "passed": 0,
+        "failed": 0
+    }
     
-    # Core tests
-    results["Health Check"] = test_health_check()
-    results["MongoDB Connection"] = test_mongodb_connection()
+    tests = [
+        # Health check
+        ("Health Check", test_health_check),
+        
+        # Authentication tests
+        ("Auth: Session Creation", test_auth_session_creation),
+        ("Auth: Check Status (Unauthenticated)", test_auth_check_unauthenticated),
+        ("Auth: Get Me (Unauthenticated)", test_auth_me_unauthenticated),
+        ("Auth: Logout (Unauthenticated)", test_auth_logout_unauthenticated),
+        
+        # 2FA tests
+        ("2FA: Generate Secret (Unauthenticated)", test_2fa_generate_unauthenticated),
+        ("2FA: Check Status (Unauthenticated)", test_2fa_status_unauthenticated),
+        ("2FA: Verify TOTP (Unauthenticated)", test_2fa_verify_unauthenticated),
+        ("2FA: Verify Backup Code (Unauthenticated)", test_2fa_backup_code_verify_unauthenticated),
+        ("2FA: Disable 2FA (Unauthenticated)", test_2fa_disable_unauthenticated),
+        
+        # Payout tests
+        ("Payouts: Get Status (Unauthenticated)", test_payout_status_unauthenticated),
+        ("Payouts: Register Creator (Unauthenticated)", test_payout_register_creator_unauthenticated),
+        ("Payouts: Start Onboarding (MOCK)", test_payout_onboard),
+        ("Payouts: Create Payment (Invalid Creator)", test_payout_create_payment_unauthenticated),
+        ("Payouts: Get Earnings (Unauthenticated)", test_payout_get_earnings_unauthenticated),
+        ("Payouts: Request Payout (Unauthenticated)", test_payout_request_payout_unauthenticated),
+    ]
     
-    # Content Moderation tests (HIGH PRIORITY)
-    results["Moderation - Normal Text"] = test_moderation_normal_text()
-    results["Moderation - Toxic Text"] = test_moderation_toxic_text()
-    results["Moderation - Profane Text"] = test_moderation_profane_text()
-    results["Moderation - Stream Title"] = test_moderation_stream_title()
-    results["Moderation - Username"] = test_moderation_username()
-    results["Moderation - Missing Input"] = test_moderation_missing_input()
-    results["Moderation - Invalid Input"] = test_moderation_invalid_input()
-    results["Emergent LLM Chat Moderation"] = test_emergent_chat_moderation()
+    for test_name, test_func in tests:
+        results["total"] += 1
+        try:
+            if test_func():
+                results["passed"] += 1
+            else:
+                results["failed"] += 1
+        except Exception as e:
+            print(f"❌ EXCEPTION in {test_name}: {str(e)}")
+            results["failed"] += 1
+        
+        time.sleep(0.5)  # Small delay between tests
     
-    # Stream tests
-    results["Stream Creation"] = test_stream_creation()
-    results["Get Active Streams"] = test_get_active_streams()
-    results["Agora Token Generation"] = test_agora_token_generation()
-    
-    # Other features
-    results["Gift Catalog"] = test_gift_catalog()
-    results["Wallet Balance"] = test_wallet_balance()
-    
-    # Summary
-    print(f"\n{BLUE}{'='*60}{RESET}")
-    print(f"{BLUE}TEST SUMMARY{RESET}")
-    print(f"{BLUE}{'='*60}{RESET}")
-    
-    passed = sum(1 for v in results.values() if v)
-    total = len(results)
-    
-    for test_name, result in results.items():
-        status = f"{GREEN}PASS{RESET}" if result else f"{RED}FAIL{RESET}"
-        print(f"{status} - {test_name}")
-    
-    print(f"\n{BLUE}Total: {passed}/{total} tests passed{RESET}")
-    
-    if passed == total:
-        print(f"{GREEN}All tests passed!{RESET}")
-    elif passed >= total * 0.8:
-        print(f"{YELLOW}Most tests passed, some issues found{RESET}")
-    else:
-        print(f"{RED}Multiple tests failed, critical issues detected{RESET}")
+    # Print summary
+    print("\n" + "="*80)
+    print("TEST SUMMARY")
+    print("="*80)
+    print(f"Total Tests: {results['total']}")
+    print(f"✅ Passed: {results['passed']}")
+    print(f"❌ Failed: {results['failed']}")
+    print(f"Success Rate: {(results['passed']/results['total']*100):.1f}%")
+    print("="*80)
     
     return results
 
 if __name__ == "__main__":
-    run_all_tests()
+    results = run_all_tests()
+    
+    # Exit with appropriate code
+    exit(0 if results["failed"] == 0 else 1)
