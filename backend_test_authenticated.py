@@ -205,7 +205,8 @@ def test_2fa_verify_authenticated():
         
         if response.status_code == 200:
             data = response.json()
-            if "message" in data and "2fa_verified" in data:
+            # During setup, response includes backup_codes; during login, it includes 2fa_verified
+            if "message" in data and ("2fa_verified" in data or "backup_codes" in data):
                 print_result(True, "TOTP code verified successfully", data)
                 return True
             else:
