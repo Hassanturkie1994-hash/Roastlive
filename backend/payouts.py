@@ -263,11 +263,11 @@ async def get_creator_earnings(creator_id: str, request: Request):
         total_fees = result[0]["total_platform_fee"] if result else 0
         count = result[0]["count"] if result else 0
         
-        # Get recent payments
+        # Get recent payments (exclude MongoDB _id field)
         recent_payments = await db.payments.find({
             "creator_id": creator_id,
             "status": "succeeded"
-        }).sort("created_at", -1).limit(10).to_list(10)
+        }, {"_id": 0}).sort("created_at", -1).limit(10).to_list(10)
         
         return {
             "creator_id": creator_id,
