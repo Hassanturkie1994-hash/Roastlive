@@ -383,6 +383,28 @@ async def send_gift(request: SendGiftRequest):
             },
         ])
         
+        # CHECK IF THIS IS A BATTLE - Update battle score
+        battle_participant = await db.battle_participants.find_one({
+            "user_id": request.recipientId,
+            "status": {"$in": ["ready", "active"]}
+        })
+        
+        if battle_participant:
+            # This is a battle - update the team's score
+            match_id = battle_participant["match_id"]
+            team = battle_participant["team"]
+            score_field = f"{team}_score"
+            
+            await db.battle_matches.update_one(
+                {"match_id": match_id},
+                {"$inc": {score_field: request.giftPrice}}
+            )
+            
+            logging.info(f"Battle score updated: {match_id} - {team} +{request.giftPrice}")
+            
+            gift_record["battle_match_id"] = match_id
+            gift_record["battle_team"] = team
+        
         return {"success": True, "gift": gift_record}
     except Exception as e:
         logging.error(f"Send gift error: {str(e)}")
