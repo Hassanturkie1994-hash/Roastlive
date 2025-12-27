@@ -151,8 +151,12 @@ async def verify_totp_code(verification: TOTPVerification, request: Request):
             secret = temp_setup["secret"]
             backup_codes = temp_setup["backup_codes"]
             
-            # Verify expiration
-            if datetime.now(timezone.utc) > temp_setup["expires_at"]:
+            # Verify expiration (normalize timezone-naive datetimes)
+            expires_at = temp_setup["expires_at"]
+            if expires_at.tzinfo is None:
+                expires_at = expires_at.replace(tzinfo=timezone.utc)
+            
+            if datetime.now(timezone.utc) > expires_at:
                 await db.temp_2fa_setup.delete_one(
                     {"user_id": current_user.user_id}
                 )
