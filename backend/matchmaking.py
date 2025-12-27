@@ -496,8 +496,45 @@ async def end_battle(match_id: str, req: Request):
             {"$set": {"status": "completed"}}
         )
         
-        # Get participants for XP update (future integration)
+        # Get participants for XP update
         participants = await db.battle_participants.find({"match_id": match_id}).to_list(100)
+        
+        # Award XP to participants
+        xp_awards = {
+            "win": 100,
+            "loss": 50,
+            "tie": 75
+        }
+        
+        for participant in participants:
+            user_id = participant["user_id"]
+            team = participant["team"]
+            
+            # Determine XP amount
+            if winner == "tie":
+                xp_amount = xp_awards["tie"]
+                result = "tie"
+            elif winner == team:
+                xp_amount = xp_awards["win"]
+                result = "win"
+            else:
+                xp_amount = xp_awards["loss"]
+                result = "loss"
+            
+            # Award XP to user (assumes users collection exists with XP tracking)
+            await db.users.update_one(
+                {"user_id": user_id},
+                {
+                    "$inc": {
+                        "total_xp": xp_amount,
+                        "battle_wins": 1 if result == "win" else 0,
+                        "battle_total": 1
+                    }
+                },
+                upsert=True
+            )
+            
+            logger.info(f"Awarded {xp_amount} XP to {user_id} for battle {result}")
         
         logger.info(f"Battle {match_id} ended, winner: {winner}")
         
@@ -508,6 +545,7 @@ async def end_battle(match_id: str, req: Request):
                 "team_a": team_a_score,
                 "team_b": team_b_score
             },
+            "xp_awarded": True,
             "message": "Battle completed!",
             "match_duration": (datetime.now(timezone.utc) - match["started_at"]).seconds if match.get("started_at") else 0
         }
