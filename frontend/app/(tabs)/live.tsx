@@ -180,6 +180,9 @@ export default function Live() {
         </ScrollView>
       )}
 
+      {/* Battle Queue Component */}
+      {user && <BattleQueue />}
+
       {/* Go Live Button */}
       <TouchableOpacity style={styles.goLiveButton} onPress={handleGoLive}>
         <Ionicons name="videocam" size={28} color="#fff" />
