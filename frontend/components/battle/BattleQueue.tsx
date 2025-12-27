@@ -51,26 +51,37 @@ export default function BattleQueue() {
 
       if (response.ok) {
         const data = await response.json();
-        setQueueStatus(data);
-
-        // If we were in queue but now we're not, a match might have been found
+        
+        // Check if we found a match (transitioned from in_queue to not in_queue)
         if (queueStatus.in_queue && !data.in_queue) {
-          // Check if we have a match
-          // In a real implementation, this would come via real-time notification
-          Alert.alert(
-            '🎮 Match Found!',
-            'Your battle is ready to begin!',
-            [
-              {
-                text: 'Join Battle',
-                onPress: () => {
-                  // Navigate to battle room
-                  // router.push(`/battle/${matchId}`);
-                  Alert.alert('Demo', 'Battle room navigation will be implemented next!');
+          // User left queue - likely matched
+          // Try to find the match by checking recent battle_participants
+          try {
+            const matchResponse = await fetch(`${BACKEND_URL}/api/matchmaking/queue/status`, {
+              credentials: 'include',
+            });
+            
+            // In real implementation, backend would return match_id
+            // For now, show alert and reset
+            Alert.alert(
+              '🎮 Match Found!',
+              'Your battle is ready to begin!',
+              [
+                {
+                  text: 'Join Battle',
+                  onPress: () => {
+                    // TODO: Navigate to actual match_id from backend
+                    router.push('/battle/demo_match_123');
+                  },
                 },
-              },
-            ]
-          );
+              ]
+            );
+            setQueueStatus({ in_queue: false });
+          } catch (error) {
+            console.error('Match check failed:', error);
+          }
+        } else {
+          setQueueStatus(data);
         }
       }
     } catch (error) {
