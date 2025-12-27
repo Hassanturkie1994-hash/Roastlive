@@ -82,7 +82,7 @@ export default function AccessibilityMotionScreen() {
           <View style={{ flex: 1 }}>
             <Text style={styles.infoTitle}>What Gets Reduced?</Text>
             <Text style={styles.infoText}>
-              When enabled, Reduce Motion will:{'\n'}\u2022 Disable auto-play on videos{'\n'}\u2022 Reduce parallax effects{'\n'}\u2022 Minimize page transitions{'\n'}\u2022 Limit animated gift effects{'\n'}\u2022 Replace intense animations with simple fades
+              When enabled, Reduce Motion will reduce or disable auto-play on videos, parallax effects, page transitions, animated gift effects, and replace intense animations with simple fades.
             </Text>
           </View>
         </View>
