@@ -95,7 +95,7 @@ async def get_current_user(request: Request) -> Optional[User]:
 
 # Routes
 @router.post("/session")
-async def create_session(request: Request, response: Response):
+async def create_session(request: Request, response: Response, background_tasks: BackgroundTasks):
     """
     Exchange session_id for user data and create session.
     Called by frontend after OAuth redirect.
@@ -120,6 +120,7 @@ async def create_session(request: Request, response: Response):
         {"_id": 0}
     )
     
+    is_new_user = False
     if not existing_user:
         # Create new user with custom user_id
         user_id = f"user_{secrets.token_hex(12)}"
@@ -131,6 +132,10 @@ async def create_session(request: Request, response: Response):
             "created_at": datetime.now(timezone.utc)
         }
         await db.users.insert_one(user_doc)
+        is_new_user = True
+        
+        # Send welcome email in background
+        background_tasks.add_task(send_welcome_email, session_response.email, session_response.name)
     else:
         user_id = existing_user["user_id"]
     
@@ -165,7 +170,8 @@ async def create_session(request: Request, response: Response):
         "email": session_response.email,
         "name": session_response.name,
         "picture": session_response.picture,
-        "session_token": session_response.session_token
+        "session_token": session_response.session_token,
+        "is_new_user": is_new_user
     }
 
 @router.get("/me")
