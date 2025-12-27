@@ -683,10 +683,12 @@ from auth import router as auth_router
 from twofa import router as twofa_router
 from payouts import router as payouts_router
 from matchmaking import router as matchmaking_router
+from reactions import router as reactions_router
 app.include_router(auth_router)
 app.include_router(twofa_router)
 app.include_router(payouts_router)
 app.include_router(matchmaking_router)
+app.include_router(reactions_router)
 app.include_router(api_router)
 
 app.add_middleware(
