@@ -14,6 +14,7 @@ import { theme } from '../../constants/theme';
 import { useAuth } from '../../contexts/AuthContext';
 import StreamCard from '../../components/stream/StreamCard';
 import { supabase } from '../../lib/supabase';
+import BattleQueue from '../../components/battle/BattleQueue';
 
 interface Stream {
   id: string;
