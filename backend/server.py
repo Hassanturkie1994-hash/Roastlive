@@ -656,7 +656,9 @@ async def get_admin_dashboard_stats():
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
 
-# Include router with all endpoints
+# Include routers
+from auth import router as auth_router
+app.include_router(auth_router)
 app.include_router(api_router)
 
 app.add_middleware(
