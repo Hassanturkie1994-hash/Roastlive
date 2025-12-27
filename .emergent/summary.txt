@@ -1,221 +1,169 @@
 <analysis>
 
-**original_problem_statement**: The user wants to build a Roast Live livestreaming mobile application.
+**original_problem_statement**: The user initially wanted to fix a Roast Live application that was in a non-functional state due to a critical Metro bundler crash (). After the environment was stabilized, the user requested the implementation of a comprehensive, multi-screen settings feature covering all aspects of the application (Privacy, Account, Notifications, Monetization, etc.).
 
-The user provided a very detailed list of bugs to fix and features to implement, including:
-- **Core Flow Fixes**: Removing an unnecessary Go Live screen, fixing failing chat messages, and making several UI buttons (Gift, Shield, Guest Invite, Lock) functional.
-- **UI/UX Polish**: Fixing a bug where toggling chat makes the camera disappear, adding a flashlight toggle, and adding a confirmation dialog to prevent accidental stream termination on back-swipe.
-- **Streaming Logic**: Ensuring new streams appear in the feed immediately, implementing a pause/resume feature for interruptions (e.g., phone calls) with a 10-minute timeout, and an auto-end feature for streams inactive for over 20 minutes.
-- **Battle Mode Overhaul**: Implementing a real matchmaking queue, a premade team/lobby system, fair matchmaking rules (longest wait first), a comprehensive XP/ranking system with a leaderboard, and fixing critical errors that prevent users from starting a battle.
-- **Technical Implementation**: Using Supabase Storage for all media (images, streams) as a temporary solution.
-- **Code Quality**: Migrating all Supabase  calls to  to prevent the app from crashing when a query returns no results.
+Following the creation of the settings UI structure, the user then requested the implementation of several major backend features:
+- Email notifications
+- Social login (Google/Apple/Facebook OAuth)
+- 2FA integration
+- Payout processing
 
-The user also reported persistent, critical issues with the application crashing on startup due to Metro bundler errors and being unable to connect via Expo Go on their Android device.
+The immediate priority set by the user is to proceed with these backend integrations, starting with Social Login.
 
 **User's preferred language**: English
 
 **what currently exists?**
-The project is a large Expo/React Native application with a FastAPI backend and Supabase database.
+The application is in a **working and bootable state**. The critical Metro bundler and ngrok connection issues that plagued the previous sessions have been resolved. The Expo frontend (SDK 54) now successfully bundles for Android, and the FastAPI backend is running.
 
-During this session, the agent implemented a massive number of features and fixes based on the user's requests:
-- **Core Streaming Features**: A pause/resume mechanism () was created and integrated into the  screen to handle app interruptions. Logic to award XP upon stream completion was also added.
-- **Battle Mode**: An XP & Ranking system was scaffolded (, ) and integrated. A  component was created and added to the battle screen to replace static avatars, and the  function was updated to award XP.
-- **UI Components**: Modals for the  and  were created and integrated into the  screen. A  screen was created to display rankings. The user profile screen () was updated to display user XP and level.
-- **Database**: Multiple SQL scripts were created to add new tables and functions for XP, app state, wallet functionality, and pause/resume logic.
-- **Code Refactoring**: A significant refactoring effort was completed to replace over 60 instances of  with  across 32 files to improve app stability and prevent crashes from empty query results.
+A massive, comprehensive settings feature has been scaffolded. This includes:
+- A new database schema file ().
+- A placeholder settings service ().
+- Over 20 new placeholder UI screen files under  for every conceivable setting.
 
-However, the application is currently in a **non-functional, broken state**. The Metro bundler is failing to build the application due to a critical environment issue.
+The backend was tested and several critical bugs were fixed by the  agent. However, the vast majority of frontend features, both old (XP system, stream pause/resume) and new (settings screens), remain functionally unimplemented and completely untested by a user.
 
 **Last working item**:
--   **Last item agent was working**: The agent was trying to resolve a critical Expo/Metro bundler crash loop. After fixing several issues (ngrok tunnel conflicts, incorrect import paths, syntax errors), the agent identified the root cause: the system was hitting its file watcher limit (), which caused the Metro bundler to crash repeatedly.
--   **Status**: BLOCKED
+-   **Last item agent was working**: The agent was preparing to implement the backend features requested by the user. It had just finished fetching detailed integration playbooks for Social OAuth, Email Notifications, 2FA, and Payouts. It had decided to start with Google OAuth implementation as the first step.
+-   **Status**: NOT STARTED
 -   **Agent Testing Done**: N
--   **Which testing method agent to use?**: NA. The environment must be fixed before any testing is possible. The immediate next step is to resolve the  error.
+-   **Which testing method agent to use?**: both
 -   **User Testing Done**: N
 
 **All Pending/In progress Issue list**:
--   Issue 1: Critical Environment Failure:  - File Watcher Limit Reached (P0)
--   Issue 2: Comprehensive Testing of All New Features (P1)
--   Issue 3: Incomplete Battle Mode Features (P2)
--   Issue 4: Disabled Lottie Animations (P3)
--   Issue 5: Disabled Story Creation Screen (P3)
--   Issue 6: Fragmented and Unapplied Database Schema (P3)
+-   **Issue 1: Aggressive and Unreliable Metro Caching (P0)**
+    -   This is a recurring environmental issue that caused significant delays. While currently stable, any dependency change or configuration edit risks re-triggering it.
+-   **Issue 2: Incomplete and Untested Settings Feature (P1)**
+    -   The UI screens are just placeholders and do not have any logic. The backend service and DB schema are not fully integrated.
+-   **Issue 3: Fragmented and Unapplied Database Schema (P2)**
+    -   Multiple SQL files exist, and a new one () was just added. They need to be consolidated and applied.
+-   **Issue 4: Disabled Core Features (P3)**
+    -    animations and the Story Creation screen remain commented out from previous sessions.
 
 **Issues Detail**:
--   **Issue 1: Critical Environment Failure:  - File Watcher Limit Reached (P0)**
-    -   **Attempted fixes**: The agent correctly diagnosed that the Expo service was in a crash loop. It found the  error in the logs. Attempts to fix it included:
-        1.  Increasing the limit via fs.inotify.max_user_watches = 12288 (failed due to permissions).
-        2.  Adding a  to  to reduce the number of watched files (did not solve the issue).
+-   **Issue 1: Aggressive and Unreliable Metro Caching (P0)**
+    -   **Attempted fixes**: The environment was stabilized by disabling Metro's Fast Resolver () and simplifying . This is a workaround, not a root cause fix.
     -   **Next debug checklist**:
-        1.  Re-investigate . Ensure the  is correctly configured to exclude large, unnecessary directories. A common mistake is not excluding  or build artifacts correctly.
-        2.  Explore alternative ways to increase the watcher limit within the container environment if possible.
-        3.  Call the  immediately if the issue persists, as this is a fundamental environment blocker.
-    -   **Why fix this issue and what will be achieved with the fix?**: This is the highest priority. The application cannot be bundled, run, or tested until this is resolved. Fixing it will unblock all further development and testing.
-    -   **Status**: BLOCKED
-    -   **Is recurring issue?**: Y (This is a new manifestation of the general environment instability).
-    -   **Should Test frontend/backend/both after fix?**: Both.
-    -   **Blocked on other issue**: This issue blocks everything.
-
--   **Issue 2: Comprehensive Testing of All New Features (P1)**
-    -   **Attempted fixes**: None. The agent implemented a vast number of features (XP, pause/resume, leaderboard, new modals,  migration) but was blocked from testing by the environment failure.
-    -   **Next debug checklist**: After fixing Issue 1, the next agent must conduct a full User Acceptance Test (UAT) of all the features implemented in this session. This includes solo streaming, battle mode, viewing profiles, checking the leaderboard, etc.
-    -   **Why fix this issue and what will be achieved with the fix?**: Ensures the large volume of newly added code is functional and bug-free.
-    -   **Status**: NOT STARTED
-    -   **Is recurring issue?**: N
-    -   **Should Test frontend/backend/both after fix?**: Both.
-    -   **Blocked on other issue**: Issue 1.
-
--   **Issue 3: Incomplete Battle Mode Features (P2)**
-    -   **Attempted fixes**: The agent laid the groundwork for many features (XP system, multi-guest grid) but did not complete the full implementation from the user's request.
-    -   **Next debug checklist**: Implement the remaining battle mode features: a true matchmaking queue (not demo), a premade lobby system, and the ability for a solo streamer to enter/exit a battle.
-    -   **Why fix this issue and what will be achieved with the fix?**: Completes the core battle experience, a primary feature of the app.
-    -   **Status**: NOT STARTED
-    -   **Is recurring issue?**: N
-    -   **Should Test frontend/backend/both after fix?**: Both.
-    -   **Blocked on other issue**: Issue 1.
-
--   **Issue 4 & 5: Disabled Lottie Animations & Story Creation Screen (P3)**
-    -   **Attempted fixes**: None. These are carried over from previous forks.
-    -   **Next debug checklist**: Uncomment the code in  and  and debug the original build errors.
-    -   **Why fix this issue and what will be achieved with the fix?**: Restores disabled app features and reduces technical debt.
-    -   **Status**: NOT STARTED
+        1.  Before any new dependency installation, anticipate potential caching issues.
+        2.  If any bundling error occurs, the first step should always be to stop the expo server, run , and restart.
+        3.  Do not change  from .
+    -   **Why fix this issue and what will be achieved with the fix?**: This is a persistent environmental problem. While a workaround is active, being mindful of it prevents long debugging loops.
+    -   **Status**: RESOLVED (Workaround in place)
     -   **Is recurring issue?**: Y
-    -   **Should Test frontend/backend/both after fix?**: Frontend.
-    -   **Blocked on other issue**: Issue 1.
-
--   **Issue 6: Fragmented and Unapplied Database Schema (P3)**
-    -   **Attempted fixes**: The agent created multiple new SQL files (, , etc.) but did not consolidate them.
-    -   **Next debug checklist**: Create a single, idempotent  file that incorporates all changes from all  and  files to simplify setup.
-    -   **Why fix this issue and what will be achieved with the fix?**: Simplifies environment setup and prevents bugs from an out-of-sync schema.
-    -   **Status**: NOT STARTED
-    -   **Is recurring issue?**: Y
-    -   **Should Test frontend/backend/both after fix?**: Backend/DB.
-    -   **Blocked on other issue**: None.
+    -   **Should Test frontend/backend/both after fix?**: Frontend
+    -   **Blocked on other issue**: None
 
 **In progress Task List**:
--   There are no specific tasks in progress, as the entire project is blocked by the environment failure. The first task is to resolve the  error.
+-   **Task 1: Implement Backend Integrations (P0)**
+    -   **Where to resume**: Start by implementing the Google OAuth flow using the playbook obtained from the . This will involve modifying the backend to handle OAuth callbacks and the frontend to add a Sign in with Google button.
+    -   **What will be achieved with this?**: Fulfills the user's latest and highest priority request, adding a critical authentication feature.
+    -   **Status**: NOT STARTED
+    -   **Should Test frontend/backend/both after fix?**: Both
+    -   **Blocked on something**: None
 
 **Upcoming and Future Tasks**
--   **(P0) Full UAT**: Once the environment is fixed, test all features implemented in this session.
--   **(P1) Battle Mode - Real Matchmaking**: Implement the server-side queue for matching real users.
--   **(P1) Battle Mode - Premade Lobby**: Implement UI and logic for inviting friends to a team before matchmaking.
--   **(P2) Auto-End Stream on Inactivity**: Implement the 20-minute inactivity detector.
--   **(P3) Fix Disabled Features**: Address the root causes for the disabled Lottie animations and Story Creation screen.
+-   **(P0) Upcoming: User Acceptance Testing**: The user has not tested *any* of the features developed in the last two forks. This includes the XP & ranking system, stream pause/resume, leaderboard, new modals, and the  migration. This is a high-risk technical debt.
+-   **(P1) Upcoming: Complete Settings Implementation**: Flesh out all the placeholder settings screens with actual UI components and logic, connect them to the , and integrate with the backend.
+-   **(P1) Future: Implement other Backend Integrations**: Implement Email Notifications, 2FA, and Payouts after OAuth is complete.
+-   **(P2) Future: Complete Battle Mode**: Implement the real matchmaking queue and premade lobby system.
+-   **(P3) Future: Fix Disabled Features**: Re-enable and debug the Lottie animations and the Story Creation screen.
+-   **(P3) Future: Consolidate Database Schema**: Combine all  files into a single, idempotent script.
 
 **Completed work in this session**
-- **Critical Stability Fix**: Replaced ~60 instances of  with  across 32 files to prevent crashes on empty Supabase query results.
-- **XP & Ranking System**: Created backend schema, services (), and frontend UI updates on the profile page to display XP, level, and rank.
-- **Stream Pause/Resume**: Implemented logic to detect app backgrounding and display a paused state on the stream, with a 10-minute auto-end timer.
-- **New UI Components**:
-  - Created a  screen.
-  - Created and integrated .
-  - Created and integrated .
-  - Created  for battle mode.
-- **Feature Enhancements**:
-  - Added a flashlight toggle to the broadcast screen.
-  - Added a swipe-back confirmation dialog to prevent accidental stream ending.
-  - Migrated the active stream list () from a broken backend endpoint to fetch directly from Supabase.
-- **Bug Fixes**:
-  - Fixed an issue where demo match IDs were not valid UUIDs.
-  - Corrected numerous Metro bundler issues (incorrect import paths, syntax errors in constants) before being blocked by the  error.
+- **Critical Environment Stabilization**:
+  - Diagnosed and resolved a fundamental Metro bundler crisis () by discovering that disabling the Fast Resolver () was the key.
+  - Successfully downgraded to Expo SDK 51 to debug, then upgraded back to SDK 54, ensuring the project is on a modern, working SDK.
+  - Fixed a persistent ngrok connection issue by correcting the  environment variable.
+- **Backend Testing & Hardening**:
+  - Executed the  agent, which successfully tested all backend endpoints and fixed 3 critical bugs.
+- **Massive Settings Feature Scaffolding**:
+  - Created a new database schema file () for user preferences.
+  - Created a placeholder settings service ().
+  - Created over 20 placeholder UI screens for a comprehensive settings section, effectively building the entire navigation structure.
 
 **Earlier issues found/mentioned but not fixed**
--   **Issue 1: Lottie Animations Disabled**: The  in  remains commented out.
--   **Issue 2: Story Creation Screen Disabled**: The content of  remains commented out.
+-   **Issue 1: Lottie Animations Disabled**
+    - The  in  is still commented out.
+-   **Issue 2: Story Creation Screen Disabled**
+    - The content of  is still commented out.
+-   **Issue 3: Fragmented Database Schema**
+    -  The number of separate  files has increased, making schema management more complex. A consolidation task is pending.
 
 **Known issue recurrence from previous fork**
--   **Issue recurrence in previous fork**: Expo Go / Metro bundler instability.
--   **Recurrence count**: EXTREMELY HIGH. The majority of this session was spent fighting a cascade of environment and bundler issues, culminating in the  blocker.
--   **Status**: BLOCKED. The environment is currently broken.
+-   **Issue recurrence in previous fork**: Extreme Metro bundler and caching instability.
+-   **Recurrence count**: HIGH. The majority of the session was spent fighting a cascade of bundling errors.
+-   **Status**: RESOLVED (Workaround). A stable workaround () was found and is currently active. This is critical information for the next agent.
 
 **Code Architecture**
 
 
 **Key Technical Concepts**
-- **Frontend**: React Native, Expo, Expo Router, TypeScript
-- **Backend**: FastAPI, Python
-- **Database/Auth**: Supabase (PostgreSQL, Realtime)
-- **Core Problem**: The development environment is unstable, suffering from severe Metro bundler caching issues and a critical  (file watcher limit) error that prevents the app from being bundled.
-- **State Management**: New utilities  for managing stream state (paused/active) and / for user progression.
+- **Expo SDK Debugging**: The session was a deep dive into Expo/Metro internals. Key learnings include the impact of  fields in , aggressive caching behavior, and the existence and effect of the  environment variable.
+- ****: A utility was used to create a patch for a broken npm dependency (), which is a crucial technique for handling such issues.
+- **Backend Integrations**: The agent is now working with playbooks for integrating third-party services like Social OAuth, SendGrid (for email), and Stripe/Wise (for payouts).
 
 **key DB schema**
-The schema is now even more fragmented. In addition to the previous files, the agent added:
-- 
-- 
-- 
-- 
-A consolidation of all these SQL files is highly recommended.
+- **New Table Definitions**: A new file  was created, containing the schema for various user preferences tables. This file needs to be applied to the database.
 
 **changes in tech stack**
-- No fundamental changes.
+- No new technologies, but the Expo SDK was downgraded to 51 and then successfully upgraded back to 54.
 
 **All files of reference**
--   **/app/frontend/metro.config.js**: This file is now critical for debugging the  error. It was modified to add a .
--   **/app/frontend/app/(tabs)/live/broadcast.tsx**: Heavily modified with many new features.
--   **/app/frontend/app/battle/match/[matchId].tsx**: Heavily modified with new battle UI and logic.
--   All new service/util files (, , etc.).
--   All new component files (, , etc.).
--   All new  documentation files.
+-   **/app/frontend/.env**: Critically important. Now contains  and the corrected . **Do not alter these without good reason.**
+-   **/app/frontend/metro.config.js**: Was simplified to help resolve bundling issues.
+-   **/app/frontend/app/(tabs)/profile/settings/**: This new directory contains the entire scaffolded UI for the settings feature.
+-   **/app/DATABASE_USER_SETTINGS.sql**: Contains the new, unapplied schema for user settings.
+-   **/app/auth_testing.md** (and other playbooks): Contains instructions for implementing the next set of features.
 
 **Critical Info for New Agent**
--   **THE APP IS BROKEN AND WILL NOT BUNDLE.** Your absolute first priority is to fix the  error. Do not attempt to add features or test anything until Metro can successfully build the project.
--   **Debugging **: The previous agent tried adding a  to , which didn't work. You should review that configuration or explore other ways to solve the file watcher limit in this specific container environment. Calling  early is strongly advised.
--   **Metro Caching Hell**: Be aware that this environment has aggressive and persistent Metro caching. The previous agent had to manually delete cache directories ( and ) to get changes to apply. If you fix a file and the old error persists, assume it's a cache issue.
--   **Untested Code**: A massive amount of code for new features (XP, pause/resume, etc.) was written but never tested. Once the environment is stable, a full regression and feature test is required.
--   **Database Schema**: The DB schema is scattered across numerous files. The user must be instructed to run all the new  files, or you should propose a task to consolidate them.
+-   **ENVIRONMENT IS STABLE BUT FRAGILE**: The app is bundling because of a specific workaround:  is set in . Do not change this. Metro's cache is extremely aggressive; if you encounter strange bundling errors, your first action should be to stop the server and clear all caches: .
+-   **IMMEDIATE TASK: GOOGLE OAUTH**: Your top priority is to start implementing the backend integrations the user requested. Begin with Google OAuth, following the playbook in  and the information retrieved from the integration agent.
+-   **HUGE UNTESTED FEATURE-SET**: Be aware that almost none of the features from the past two forks (XP system, pause/resume, leaderboards, gift modals, etc.) have been tested by a user. After implementing the backend integrations, a full regression test will be critical.
+-   **SETTINGS ARE PLACEHOLDERS**: The 20+ new settings screens are just empty shells. They exist and the app bundles, but they have no functionality. The user wants them all implemented.
 
 **documents created in this job**
-- /app/DATABASE_FIXES_PHASE1.sql
-- /app/PHASE_1_2_FIXES_README.md
-- /app/DATABASE_PHASE3_4_XP_STORAGE.sql
-- /app/PHASE_3_4_5_IMPLEMENTATION.md
-- /app/DATABASE_PAUSE_RESUME.sql
-- /app/COMPLETE_IMPLEMENTATION_SUMMARY.md
-- /app/DATABASE_WALLET_FUNCTION.sql
-- /app/MAYBLESINGLE_UPDATES.md
-- /app/frontend/constants/gifts.ts
-- Numerous new components, services, and utils.
+- /app/DATABASE_USER_SETTINGS.sql
+- /app/frontend/services/settingsService.ts
+- 20+ new screen files under 
+- /app/auth_testing.md
+- /app/patches/@expo+metro-runtime+6.1.2.patch (created to fix SDK 54 bug)
 
 **Last 10 User Messages and any pending HUMAN messages**
-- **Msg 409**: I cant open app in expo go... fix expo go errors - User reports the app is broken again. **(Status: IN PROGRESS / BLOCKED)**
-- **Msg 386**: User requests to update all  to . **(Status: COMPLETED)**
-- **Msg 305**: User reports a  in . **(Status: Agent attempted fix, but was blocked by cache issues)**
-- **Msg 252**: User reports an  for . **(Status: Agent attempted fix, but was blocked by cache issues)**
-- **Msg 216**: Packager is not running - User reports initial connection failure after a large batch of features were added. **(Status: Agent attempted fix, which led to more errors)**
-- **Msg 171**: Keep going to next phases! - User confirms to continue development. **(Status: DONE)**
-- **Msg 100**: Move to next in the process! - User confirms to continue development. **(Status: DONE)**
-- **Msg 75**: Move to the next phases and work hard on everything we spoke about - User confirms to continue development. **(Status: DONE)**
-- **Msg 14**: Begin with Phase 1 and 2 together - User confirms the initial plan. **(Status: DONE)**
-- **Msg 5**: The user provides a huge, detailed list of required fixes and new features. This is the primary work specification for the current job. **(Status: IN PROGRESS)**
+1.  **Keep going! (Msg 404)**: User requests backend integrations: email, social login, 2FA, payouts. **(Status: IN PROGRESS)**
+2.  **Test it out... (Msg 403)**: Agent confirms settings system is bundled and asks user to test. **(Status: DONE)**
+3.  **Keep going on with the phases! (Msg 362)**: User confirms to continue work after initial settings files were created. **(Status: DONE)**
+4.  **Yes it works. No go for all settings!... (Msg 337)**: User confirms Expo Go is working, approves implementing all settings, and gives agent priority choice. **(Status: DONE)**
+5.  **Make all of those settings visable on the app... (Msg 332)**: User provides a massive, detailed list of settings features to be implemented. **(Status: IN PROGRESS)**
+6.  **I still get the same error code... (Msg 317)**: User reports the ngrok connection issue persists. **(Status: RESOLVED)**
+7.  **Packager is not running at... (Msg 295)**: User reports the initial ngrok/Expo Go connection error. **(Status: RESOLVED)**
+8.  **Check out the changed you made... (Msg 280)**: User asks agent to verify the SDK version and continue with the original plan. **(Status: DONE)**
+9.  **Attempt downgrading the Expo SDK... (Msg 155)**: User chooses to downgrade the SDK to fix the bundler issue. **(Status: DONE)**
+10. **Find solution so I can run the app again... (Msg 261)**: User insists the agent fix the bundler issue and not give up. **(Status: RESOLVED)**
 
 **Project Health Check:**
+-   **Working**: The application now successfully bundles and runs.
 -   **Broken**:
-    -   **Metro Bundler**: Critically broken due to  error. The app cannot be started or tested.
-    -   **/app/frontend/components/gifts/GiftDetailModal.tsx**: Lottie animations are still commented out.
-    -   **/app/frontend/app/stories/create.tsx**: Screen content is still commented out.
+    -   : Lottie animations are still commented out.
+    -   : Screen content is still commented out.
 -   **Mocked**:
-    -   **Live Streaming**: The entire feature is in a demo mode.
-    -   **Matchmaking**: Still uses a demo/placeholder logic, not a real queue.
+    -   **Matchmaking**: Still uses a demo/placeholder logic.
+    -   **Settings**: The entire settings feature is a UI-only scaffold with no logic.
 
 **3rd Party Integrations**
--   **Supabase**: Used for Auth, PostgreSQL DB, and Realtime communication. Requires a User API Key.
--   **Agora**: Intended for live streaming but is currently **bypassed** by demo mode.
--   **OpenAI GPT**: For AI Content Moderation. Uses Emergent LLM Key.
+-   **Supabase**: Auth, PostgreSQL DB, Realtime. (Requires User API Key)
+-   **Agora**: For live streaming (currently in demo mode).
+-   **OpenAI GPT**: For AI Content Moderation. (Uses Emergent LLM Key)
+-   **Upcoming**: SendGrid (Email), Google/Apple/Facebook (OAuth), Stripe/Wise (Payouts).
 
 **Testing status**
--   **Testing agent used after significant changes**: NO (Agent was blocked).
--   **Troubleshoot agent used after agent stuck in loop**: YES. The  correctly identified a hidden Metro cache directory, though this did not solve the final  issue.
--   **Test files created**: []
--   **Known regressions**: The entire application is non-functional due to the bundler issue.
+-   **Testing agent used after significant changes**: YES ( was used to test and fix the backend).
+-   **Troubleshoot agent used after agent stuck in loop**: YES (called twice to diagnose the critical  issue).
+-   **Test files created**: [  ]
+-   **Known regressions**: The project underwent a temporary SDK downgrade and had multiple dependencies reinstalled. While it appears stable, there's a risk of subtle regressions that haven't been caught due to lack of frontend testing.
 
 **Credentials to test flow:**
-N/A. The app cannot be tested.
+- User credentials are required to test login and other authenticated features. The next agent should use the existing test accounts or ask the user if new ones are needed for OAuth testing.
 
 **What agent forgot to execute**
-The agent did not forget tasks but was completely blocked by the critical  environment error. It was unable to:
--   Complete the full implementation of the user's extensive feature list (real matchmaking, premade lobbies, etc.).
--   Test any of the dozens of new features and fixes it implemented.
--   Consolidate the fragmented database schema files.
--   Fix the long-standing disabled Lottie and Story features.
+- The agent was redirected by the user's new, high-priority requests. It did not forget, but had to **postpone** the comprehensive testing of all the features implemented in the previous fork (XP system, stream pause/resume, new modals, etc.). This remains a significant piece of technical debt.
 
 </analysis>

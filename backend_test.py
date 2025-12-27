@@ -9,7 +9,7 @@ import time
 from datetime import datetime
 
 # Backend URL from environment
-BACKEND_URL = "https://live-preview-22.preview.emergentagent.com/api"
+BACKEND_URL = "https://roast-auth-1.preview.emergentagent.com/api"
 
 # Test data
 TEST_USER_ID = "test-user-" + str(int(time.time()))
